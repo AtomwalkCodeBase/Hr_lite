@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "hr-app-lite",
+    "slug": "hrapplite",
+    "version": "1.0.8",
+    "orientation": "portrait",
+    "icon": "./assets/images/adaptive-icons.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "versionCode": 1,
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icons.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.pritamkumarnayak01.hrapp"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ad69641b-b7cc-47f7-86a4-3ee437bee76d"
+      }
+    },
+    "owner": "pritamkumarnayak01"
+  }
+}
