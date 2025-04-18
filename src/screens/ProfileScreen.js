@@ -48,7 +48,7 @@ const ProfileScreen = () => {
     fetchUserPin();
   }, []);
 
-  const handleBackPress = () => navigation.goBack();
+  const handleBackPress = () => router.back();
   const handlePressPassword = () => router.push({ pathname: 'ResetPassword' });
   const handleQRPress = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
@@ -123,13 +123,13 @@ const ProfileScreen = () => {
             <InfoRow 
               icon="mail" 
               label="Email" 
-              value={profile?.email_id || 'souvagyaranjandash8@gmail.com'} 
+              value={profile?.email_id || 'mail@gmail.com'} 
             />
-            <InfoRow 
+            {profile?.mobile_number && <InfoRow 
               icon="phone" 
               label="Mobile" 
-              value={profile?.mobile_number || '7381625406'} 
-            />
+              value={profile?.mobile_number} 
+            />}
           </View>
 
           {/* Leave Information */}

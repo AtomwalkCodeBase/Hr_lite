@@ -35,9 +35,10 @@ const SearchInput = styled.TextInput`
   padding-left: 10px;
 `;
 
-const LeaveScreen = () => {
+const LeaveScreen = (props) => {
   const navigation = useNavigation();
   const router = useRouter();
+  const [empId, setEmpId] = useState('');
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [leaveData, setLeavedata] = useState([]);
@@ -51,8 +52,16 @@ const LeaveScreen = () => {
   const [isLoading, setIsLoading] = useState(false); // State for loader visibility
 
   useEffect(() => {
-    leaveDetails();
-  }, []);
+    if (empId) { // Only call leaveDetails if empId is set
+      leaveDetails();
+    }
+  }, [empId]); // Add empId as a dependency
+
+  useEffect(() => {
+      if (props?.data?.empId) {
+        setEmpId(props.data.empId);
+      }
+    }, [props.data?.empId]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -61,7 +70,7 @@ const LeaveScreen = () => {
 
   const leaveDetails = () => {
     setIsLoading(true);
-    getEmpLeave("A")
+    getEmpLeave("A", empId)
       .then((res) => {
         setLeavedata(res.data);
         setFilteredData(res.data);
@@ -83,7 +92,10 @@ const LeaveScreen = () => {
   }, [navigation]);
 
   const handleBackPress = () => {
-    router.push('home');
+    router.navigate({
+      pathname: 'home',
+      params: { screen: 'HomePage' }
+    });
   };
   
   const handleCardPress = (leave) => {

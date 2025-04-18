@@ -252,7 +252,10 @@ const HomePage = () => {
     };
     const handlePressALeave = () => {
       router.push({
-        pathname: 'ApproveLeaves' 
+        pathname: 'ApproveLeaves',
+        params: {
+          empId,
+        }, 
       });
     };
     const handlePressClaim = () => {

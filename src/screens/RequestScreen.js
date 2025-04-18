@@ -70,6 +70,7 @@ const HelpScreen = (props) => {
     getRequestCategory()
       .then((res) => {
         setRequestCategories(res.data);
+        console.log("setRequestCategories", res.data)
         const filtered = res.data.filter(category => category.request_type === 'R');
         setFilteredCategories(filtered);
       })

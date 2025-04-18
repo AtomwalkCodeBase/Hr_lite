@@ -144,7 +144,10 @@ const LeaveScreen = () => {
   
 
   const handleBackPress = () => {
-    router.push('home');
+    router.navigate({
+      pathname: 'home',
+      params: { screen: 'HomePage' }
+    });
   };
 
   const handleRefresh = () => {

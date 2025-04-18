@@ -67,8 +67,8 @@ const AuthScreen = () => {
         }
     
         const correctMPIN = await AsyncStorage.getItem('userPin');
-        const finalUsername = await AsyncStorage.getItem('username');
-        const userPassword = await AsyncStorage.getItem('Password');
+        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const userPassword = await AsyncStorage.getItem('userPin');
     
         setTimeout(() => {
             if (mPIN.join('') === correctMPIN) {
@@ -87,8 +87,8 @@ const AuthScreen = () => {
     };
 
     const handleBiometricAuthentication = async () => {
-        const finalUsername = await AsyncStorage.getItem('username');
-        const userPassword = await AsyncStorage.getItem('Password');
+        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const userPassword = await AsyncStorage.getItem('userPin');
 
         try {
             const biometricAuth = await LocalAuthentication.authenticateAsync({
@@ -134,9 +134,9 @@ const AuthScreen = () => {
                     <TouchableOpacity style={styles.submitButton} onPress={handleMPINSubmit}>
                         <Text style={styles.submitButtonText}>Submit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={openPopup}>
+                 {/*   <TouchableOpacity onPress={openPopup}>
                         <Text style={styles.forgotText}>Forgot PIN?</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity>*/}
                     <TouchableOpacity
                         style={styles.fingerprintButton}
                         onPress={checkNetworkAndAuthenticate}

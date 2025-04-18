@@ -81,6 +81,8 @@ const HelpScreen = (props) => {
       });
   };
 
+  console.log("Emp Id====", empId);
+
   const handleBackPress = () => {
     router.push({
       pathname: 'MoreScreen' 
@@ -127,6 +129,17 @@ const HelpScreen = (props) => {
     });
   };
 
+  const handleUpdateRequest = (item) => {
+    router.push({
+      pathname: 'UpdateHelp',
+      params: {
+        empId,
+        call_type,
+        item: JSON.stringify(item), // ✅ stringify here
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
@@ -150,6 +163,7 @@ const HelpScreen = (props) => {
                   <RequestCard 
                     item={item}
                     onPress={filteredHelps.length > 0 ? () => handleCardPress(item) : undefined}
+                    onUpdate={() => handleUpdateRequest(item)}
                   />
                 )}
                 keyExtractor={(item) => item.id.toString()}

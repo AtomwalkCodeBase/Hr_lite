@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { Keyboard, SafeAreaView, Alert } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { getRequestCategory, postEmpRequest } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import DropdownPicker from '../components/DropdownPicker';
@@ -21,6 +21,7 @@ const Container = styled.ScrollView`
 `;
 
 const UpdateHelp = (props) => {
+  const  data  = useLocalSearchParams();
   const [empId, setEmpId] = useState("");
   const [requestText, setRequestText] = useState('');
   const [remark, setRemark] = useState('');
@@ -38,6 +39,11 @@ const UpdateHelp = (props) => {
   const router = useRouter();
   const call_type = props.data.item;
 
+  console.log("jhgdfhj", data?.empId);
+
+
+  console.log("data", JSON.parse(data?.item));
+  // console.log("data",data?.item);
   // Dynamic header title based on call_type
 //   const headerTitle = call_type === 'H' ? 'Add Help Request' : 'Add General Request';
 
