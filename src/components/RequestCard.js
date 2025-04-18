@@ -71,7 +71,7 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
       {/* Action buttons container */}
       <View style={styles.buttonsContainer}>
         {/* Update Details button */}
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={[styles.actionButton, styles.updateButton]}
           onPress={onUpdate}
           activeOpacity={0.8}
@@ -85,7 +85,7 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
             <Text style={styles.buttonText}>Update Details</Text>
             <Ionicons name="create" size={18} color="white" />
           </LinearGradient>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         
         {/* View Details button */}
         <TouchableOpacity 
@@ -124,6 +124,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     overflow: 'hidden',
     shadowColor: '#1A237E',
+    borderColor: '#cccc',
+    borderWidth: 1,
   },
   cardContent: {
     padding: 16,

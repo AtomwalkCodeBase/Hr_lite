@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "hr-app-lite",
-    "slug": "hrapplite",
-    "version": "1.0.8",
+    "name": "Atomwalk HRM Lite",
+    "slug": "atomwalkhrmslite",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/adaptive-icons.png",
     "scheme": "myapp",
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/images/adaptive-icons.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.pritamkumarnayak01.hrapp"
+      "package": "com.atomwalk.atomwalkhrmslite"
     },
     "web": {
       "bundler": "metro",
@@ -41,9 +41,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "ad69641b-b7cc-47f7-86a4-3ee437bee76d"
+        "projectId": "51fe7bfa-9380-4bc2-9337-87001bb0e07b"
       }
     },
-    "owner": "pritamkumarnayak01"
+    "owner": "atomwalk"
   }
 }

@@ -76,18 +76,14 @@ const LoginScreen = () => {
       console.log('API Response:', response);
 
       if (response.status === 200) {
-        const { token, emp_id, e_id } = response.data;
-
-        // console.log('Token ====',e_id)
-
+        const { token, emp_id, e_id } = response.data;     
         // Store token and emp_id in AsyncStorage
         await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('mobileNumber', mobileNumber);
         await AsyncStorage.setItem('empId', emp_id);
-        await AsyncStorage.setItem('empNoId', e_id);
+        await AsyncStorage.setItem('empNoId', String(e_id));
         await AsyncStorage.setItem('userPin', pin);
-
-        // Fetch and store company info
+  
         try {
           const companyInfoResponse = await getCompanyInfo();
           const companyInfo = companyInfoResponse.data;
@@ -98,10 +94,6 @@ const LoginScreen = () => {
         } catch (error) {
           console.error('Error fetching company info:', error.message);
         }
-
-        console.log("Employee Id---",emp_id);
-
-        // Navigate to the home screen
         router.push('/home');
       } else {
         setErrorMessage('Invalid mobile number or PIN');

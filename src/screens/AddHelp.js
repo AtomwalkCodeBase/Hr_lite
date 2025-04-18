@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { Keyboard, SafeAreaView, Alert } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { getRequestCategory, postEmpRequest } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import DropdownPicker from '../components/DropdownPicker';
@@ -21,9 +21,10 @@ const Container = styled.ScrollView`
 `;
 
 const AddHelp = (props) => {
+  const itemdata = JSON.parse(props?.data?.item || '{}');
   const [empId, setEmpId] = useState("");
-  const [requestText, setRequestText] = useState('');
-  const [remark, setRemark] = useState('');
+  const [requestText, setRequestText] = useState(itemdata?.request_text||"");
+  const [remark, setRemark] = useState(itemdata?.remarks||"");
   const [fileName, setFileName] = useState('');
   const [fileUri, setFileUri] = useState('');
   const [fileMimeType, setFileMimeType] = useState('');
@@ -36,11 +37,10 @@ const AddHelp = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
+  console.log(filteredCategories,"filteredCategories")
   const call_type = props.data.call_type;
-
   // Dynamic header title based on call_type
-  const headerTitle = call_type === 'H' ? 'Add Help Request' : 'Add General Request';
-
+  const headerTitle = props?.data?.headerTitle?props?.data?.headerTitle:call_type === 'H' ? 'Add Help Request' : 'Add General Request';
   useEffect(() => {
     if (props?.data?.empId) {
       setEmpId(props.data.empId);
@@ -121,9 +121,9 @@ const AddHelp = (props) => {
     const formData = new FormData();
     formData.append('emp_id', empId);
     formData.append('request_category_id', selectedCategory);
-    formData.append('call_mode', 'ADD');
-    formData.append('request_type', call_type);
-    formData.append('request_id', '0');
+    formData.append('call_mode', itemdata.request_id?"UPDATE":'ADD');
+    formData.append('request_type',itemdata.request_id?itemdata.request_type: call_type);
+    formData.append('request_id', itemdata.request_id?itemdata.request_id:'0');
     formData.append('request_text', requestText);
     formData.append('remarks', remark);
     
@@ -164,7 +164,17 @@ const AddHelp = (props) => {
       console.log('Form Data==',formData)
     }
   };
-
+  useEffect(() => {
+    if (itemdata.request_sub_type) {
+      const matchedCategory = filteredCategories.find(
+        (category) => category.name == itemdata.request_sub_type
+      );
+      if (matchedCategory) {
+        setSelectedCategory(matchedCategory.id.toString());
+      }
+    }
+  }, [filteredCategories]);
+  
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <HeaderComponent 

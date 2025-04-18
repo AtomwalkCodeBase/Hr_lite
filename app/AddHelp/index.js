@@ -7,7 +7,7 @@ import AddHelp from '../../src/screens/AddHelp';
 const index = () => {
   const route = useRoute();
   const data = route?.params;
-
+// console.log("ashu",data)
   return (
     <View style={{ flex: 1,
         

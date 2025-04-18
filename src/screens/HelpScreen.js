@@ -131,11 +131,13 @@ const HelpScreen = (props) => {
 
   const handleUpdateRequest = (item) => {
     router.push({
-      pathname: 'UpdateHelp',
+      pathname: 'AddHelp',
       params: {
         empId,
         call_type,
-        item: JSON.stringify(item), // ✅ stringify here
+        item: JSON.stringify(item),
+        headerTitle: "Update Request",
+         // ✅ stringify here
       },
     });
   };

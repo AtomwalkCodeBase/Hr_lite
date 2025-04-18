@@ -39,14 +39,6 @@ const UpdateHelp = (props) => {
   const router = useRouter();
   const call_type = props.data.item;
 
-  console.log("jhgdfhj", data?.empId);
-
-
-  console.log("data", JSON.parse(data?.item));
-  // console.log("data",data?.item);
-  // Dynamic header title based on call_type
-//   const headerTitle = call_type === 'H' ? 'Add Help Request' : 'Add General Request';
-
   useEffect(() => {
     if (props?.data?.empId) {
       setEmpId(props.data.empId);
@@ -127,7 +119,7 @@ const UpdateHelp = (props) => {
     const formData = new FormData();
     formData.append('emp_id', empId);
     formData.append('request_category_id', selectedCategory);
-    formData.append('call_mode', 'ADD');
+    formData.append('call_mode', 'UPDATE');
     formData.append('request_type', call_type);
     formData.append('request_id', '0');
     formData.append('request_text', requestText);
