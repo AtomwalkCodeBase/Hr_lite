@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, Ionicons, Feather, FontAwesome } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
-import { getProfileInfo } from '../services/authServices';
+import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import Loader from '../components/old_components/Loader';
 
 const { width, height } = Dimensions.get('window');
@@ -94,11 +94,11 @@ const MorePage = (props) => {
 
   useEffect(()=>{
     setLoading(true);
-    getProfileInfo()
+    getEmployeeInfo()
     .then((res) => {
         // setProfile(res?.data?.emp_data);
-        setEmpId(res?.data?.emp_data?.emp_id);
-        setIsManager(res.data.user_group.is_manager);
+        setEmpId(res?.data[0]?.emp_id);
+        setIsManager(res?.data[0]?.is_manager);
         setLoading(false);
     })
     .catch((error) => {
@@ -163,7 +163,12 @@ const MorePage = (props) => {
   // const handlePressSettings = () => router.push('settings');
   // const handlePressSupport = () => router.push('support');
   const handlePressProfile = () => router.push('profile');
-  const handleBackPress = () => router.push('home');
+  const handleBackPress = () => {
+    router.navigate({
+      pathname: 'home',
+      params: { screen: 'HomePage' }
+    });
+  };
   const handleAppointee = () => router.push({ pathname: 'AddAppointee' });
 
   // Inside your menu items array

@@ -279,9 +279,13 @@ const ApproveClaim = () => {
     if (selectedImageUrl) {
       setSelectedImageUrl(null);
     } else {
-      router.push('home');
+      router.navigate({
+        pathname: 'home',
+        params: { screen: 'HomePage' }
+      });
     }
   };
+
 
   const handleCardPress = (claim) => {
     setSelectedClaim(claim);

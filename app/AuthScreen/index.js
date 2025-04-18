@@ -83,6 +83,7 @@ const LoginScreen = () => {
         // Store token and emp_id in AsyncStorage
         await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('mobileNumber', mobileNumber);
+        await AsyncStorage.setItem('empId', emp_id);
         await AsyncStorage.setItem('userPin', pin);
 
         // Fetch and store company info

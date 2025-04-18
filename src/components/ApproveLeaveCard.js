@@ -1,120 +1,224 @@
 import React from 'react';
-import styled from 'styled-components/native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { View, Text } from 'react-native';
-
-const CardContainer = styled.TouchableOpacity`
-  background-color: #fff;
-  padding: 16px;
-  border-radius: 12px;
-  border-width: 1px;
-  border-color: ${props => props.borderColor || '#ddd'};
-  margin-bottom: 12px;
-  shadow-color: #000;
-  shadow-opacity: 0.1;
-  shadow-radius: 4px;
-  shadow-offset: 0px 2px;
-  elevation: 4;
-`;
-
-const StatusContainer = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const Status = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  background-color: ${props => props.bgColor || 'transparent'};
-  padding: 4px 8px;
-  border-radius: 8px;
-`;
-
-const StatusText = styled.Text`
-  font-size: 14px;
-  color: ${props => props.color || '#000'};
-  margin-left: 8px;
-  font-weight: bold;
-`;
-
-const DetailText = styled.Text`
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: #333;
-`;
-
-const RejectButton = styled.TouchableOpacity`
-  background-color: #ff6666;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 3px 28px;
-  border-radius: 22px;
-  margin-top: 10px;
-`;
-
-const ApproveButton = styled.TouchableOpacity`
-  background-color: #007bff;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 20px;
-  border-radius: 22px;
-  margin-top: 10px;
-  height: 40px;
-`;
-
-const ButtonText = styled.Text`
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-`;
 
 const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject }) => {
   const getStatusStyles = (status_display) => {
     switch (status_display) {
       case 'Submitted':
-        return { bgColor: '#fff7e6', color: '#FFA800', borderColor: '#FFA800' };
+        return { 
+          bgColor: '#fff7e6', 
+          color: '#FFA800', 
+          borderColor: '#FFA800',
+          icon: 'pending'
+        };
       case 'Rejected':
-        return { bgColor: '#ffe6e6', color: '#FF0000', borderColor: '#FF0000', icon: 'cancel' };
+        return { 
+          bgColor: '#ffe6e6', 
+          color: '#FF0000', 
+          borderColor: '#FF0000', 
+          icon: 'cancel' 
+        };
       case 'Cancelled':
-        return { bgColor: '#ffe6e6', color: '#ff6666', borderColor: '#ff6666', icon: 'cancel' };
+        return { 
+          bgColor: '#ffe6e6', 
+          color: '#ff6666', 
+          borderColor: '#ff6666', 
+          icon: 'cancel' 
+        };
       case 'Approved':
-        return { bgColor: '#eaffea', color: '#66cc66', borderColor: '#66cc66', icon: 'check-circle' };
+        return { 
+          bgColor: '#eaffea', 
+          color: '#66cc66', 
+          borderColor: '#66cc66', 
+          icon: 'check-circle' 
+        };
       default:
-        return { bgColor: '#fff', color: '#000', borderColor: '#ddd', icon: 'check-circle' };
+        return { 
+          bgColor: '#fff', 
+          color: '#000', 
+          borderColor: '#ddd', 
+          icon: 'check-circle' 
+        };
     }
   };
 
+  console.log("Leave==",leave)
+
   const { bgColor, color, borderColor, icon } = getStatusStyles(leave.status_display);
+  const showButtons = leave.status_display === 'Submitted';
 
   return (
-    <CardContainer borderColor={borderColor} onPress={() => onPress(leave)}>
-      <StatusContainer>
-        <View>
-          <DetailText>
-            {leave.emp_data.emp_id} [{leave.emp_data.name}]
-          </DetailText>
-          <DetailText>Date: {leave.from_date} to {leave.to_date}</DetailText>
+    <TouchableOpacity 
+      style={[styles.cardContainer, { borderColor }]}
+      onPress={() => onPress(leave)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.headerContainer}>
+        <View style={styles.employeeInfo}>
+          <Text 
+            style={styles.employeeIdText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {leave.emp_data.emp_id}
+          </Text>
+          <Text 
+            style={styles.employeeNameText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {leave.emp_data.name}
+          </Text>
         </View>
-        <Status bgColor={bgColor}>
-          <StatusText color={color}>{leave.leave_type_display}</StatusText>
-          <MaterialIcons name={icon} size={24} color={color} />
-        </Status>
-      </StatusContainer>
-      {leave.status_display === 'Submitted' && (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <RejectButton onPress={() => onReject(leave)}>
-            <ButtonText>Reject</ButtonText>
-          </RejectButton>
-          <ApproveButton onPress={() => onApprove(leave)}>
-            <ButtonText>Approve</ButtonText>
-          </ApproveButton>
+        
+        <View style={[styles.statusContainer, { backgroundColor: bgColor }]}>
+          <Text 
+            style={[styles.statusText, { color }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {leave.leave_type_display}
+          </Text>
+          <MaterialIcons 
+            name={icon} 
+            size={20} 
+            color={color} 
+            style={styles.statusIcon}
+          />
+        </View>
+      </View>
+      
+      <View style={styles.detailsContainer}>
+        <Text style={styles.dateText}>
+          {leave.from_date} - {leave.to_date}
+        </Text>
+        <Text style={styles.daysText}>
+          {leave.no_leave_count} day(s)
+        </Text>
+      </View>
+      
+      {showButtons && (
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity 
+            style={styles.rejectButton} 
+            onPress={() => onReject(leave)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>Reject</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.approveButton} 
+            onPress={() => onApprove(leave)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>Approve</Text>
+          </TouchableOpacity>
         </View>
       )}
-    </CardContainer>
+    </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  cardContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  employeeInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  employeeIdText: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  employeeNameText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    maxWidth: '40%',
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusIcon: {
+    marginLeft: 4,
+  },
+  detailsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dateText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  daysText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  rejectButton: {
+    backgroundColor: '#ff4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 20,
+    flex: 1,
+    marginRight: 8,
+  },
+  approveButton: {
+    backgroundColor: '#007bff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40,
+    borderRadius: 20,
+    flex: 1,
+    marginLeft: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+});
 
 export default ApproveLeaveCard;

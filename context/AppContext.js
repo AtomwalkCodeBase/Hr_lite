@@ -61,6 +61,7 @@ const AppProvider = ({ children }) => {
               // console.log('Token ====',token)
               // Store token and emp_id in AsyncStorage
               await AsyncStorage.setItem('userToken', token);
+              await AsyncStorage.setItem('empId', emp_id);
               await AsyncStorage.setItem('mobileNumber', username);
               await AsyncStorage.setItem('userPin', password);
             }
