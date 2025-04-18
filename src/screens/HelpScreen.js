@@ -16,7 +16,8 @@ import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
 import { getEmployeeRequest, getRequestCategory } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
-import RequestCard from '../components/RequestCard'; // Import the new component
+import RequestCard from '../components/RequestCard';
+import ModalComponent from '../components/ModalComponent';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,12 +27,15 @@ const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100)
 
 const HelpScreen = (props) => {
   const router = useRouter();
-  const [requestCategories, setRequestCategories] = useState([]);
-  const [requestData, setRequestData] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  const [empId, setEmpId] = useState("");
+  const call_type = 'H';
+  const [helpCategories, setHelpCategories] = useState([]);
+  const [helpData, setHelpData] = useState([]);
+  const [filteredHelps, setFilteredHelps] = useState([]);
+  const [empId, setEmpId] = useState(""); 
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [filteredHelpCategories, setFilteredHelpCategories] = useState([]);
   const scaleValue = new Animated.Value(0);
   const fadeAnim = new Animated.Value(0);
 
@@ -65,9 +69,9 @@ const HelpScreen = (props) => {
     setLoading(true);
     getRequestCategory()
       .then((res) => {
-        setRequestCategories(res.data);
-        const filtered = res.data.filter(category => category.request_type === 'R');
-        setFilteredCategories(filtered);
+        setHelpCategories(res.data);
+        const filtered = res.data.filter(category => category.request_type === 'H');
+        setFilteredHelpCategories(filtered);
       })
       .catch((err) => {
         console.error("Error:", err);
@@ -87,13 +91,13 @@ const HelpScreen = (props) => {
     setLoading(true);
     getEmployeeRequest()
       .then((res) => {
-        setRequestData(res.data);
+        setHelpData(res.data);
         const filtered = res.data.filter(
           (request) => 
             request.request_type === 'H' && 
             request.emp_id === empId
         );
-        setFilteredRequests(filtered);
+        setFilteredHelps(filtered);
       })
       .catch((err) => {
         console.error("Fetch Error:", err);
@@ -104,12 +108,23 @@ const HelpScreen = (props) => {
   };
 
   const handleCardPress = (item) => {
-    // Handle card press if needed
-    console.log("Card Pressed")
+    setSelectedRequest(item);
+    setIsModalVisible(true);
+  };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setSelectedRequest(null);
   };
   
-  const handleCreateRequest = () => {
-    router.push('/CreateRequestScreen');
+  const handleCreateRequest = () => {  
+    router.push({
+      pathname: 'AddHelp',
+      params: {
+        empId,
+        call_type
+      },
+    });
   };
 
   return (
@@ -120,8 +135,6 @@ const HelpScreen = (props) => {
           showActionButton={false}
         />
       <View style={styles.container}>
-        
-        
         {loading ? (
           <Loader visible={loading} />
         ) : (
@@ -130,22 +143,19 @@ const HelpScreen = (props) => {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            
-            
-            {filteredRequests.length > 0 ? (
-              // In your RequestScreen.js
-            <FlatList
-              data={filteredRequests}
-              renderItem={({ item }) => (
-                <RequestCard 
-                  item={item}
-                  onPress={filteredRequests.length > 0 ? () => handleCardPress(item) : undefined}
-                />
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              contentContainerStyle={styles.listContent}
-            />
+            {filteredHelps.length > 0 ? (
+              <FlatList
+                data={filteredHelps}
+                renderItem={({ item }) => (
+                  <RequestCard 
+                    item={item}
+                    onPress={filteredHelps.length > 0 ? () => handleCardPress(item) : undefined}
+                  />
+                )}
+                keyExtractor={(item) => item.id.toString()}
+                scrollEnabled={false}
+                contentContainerStyle={styles.listContent}
+              />
             ) : (
               <EmptyMessage 
                 message="No resource requests found"
@@ -162,6 +172,11 @@ const HelpScreen = (props) => {
           iconName="add"
         />
       </View>
+      <ModalComponent
+        isVisible={isModalVisible}
+        helpRequest={selectedRequest}
+        onClose={closeModal}
+      />
     </SafeAreaView>
   );
 };
@@ -179,7 +194,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingBlockStart: responsiveWidth(5),
-    // paddingHorizontal: responsiveWidth(4),
   },
   scrollContent: {
     paddingBottom: responsiveHeight(12),

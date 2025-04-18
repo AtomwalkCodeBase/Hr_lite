@@ -74,4 +74,5 @@ export const getfiletotext = `${endpoint}/get_file_to_text/${db_name}/`;
 export const processAppointee = `${endpoint}/process_employee_job/${db_name}/`;
 export const getEmployeeRequestList = `${endpoint}/get_employee_request/${db_name}/`;
 export const getEmployeeRequestCategory = `${endpoint}/get_request_category/${db_name}/`;
+export const processEmployeeRequest = `${endpoint}/process_employee_request/${db_name}/`;
 

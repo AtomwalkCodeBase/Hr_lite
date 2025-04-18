@@ -7,7 +7,7 @@ const { width } = Dimensions.get('window');
 
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const RequestCard = ({ item, onPress }) => {
+const RequestCard = ({ item, onPress, onUpdate }) => {
   // Status configuration with colors and icons
   const statusConfig = {
     approved: { color: '#4CAF50', icon: 'checkmark-circle' },
@@ -68,22 +68,42 @@ const RequestCard = ({ item, onPress }) => {
         </View>
       </View>
 
-      {/* View Details button with gradient */}
-      <TouchableOpacity 
-        style={styles.actionButton}
-        onPress={onPress}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={['#5C6BC0', '#3949AB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.buttonGradient}
+      {/* Action buttons container */}
+      <View style={styles.buttonsContainer}>
+        {/* Update Details button */}
+        <TouchableOpacity 
+          style={[styles.actionButton, styles.updateButton]}
+          onPress={onUpdate}
+          activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>View Details</Text>
-          <Ionicons name="arrow-forward" size={18} color="white" />
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={['#26A69A', '#00897B']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            <Text style={styles.buttonText}>Update Details</Text>
+            <Ionicons name="create" size={18} color="white" />
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        {/* View Details button */}
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#5C6BC0', '#3949AB']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            <Text style={styles.buttonText}>View Details</Text>
+            <Ionicons name="arrow-forward" size={18} color="white" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -158,9 +178,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: '#78909C',
   },
-  actionButton: {
+  buttonsContainer: {
+    flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: '#ECEFF1',
+  },
+  actionButton: {
+    flex: 1,
+  },
+  updateButton: {
+    borderRightWidth: 1,
+    borderRightColor: '#ECEFF1',
   },
   buttonGradient: {
     flexDirection: 'row',

@@ -17,6 +17,7 @@ import Loader from '../components/old_components/Loader';
 import { getEmployeeRequest, getRequestCategory } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
 import RequestCard from '../components/RequestCard'; // Import the new component
+import ModalComponent from '../components/ModalComponent';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,12 +25,15 @@ const responsiveWidth = (percentage) => width * (percentage / 100);
 const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const RequestScreen = (props) => {
+const HelpScreen = (props) => {
   const router = useRouter();
+  const call_type = 'R';
   const [requestCategories, setRequestCategories] = useState([]);
   const [requestData, setRequestData] = useState([]);
   const [filteredRequests, setFilteredRequests] = useState([]);
   const [empId, setEmpId] = useState("");
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filteredCategories, setFilteredCategories] = useState([]);
   const scaleValue = new Animated.Value(0);
@@ -83,6 +87,8 @@ const RequestScreen = (props) => {
     });
   };
 
+  console.log("Request===",requestData)
+
   const fetchRequest = () => {
     setLoading(true);
     getEmployeeRequest()
@@ -104,13 +110,36 @@ const RequestScreen = (props) => {
   };
 
   const handleCardPress = (item) => {
-    // Handle card press if needed
-    console.log("Card Pressed")
+    console.log("Card data===",item)
+    setSelectedRequest(item);
+    setIsModalVisible(true);
   };
-  
-  const handleCreateRequest = () => {
-    router.push('/CreateRequestScreen');
+
+  const handleUpdateRequest = (item) => {
+    console.log("Passed data===",item)
+    router.push({
+      pathname: 'UpdateHelp',
+      params: {
+        empId,
+        item
+      },
+    });
   };
+
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setSelectedRequest(null);
+  };
+
+  const handleCreateRequest = () => {  
+    router.push({
+      pathname: 'AddHelp',
+      params: {
+        empId,
+        call_type
+      },
+    });
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -134,18 +163,20 @@ const RequestScreen = (props) => {
             
             {filteredRequests.length > 0 ? (
               // In your RequestScreen.js
-            <FlatList
+              <FlatList
               data={filteredRequests}
               renderItem={({ item }) => (
                 <RequestCard 
                   item={item}
                   onPress={filteredRequests.length > 0 ? () => handleCardPress(item) : undefined}
+                  onUpdate={() => handleUpdateRequest(item)}
                 />
               )}
               keyExtractor={(item) => item.id.toString()}
               scrollEnabled={false}
               contentContainerStyle={styles.listContent}
             />
+            
             ) : (
               <EmptyMessage 
                 message="No resource requests found"
@@ -162,6 +193,11 @@ const RequestScreen = (props) => {
           iconName="add"
         />
       </View>
+      <ModalComponent
+        isVisible={isModalVisible}
+        helpRequest={selectedRequest}
+        onClose={closeModal}
+      />
     </SafeAreaView>
   );
 };
@@ -197,4 +233,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RequestScreen;
+export default HelpScreen;

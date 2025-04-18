@@ -1,24 +1,26 @@
 import React from 'react';
-import { Text, View, Modal, TouchableOpacity } from 'react-native';
+import { Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const ModalComponent = ({ isVisible, leave, onClose, claim }) => {
-
-  console.log("Data==",claim)
+const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
   return (
     <Modal visible={isVisible} transparent={true} animationType="fade">
       <ModalOverlay>
         <ModalContainer>
           <ModalHeader>
             <ModalTitle>
-              {leave ? 'Leave Details' : claim ? 'Claim Details' : ''}
+              {leave ? 'Leave Details' : 
+               claim ? 'Claim Details' : 
+               helpRequest ? 'Request Details' : ''}
             </ModalTitle>
-            
+            <CloseButton onPress={onClose}>
+              <MaterialIcons name="close" size={24} color="#6B7280" />
+            </CloseButton>
           </ModalHeader>
 
           <ModalBody>
-            {leave ? (
+            {leave && (
               <DetailContainer>
                 <DetailItem>
                   <DetailLabel>Leave Type</DetailLabel>
@@ -43,9 +45,9 @@ const ModalComponent = ({ isVisible, leave, onClose, claim }) => {
                   </DetailItem>
                 )}
               </DetailContainer>
-            ) : null}
+            )}
 
-            {claim ? (
+            {claim && (
               <DetailContainer>
                 <DetailItem>
                   <DetailLabel>Claim ID</DetailLabel>
@@ -60,10 +62,10 @@ const ModalComponent = ({ isVisible, leave, onClose, claim }) => {
                   <DetailValue>₹{claim.expense_amt}</DetailValue>
                 </DetailItem>
                 {claim.project_name && (
-                <DetailItem>
-                  <DetailLabel>Project</DetailLabel>
-                  <DetailValue>{claim.project_name}</DetailValue>
-                </DetailItem>
+                  <DetailItem>
+                    <DetailLabel>Project</DetailLabel>
+                    <DetailValue>{claim.project_name}</DetailValue>
+                  </DetailItem>
                 )}
                 {claim.remarks && (
                   <DetailItem>
@@ -72,7 +74,40 @@ const ModalComponent = ({ isVisible, leave, onClose, claim }) => {
                   </DetailItem>
                 )}
               </DetailContainer>
-            ) : null}
+            )}
+
+            {helpRequest && (
+              <DetailContainer>
+                <DetailItem>
+                  <DetailLabel>Request ID</DetailLabel>
+                  <DetailValue bold>{helpRequest.request_id}</DetailValue>
+                </DetailItem>
+                <DetailItem>
+                  <DetailLabel>Category</DetailLabel>
+                  <DetailValue>{helpRequest.request_sub_type}</DetailValue>
+                </DetailItem>
+                <DetailItem>
+                  <DetailLabel>Date</DetailLabel>
+                  <DetailValue>{helpRequest.created_date}</DetailValue>
+                </DetailItem>
+                <DetailItem>
+                  <DetailLabel>Status</DetailLabel>
+                  <DetailValue status={helpRequest.status_display.toLowerCase()}>
+                    {helpRequest.status_display}
+                  </DetailValue>
+                </DetailItem>
+                <DetailItem>
+                  <DetailLabel>Request Details</DetailLabel>
+                  <DetailValue>{helpRequest.request_text}</DetailValue>
+                </DetailItem>
+                {helpRequest.remarks && (
+                  <DetailItem>
+                    <DetailLabel>Remarks</DetailLabel>
+                    <DetailValue>{helpRequest.remarks}</DetailValue>
+                  </DetailItem>
+                )}
+              </DetailContainer>
+            )}
           </ModalBody>
 
           <ModalFooter>
@@ -86,7 +121,7 @@ const ModalComponent = ({ isVisible, leave, onClose, claim }) => {
   );
 };
 
-// Styled Components
+// Styled Components (same as before)
 const ModalOverlay = styled.View`
   flex: 1;
   background-color: rgba(0, 0, 0, 0.5);
