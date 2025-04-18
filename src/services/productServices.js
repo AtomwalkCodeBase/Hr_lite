@@ -80,9 +80,10 @@ export function getEmpLeave(leave_type , emp_id) {
 
   export function getEmpHoliday(res) {
     let data = {
-      'year': res.year
+      'year': res.year,
+      'emp_id':res.eId,
     };
-    console.log(data,'Final response data')
+    console.log('Final response data', data)
     return authAxios(getEmpHolidayData, data)
   }
 

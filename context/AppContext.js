@@ -57,11 +57,12 @@ const AppProvider = ({ children }) => {
             });
             console.log('API Response:', response);
             if (response.status === 200) {
-              const { token, emp_id } = response.data
-              // console.log('Token ====',token)
+              const { token, emp_id,e_id } = response.data
+              console.log('Token ====',e_id)
               // Store token and emp_id in AsyncStorage
               await AsyncStorage.setItem('userToken', token);
               await AsyncStorage.setItem('empId', emp_id);
+              await AsyncStorage.setItem('eId', String(e_id));
               await AsyncStorage.setItem('mobileNumber', username);
               await AsyncStorage.setItem('userPin', password);
             }

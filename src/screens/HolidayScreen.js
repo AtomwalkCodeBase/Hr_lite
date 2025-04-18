@@ -5,11 +5,12 @@ import { getEmpHoliday, postEmpLeave } from '../services/productServices';
 import { useNavigation, useRouter } from 'expo-router';
 import HeaderComponent from '../components/HeaderComponent';
 import HolidayCard from '../components/HolidayCard';
-import { getProfileInfo } from '../services/authServices';
+import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader'; // Import the Loader component
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const monthNameMap = {
   'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4,
@@ -98,30 +99,70 @@ const HolidayScreen = () => {
   const [successMessage, setSuccessMessage] = useState(''); // Success message state
   const [errorModalVisible, setErrorModalVisible] = useState(false); // Error modal visibility state
   const [errorMessage, setErrorMessage] = useState('');
+  const [eId, setEId] = useState(null);
   const navigation = useNavigation();
   const currentYear = new Date().getFullYear();
 
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchEId = async () => {
+      const id = await AsyncStorage.getItem('eId');
+      setEId(id);
+    };
+    fetchEId();
+  }, []);
+
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  useEffect(() => {
-    const data = { year: currentYear };
-    getProfileInfo().then(res => setProfile(res.data));
-    fetchAttendanceDetails(data);
-  }, [currentYear]);
+  // First fetch the employee ID
+  // useEffect(() => {
+  //   const fetchEmployeeData = async () => {
+  //     try {
+  //       const res = await getEmployeeInfo();
+  //       const employeeId = res?.data[0]?.id;
+  //       setEId(employeeId);
+  //       console.log("Employee ID:", employeeId);
+  //     } catch (error) {
+  //       console.log("Error fetching employee info:", error);
+  //     }
+  //   };
+  //   fetchEmployeeData();
+  // }, []);
 
-  const fetchAttendanceDetails = data => {
+  // Then fetch profile and holiday data when eId is available
+  useEffect(() => {
+    if (!eId) return; // Don't proceed if eId isn't set yet
+
+    const fetchData = async () => {
+      try {
+        const data = { 
+          year: currentYear, 
+          eId: String(eId) // Ensure eId is passed as string
+        };
+        const profileRes = await getProfileInfo();
+        setProfile(profileRes.data);
+        await fetchAttendanceDetails(data);
+      } catch (error) {
+        console.log("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, [currentYear, eId]); // Add eId to dependency array
+
+  const fetchAttendanceDetails = async (data) => {
     setIsLoading(true);
-    getEmpHoliday(data).then(res => {
+    try {
+      const res = await getEmpHoliday(data);
       processHolidayData(res.data);
       setHolidaydata(res.data);
+    } catch (error) {
+      console.log("Holiday Error:", error);
+    } finally {
       setIsLoading(false);
-    }).catch(() => {
-      setIsLoading(false);
-    });
+    }
   };
 
   const handleBackPress = () => {
@@ -184,12 +225,13 @@ const HolidayScreen = () => {
     const formattedDate = `${day.padStart(2, '0')}-${(month + 1).toString().padStart(2, '0')}-${year}`;
   
     const leavePayload = {
-      emp_id: `${profile?.emp_data?.id}`,
+      emp_id: `${eId}`,
       from_date: formattedDate,
       to_date: formattedDate,
       remarks: 'Optional Holiday',
       leave_type: 'OH',
       call_mode: actionType === 'opt' ? 'ADD' : 'CANCEL',
+      hrm_lite: ''
     };
   
     if (actionType === 'cancel') leavePayload.leave_id = '999999999';
@@ -201,12 +243,27 @@ const HolidayScreen = () => {
         setSuccessMessage(`Holiday ${actionType === 'opt' ? 'applied successfully' : 'canceled successfully'}`);
         setModalVisible(true); // Show success modal
       })
-      .catch(() => {
+      .catch((error) => {
+        let errorMessage = 'Something went wrong. Please try again.';
+        
+        // If using Axios
+        if (error.response && error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+          console.log("Error message===",error.response)
+        } 
+        // If using Fetch or generic error with a message
+        else if (error.message) {
+          errorMessage = error.message;
+        }
+      
         Alert.alert(
           `Holiday ${actionType === 'opt' ? 'Application Failed' : 'Cancellation Failed'}`,
-          `Failed to ${actionType === 'opt' ? 'apply' : 'cancel'} the optional holiday.`
+          errorMessage
         );
+      
+        console.log("Error details ===", error);
       })
+      
       .finally(() => {
         setIsLoading(false); // Reset loader after action completes
       });

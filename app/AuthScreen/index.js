@@ -76,14 +76,15 @@ const LoginScreen = () => {
       console.log('API Response:', response);
 
       if (response.status === 200) {
-        const { token, emp_id } = response.data;
+        const { token, emp_id, e_id } = response.data;
 
-        // console.log('Token ====',token)
+        // console.log('Token ====',e_id)
 
         // Store token and emp_id in AsyncStorage
         await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('mobileNumber', mobileNumber);
         await AsyncStorage.setItem('empId', emp_id);
+        await AsyncStorage.setItem('empNoId', e_id);
         await AsyncStorage.setItem('userPin', pin);
 
         // Fetch and store company info
@@ -106,7 +107,7 @@ const LoginScreen = () => {
         setErrorMessage('Invalid mobile number or PIN');
       }
     } catch (error) {
-      console.error('API call error:', error);
+      console.error('API call error:', error.response.data);
       if (error.response) {
         setErrorMessage(`Error: ${error.response.data.error || 'Invalid mobile number or PIN'}`);
       } else if (error.request) {

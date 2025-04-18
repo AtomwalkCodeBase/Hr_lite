@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { postEmpLeave } from '../services/productServices';
 import RemarksInput from '../components/RemarkInput'; // Import your custom RemarksInput component
+import { getEmployeeInfo } from '../services/authServices';
 
 // Styled Components
 const ModalContainer = styled.View`
@@ -76,6 +77,18 @@ const ButtonText = styled.Text`
 const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSuccessModal, setSuccessMessage }) => {
   const [remarks, setRemarks] = useState('');
   const [error, setError] = useState(null);
+      const [empId, setEmpId] = useState('');
+
+  useEffect(() => {
+        getEmployeeInfo()
+        .then((res) => {
+            setEmpId(res?.data[0]?.id)
+            console.log("Aprove Profile response===",res.data)
+        })
+        .catch((error) => {
+          console.log("Error==++",error)
+        });
+      }, [empId]);
 
   const actionMessages = {
     APPROVE: 'Leave approved successfully',
@@ -83,7 +96,7 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
     REJECT: 'Leave rejected successfully',
   };
 
-  console.log("Leavve Data---",leave)
+  console.log("Leavve Data---",leave);
 
   const handleAction = () => {
     if (!remarks.trim()) {
@@ -92,13 +105,14 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
     }
 
     const leavePayload = {
-      emp_id: `${leave.emp_data.id}`,
+      emp_id: `${empId}`,
       from_date: leave.from_date,
       to_date: leave.to_date,
       remarks,
       leave_type: leave.leave_type,
       call_mode: actionType,
-      leave_id: `${leave.id}`
+      leave_id: `${leave.id}`,
+      hrm_lite: ''
     };
 
     console.log("Action payload=====---",leavePayload)
