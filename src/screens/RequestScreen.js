@@ -4,11 +4,10 @@ import {
   Text,
   FlatList,
   Dimensions,
-  Animated,
-  Easing,
   StyleSheet,
   SafeAreaView,
-  ScrollView
+  ScrollView,
+  RefreshControl
 } from 'react-native';
 import { useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
@@ -16,7 +15,7 @@ import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
 import { getEmployeeRequest, getRequestCategory } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
-import RequestCard from '../components/RequestCard'; // Import the new component
+import RequestCard from '../components/RequestCard';
 import ModalComponent from '../components/ModalComponent';
 
 const { width, height } = Dimensions.get('window');
@@ -25,61 +24,61 @@ const responsiveWidth = (percentage) => width * (percentage / 100);
 const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const HelpScreen = (props) => {
+const RequestScreen = (props) => {
   const router = useRouter();
   const call_type = 'R';
-  const [requestCategories, setRequestCategories] = useState([]);
-  const [requestData, setRequestData] = useState([]);
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  const [empId, setEmpId] = useState("");
+  const [helpCategories, setHelpCategories] = useState([]);
+  const [helpData, setHelpData] = useState([]);
+  const [filteredHelps, setFilteredHelps] = useState([]);
+  const [empId, setEmpId] = useState(props?.data?.empId || ""); 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const scaleValue = new Animated.Value(0);
-  const fadeAnim = new Animated.Value(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filteredHelpCategories, setFilteredHelpCategories] = useState([]);
 
   useEffect(() => {
-    fetchRequestCategory();
-    fetchRequest();
-    
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleValue, {
-        toValue: 1,
-        friction: 5,
-        tension: 30,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    if (empId) {
+      fetchData();
+    }
   }, [empId]);
 
-  useEffect(() => {
-    if (props?.data?.empId) {
-      setEmpId(props.data.empId);
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      await Promise.all([fetchRequestCategory(), fetchRequest()]);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [props?.data?.empId]);
+  };
 
-  const fetchRequestCategory = () => {
-    setLoading(true);
-    getRequestCategory()
-      .then((res) => {
-        setRequestCategories(res.data);
-        // console.log("setRequestCategories", res.data)
-        const filtered = res.data.filter(category => category.request_type === 'R');
-        setFilteredCategories(filtered);
-      })
-      .catch((err) => {
-        console.error("Error:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  const fetchRequestCategory = async () => {
+    try {
+      const res = await getRequestCategory();
+      setHelpCategories(res.data);
+      const filtered = res.data.filter(category => category.request_type === 'R');
+      setFilteredHelpCategories(filtered);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  const fetchRequest = async () => {
+    try {
+      const res = await getEmployeeRequest();
+      setHelpData(res.data);
+      const filtered = res.data.filter(
+        (request) => 
+          request.request_type === 'R' && 
+          request.emp_id === empId
+      );
+      setFilteredHelps(filtered);
+    } catch (err) {
+      console.error("Error fetching requests:", err);
+    }
   };
 
   const handleBackPress = () => {
@@ -88,50 +87,21 @@ const HelpScreen = (props) => {
     });
   };
 
-  // console.log("Request===",requestData)
-
-  const fetchRequest = () => {
-    setLoading(true);
-    getEmployeeRequest()
-      .then((res) => {
-        setRequestData(res.data);
-        const filtered = res.data.filter(
-          (request) => 
-            request.request_type === 'R' && 
-            request.emp_id === empId
-        );
-        setFilteredRequests(filtered);
-      })
-      .catch((err) => {
-        console.error("Fetch Error:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchData();
   };
 
   const handleCardPress = (item) => {
-    // console.log("Card data===",item)
     setSelectedRequest(item);
     setIsModalVisible(true);
-  };
-
-  const handleUpdateRequest = (item) => {
-    // console.log("Passed data===",item)
-    router.push({
-      pathname: 'UpdateHelp',
-      params: {
-        empId,
-        item
-      },
-    });
   };
 
   const closeModal = () => {
     setIsModalVisible(false);
     setSelectedRequest(null);
   };
-
+  
   const handleCreateRequest = () => {  
     router.push({
       pathname: 'AddHelp',
@@ -140,18 +110,28 @@ const HelpScreen = (props) => {
         call_type
       },
     });
-};
+  };
+
+  const handleUpdateRequest = (item) => {
+    router.push({
+      pathname: 'AddHelp',
+      params: {
+        empId,
+        call_type,
+        item: JSON.stringify(item),
+        headerTitle: "Update Request",
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-          headerTitle="Request Desk" 
-          onBackPress={handleBackPress} 
-          showActionButton={false}
-        />
+        headerTitle="Request Desk" 
+        onBackPress={handleBackPress} 
+        showActionButton={false}
+      />
       <View style={styles.container}>
-        
-        
         {loading ? (
           <Loader visible={loading} />
         ) : (
@@ -159,30 +139,32 @@ const HelpScreen = (props) => {
             style={styles.contentContainer}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+              />
+            }
           >
-            
-            
-            {filteredRequests.length > 0 ? (
-              // In your RequestScreen.js
+            {filteredHelps.length > 0 ? (
               <FlatList
-              data={filteredRequests}
-              renderItem={({ item }) => (
-                <RequestCard 
-                  item={item}
-                  onPress={filteredRequests.length > 0 ? () => handleCardPress(item) : undefined}
-                  onUpdate={() => handleUpdateRequest(item)}
-                />
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              scrollEnabled={false}
-              contentContainerStyle={styles.listContent}
-            />
-            
+                data={filteredHelps}
+                renderItem={({ item }) => (
+                  <RequestCard 
+                    item={item}
+                    onPress={() => handleCardPress(item)}
+                    onUpdate={() => handleUpdateRequest(item)}
+                  />
+                )}
+                keyExtractor={(item) => item.id.toString()}
+                scrollEnabled={false}
+                contentContainerStyle={styles.listContent}
+              />
             ) : (
               <EmptyMessage 
-                message="No resource requests found"
+                message="No help requests found"
                 subMessage="Tap the button below to create a new request"
-                iconName="folder-open"
+                iconName="help-circle"
               />
             )}
           </ScrollView>
@@ -194,6 +176,7 @@ const HelpScreen = (props) => {
           iconName="add"
         />
       </View>
+      
       <ModalComponent
         isVisible={isModalVisible}
         helpRequest={selectedRequest}
@@ -215,8 +198,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    paddingBlockStart: responsiveWidth(5),
-    // paddingHorizontal: responsiveWidth(4),
+    paddingTop: responsiveWidth(5),
   },
   scrollContent: {
     paddingBottom: responsiveHeight(12),
@@ -224,14 +206,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: responsiveHeight(2),
   },
-  sectionTitle: {
-    fontSize: responsiveFontSize(5),
-    fontWeight: '600',
-    color: '#34495e',
-    marginVertical: responsiveHeight(2.5),
-    marginLeft: responsiveWidth(2),
-    letterSpacing: 0.5,
-  },
 });
 
-export default HelpScreen;
+export default RequestScreen;

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StatusBar, TouchableOpacity, Dimensions, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons, Ionicons, Feather, FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
+import { getEmployeeInfo } from '../services/authServices';
 import Loader from '../components/old_components/Loader';
 
 const { width, height } = Dimensions.get('window');
@@ -26,7 +25,7 @@ const MenuContainer = styled.ScrollView.attrs({
   padding: 15px;
 `;
 
-const MenuItem = styled(Animated.createAnimatedComponent(TouchableOpacity))`
+const MenuItem = styled(TouchableOpacity)`
   width: 100%;
   height: ${height * 0.085}px;
   background-color: #fff;
@@ -42,7 +41,7 @@ const MenuItem = styled(Animated.createAnimatedComponent(TouchableOpacity))`
   shadow-radius: 4px;
 `;
 
-const MenuIconContainer = styled(Animated.View)`
+const MenuIconContainer = styled.View`
   width: ${width * 0.12}px;
   height: ${width * 0.12}px;
   border-radius: ${width * 0.06}px;
@@ -68,13 +67,7 @@ const MenuSubText = styled.Text`
   margin-top: 2px;
 `;
 
-const Divider = styled.View`
-  height: 1px;
-  background-color: #eee;
-  margin: 15px 0;
-`;
-
-const SectionTitle = styled(Animated.Text)`
+const SectionTitle = styled.Text`
   font-size: ${width * 0.038}px;
   color: #999;
   font-weight: 600;
@@ -82,22 +75,11 @@ const SectionTitle = styled(Animated.Text)`
   padding-left: 5px;
 `;
 
-const MorePage = (props) => {
+const MorePage = () => {
   const router = useRouter();
   const [isManager, setIsManager] = useState(false);
   const [empId, setEmpId] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // Animation states
-  const [headerAnim] = useState(new Animated.Value(0));
-  const [sectionTitleAnim] = useState(new Animated.Value(0));
-  const [menuItemAnims] = useState(() => 
-    Array(5).fill().map(() => ({
-      scale: new Animated.Value(0.8),
-      opacity: new Animated.Value(0),
-      iconScale: new Animated.Value(0)
-    }))
-  );
 
   useEffect(() => {
     setLoading(true);
@@ -111,53 +93,6 @@ const MorePage = (props) => {
         setLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    // Header animation
-    Animated.spring(headerAnim, {
-      toValue: 1,
-      tension: 10,
-      friction: 6,
-      useNativeDriver: true
-    }).start();
-
-    // Section title animation
-    Animated.sequence([
-      Animated.delay(150),
-      Animated.spring(sectionTitleAnim, {
-        toValue: 1,
-        tension: 10,
-        friction: 6,
-        useNativeDriver: true
-      })
-    ]).start();
-
-    // Menu items animation
-    menuItemAnims.forEach((anim, index) => {
-      Animated.sequence([
-        Animated.delay(200 + index * 80),
-        Animated.parallel([
-          Animated.spring(anim.scale, {
-            toValue: 1,
-            tension: 60,
-            friction: 7,
-            useNativeDriver: true
-          }),
-          Animated.spring(anim.opacity, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true
-          }),
-          Animated.spring(anim.iconScale, {
-            toValue: 1,
-            tension: 60,
-            friction: 7,
-            useNativeDriver: true
-          })
-        ])
-      ]).start();
-    });
-  }, [isManager]);
 
   const handlePressHelp = () => {  
     router.push({
@@ -219,117 +154,47 @@ const MorePage = (props) => {
       <HeaderComponent 
         headerTitle="More Options" 
         onBackPress={handleBackPress} 
-        headerStyle={{ 
-          backgroundColor: '#7e57c2',
-          transform: [{
-            translateY: headerAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-60, 0]
-            })
-          }],
-          opacity: headerAnim
-        }}
+        headerStyle={{ backgroundColor: '#7e57c2' }}
       />
       
       <MenuContainer>
-        <SectionTitle
-          style={{
-            transform: [{
-              translateX: sectionTitleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-20, 0]
-              })
-            }],
-            opacity: sectionTitleAnim
-          }}
-        >
-          ACCOUNT
-        </SectionTitle>
+        <SectionTitle>ACCOUNT</SectionTitle>
         
-        {menuItems.slice(0, isManager ? 2 : 1).map((item, index) => {
-          const anim = menuItemAnims[index];
-          return (
-            <MenuItem 
-              key={`account-${index}`}
-              onPress={item.action}
-              style={{
-                transform: [{ scale: anim.scale }],
-                opacity: anim.opacity
-              }}
-              activeOpacity={0.7}
-            >
-              <MenuIconContainer style={{
-                transform: [{ scale: anim.iconScale }]
-              }}>
-                {item.icon}
-              </MenuIconContainer>
-              <MenuTextContainer>
-                <MenuText>{item.title}</MenuText>
-                <MenuSubText>{item.subTitle}</MenuSubText>
-              </MenuTextContainer>
-              <Animated.View style={{
-                transform: [{
-                  scale: anim.iconScale.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.5, 1]
-                  })
-                }]
-              }}>
-                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-              </Animated.View>
-            </MenuItem>
-          );
-        })}
+        {menuItems.slice(0, isManager ? 2 : 1).map((item, index) => (
+          <MenuItem 
+            key={`account-${index}`}
+            onPress={item.action}
+            activeOpacity={0.7}
+          >
+            <MenuIconContainer>
+              {item.icon}
+            </MenuIconContainer>
+            <MenuTextContainer>
+              <MenuText>{item.title}</MenuText>
+              <MenuSubText>{item.subTitle}</MenuSubText>
+            </MenuTextContainer>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </MenuItem>
+        ))}
         
-        <SectionTitle
-          style={{
-            transform: [{
-              translateX: sectionTitleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-20, 0]
-              })
-            }],
-            opacity: sectionTitleAnim
-          }}
-        >
-          APP
-        </SectionTitle>
+        <SectionTitle>APP</SectionTitle>
         
-        {menuItems.slice(isManager ? 2 : 1).map((item, index) => {
-          const animIndex = isManager ? index + 2 : index + 1;
-          const anim = menuItemAnims[animIndex];
-          return (
-            <MenuItem 
-              key={`app-${index}`}
-              onPress={item.action}
-              style={{
-                transform: [{ scale: anim.scale }],
-                opacity: anim.opacity
-              }}
-              activeOpacity={0.7}
-            >
-              <MenuIconContainer style={{
-                transform: [{ scale: anim.iconScale }]
-              }}>
-                {item.icon}
-              </MenuIconContainer>
-              <MenuTextContainer>
-                <MenuText>{item.title}</MenuText>
-                <MenuSubText>{item.subTitle}</MenuSubText>
-              </MenuTextContainer>
-              <Animated.View style={{
-                transform: [{
-                  scale: anim.iconScale.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.5, 1]
-                  })
-                }]
-              }}>
-                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-              </Animated.View>
-            </MenuItem>
-          );
-        })}
+        {menuItems.slice(isManager ? 2 : 1).map((item, index) => (
+          <MenuItem 
+            key={`app-${index}`}
+            onPress={item.action}
+            activeOpacity={0.7}
+          >
+            <MenuIconContainer>
+              {item.icon}
+            </MenuIconContainer>
+            <MenuTextContainer>
+              <MenuText>{item.title}</MenuText>
+              <MenuSubText>{item.subTitle}</MenuSubText>
+            </MenuTextContainer>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </MenuItem>
+        ))}
       </MenuContainer>
     </Container>
   );
