@@ -74,7 +74,7 @@ const ApproveClaimDetails = (props) => {
     });
   }, [navigation]);
 
-  console.log("mANAGER==",managers)
+  // console.log("mANAGER==",managers)
 
   // Parse and calculate dates for claim submission
   const parseDate = (dateString) => {

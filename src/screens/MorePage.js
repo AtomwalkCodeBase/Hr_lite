@@ -42,7 +42,7 @@ const MenuItem = styled(Animated.createAnimatedComponent(TouchableOpacity))`
   shadow-radius: 4px;
 `;
 
-const MenuIconContainer = styled.View`
+const MenuIconContainer = styled(Animated.View)`
   width: ${width * 0.12}px;
   height: ${width * 0.12}px;
   border-radius: ${width * 0.06}px;
@@ -74,7 +74,7 @@ const Divider = styled.View`
   margin: 15px 0;
 `;
 
-const SectionTitle = styled.Text`
+const SectionTitle = styled(Animated.Text)`
   font-size: ${width * 0.038}px;
   color: #999;
   font-weight: 600;
@@ -85,83 +85,94 @@ const SectionTitle = styled.Text`
 const MorePage = (props) => {
   const router = useRouter();
   const [isManager, setIsManager] = useState(false);
-  // const [profile, setProfile] = useState([]);
   const [empId, setEmpId] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [animations] = useState(() => 
-    Array(5).fill().map(() => new Animated.Value(0))
+  
+  // Animation states
+  const [headerAnim] = useState(new Animated.Value(0));
+  const [sectionTitleAnim] = useState(new Animated.Value(0));
+  const [menuItemAnims] = useState(() => 
+    Array(5).fill().map(() => ({
+      scale: new Animated.Value(0.8),
+      opacity: new Animated.Value(0),
+      iconScale: new Animated.Value(0)
+    }))
   );
 
-  useEffect(()=>{
+  useEffect(() => {
     setLoading(true);
     getEmployeeInfo()
-    .then((res) => {
-        // setProfile(res?.data?.emp_data);
+      .then((res) => {
         setEmpId(res?.data[0]?.emp_id);
         setIsManager(res?.data[0]?.is_manager);
         setLoading(false);
-    })
-    .catch((error) => {
+      })
+      .catch((error) => {
         setLoading(false);
-        // setIsManager(false);
-    });
-  },[])
-
-  console.log("Emp Id====",empId);
+      });
+  }, []);
 
   useEffect(() => {
-    // setIsManager(props?.data?.isManager === "true" || props?.data?.isManager === true);
-    
-    // setEmpId(profile?.emp_id);
-    // Staggered animation for menu items
-    animations.forEach((anim, index) => {
-      Animated.timing(anim, {
+    // Header animation
+    Animated.spring(headerAnim, {
+      toValue: 1,
+      tension: 10,
+      friction: 6,
+      useNativeDriver: true
+    }).start();
+
+    // Section title animation
+    Animated.sequence([
+      Animated.delay(150),
+      Animated.spring(sectionTitleAnim, {
         toValue: 1,
-        duration: 300,
-        delay: index * 100,
-        easing: Easing.out(Easing.quad),
+        tension: 10,
+        friction: 6,
         useNativeDriver: true
-      }).start();
+      })
+    ]).start();
+
+    // Menu items animation
+    menuItemAnims.forEach((anim, index) => {
+      Animated.sequence([
+        Animated.delay(200 + index * 80),
+        Animated.parallel([
+          Animated.spring(anim.scale, {
+            toValue: 1,
+            tension: 60,
+            friction: 7,
+            useNativeDriver: true
+          }),
+          Animated.spring(anim.opacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true
+          }),
+          Animated.spring(anim.iconScale, {
+            toValue: 1,
+            tension: 60,
+            friction: 7,
+            useNativeDriver: true
+          })
+        ])
+      ]).start();
     });
-  }, [props?.data?.isManager]);
-
-  // console.log("Is manager==",isManager)
-
-  // const handlePressRequest = () => {
-  //   router.push({
-  //     pathname: 'RequestScr' 
-  //   });
-  // };
-
-  // const handlePressHelp = () => {
-  //   router.push({
-  //     pathname: 'HelpScr' 
-  //   });
-  // };
+  }, [isManager]);
 
   const handlePressHelp = () => {  
     router.push({
       pathname: 'HelpScr',
-      params: {
-        empId,
-      },
+      params: { empId },
     });
-};
+  };
 
   const handlePressRequest = () => {  
     router.push({
       pathname: 'RequestScr',
-      params: {
-        empId,
-      },
+      params: { empId },
     });
-};
-
+  };
   
-  
-
-  // const handlePressSettings = () => router.push('settings');
-  // const handlePressSupport = () => router.push('support');
   const handlePressProfile = () => router.push('profile');
   const handleBackPress = () => {
     router.navigate({
@@ -171,109 +182,154 @@ const MorePage = (props) => {
   };
   const handleAppointee = () => router.push({ pathname: 'AddAppointee' });
 
-  // Inside your menu items array
-const menuItems = [
-  {
-    title: "My Profile",
-    subTitle: "View and edit your profile",
-    icon: <Ionicons name="person-outline" size={24} color="#7e57c2" />,
-    action: handlePressProfile,
-    show: true // Always show
-  },
-  {
-    title: "Add Appointee",
-    subTitle: "Manage team members",
-    icon: <MaterialIcons name="person-add" size={24} color="#7e57c2" />,
-    action: handleAppointee,
-    show: isManager // Only show if isManager is true
-  },
-  {
-    title: "Help Desk",
-    subTitle: "Raise your consern at Help Desk",
-    icon: <Feather name="help-circle" size={24} color="#7e57c2" />,
-    action: handlePressHelp,
-    show: true
-  },
-  {
-    title: "Request Desk",
-    subTitle: "Add your request in Request",
-    icon: <Ionicons name="settings-outline" size={24} color="#7e57c2" />,
-    action: handlePressRequest,
-    show: true
-  },
-  // {
-  //   title: "Logout",
-  //   subTitle: "Sign out of your account",
-  //   icon: <MaterialIcons name="logout" size={24} color="#7e57c2" />,
-  //   action: handlePressLogout,
-  //   show: true
-  // }
-].filter(item => item.show); // This filters out any items where show is false
+  const menuItems = [
+    {
+      title: "My Profile",
+      subTitle: "View and edit your profile",
+      icon: <Ionicons name="person-outline" size={24} color="#7e57c2" />,
+      action: handlePressProfile,
+      show: true
+    },
+    {
+      title: "Add Appointee",
+      subTitle: "Manage team members",
+      icon: <MaterialIcons name="person-add" size={24} color="#7e57c2" />,
+      action: handleAppointee,
+      show: isManager
+    },
+    {
+      title: "Help Desk",
+      subTitle: "Raise your concern at Help Desk",
+      icon: <Feather name="help-circle" size={24} color="#7e57c2" />,
+      action: handlePressHelp,
+      show: true
+    },
+    {
+      title: "Request Desk",
+      subTitle: "Add your request in Request",
+      icon: <Ionicons name="settings-outline" size={24} color="#7e57c2" />,
+      action: handlePressRequest,
+      show: true
+    },
+  ].filter(item => item.show);
 
   return (
     <Container>
-      {/* <StatusBar barStyle={'light-content'} backgroundColor={'#7e57c2'} /> */}
       <Loader visible={loading} />
       <HeaderComponent 
         headerTitle="More Options" 
         onBackPress={handleBackPress} 
-        headerStyle={{ backgroundColor: '#7e57c2' }}
+        headerStyle={{ 
+          backgroundColor: '#7e57c2',
+          transform: [{
+            translateY: headerAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [-60, 0]
+            })
+          }],
+          opacity: headerAnim
+        }}
       />
       
       <MenuContainer>
-        <SectionTitle>ACCOUNT</SectionTitle>
-        {menuItems.slice(0, isManager ? 2 : 1).map((item, index) => (
-          <MenuItem 
-            key={`account-${index}`}
-            onPress={item.action}
-            style={{
-              opacity: animations[index],
-              transform: [{
-                translateX: animations[index].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-50, 0]
-                })
-              }]
-            }}
-            activeOpacity={0.7}
-          >
-            <MenuIconContainer>
-              {item.icon}
-            </MenuIconContainer>
-            <MenuTextContainer>
-              <MenuText>{item.title}</MenuText>
-              <MenuSubText>{item.subTitle}</MenuSubText>
-            </MenuTextContainer>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-          </MenuItem>
-        ))}
+        <SectionTitle
+          style={{
+            transform: [{
+              translateX: sectionTitleAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-20, 0]
+              })
+            }],
+            opacity: sectionTitleAnim
+          }}
+        >
+          ACCOUNT
+        </SectionTitle>
         
-        <SectionTitle>APP</SectionTitle>
-        {menuItems.slice(isManager ? 2 : 1).map((item, index) => (
-          <MenuItem 
-            key={`app-${index}`}
-            onPress={item.action}
-            style={{
-              opacity: animations[index + (isManager ? 2 : 1)],
-              transform: [{
-                translateX: animations[index + (isManager ? 2 : 1)].interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-50, 0]
-                })
-              }]
-            }}
-            activeOpacity={0.7}
-          >
-            <MenuIconContainer>
-              {item.icon}
-            </MenuIconContainer>
-            <MenuTextContainer>
-              <MenuText>{item.title}</MenuText>
-              <MenuSubText>{item.subTitle}</MenuSubText>
-            </MenuTextContainer>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-          </MenuItem>
-        ))}
+        {menuItems.slice(0, isManager ? 2 : 1).map((item, index) => {
+          const anim = menuItemAnims[index];
+          return (
+            <MenuItem 
+              key={`account-${index}`}
+              onPress={item.action}
+              style={{
+                transform: [{ scale: anim.scale }],
+                opacity: anim.opacity
+              }}
+              activeOpacity={0.7}
+            >
+              <MenuIconContainer style={{
+                transform: [{ scale: anim.iconScale }]
+              }}>
+                {item.icon}
+              </MenuIconContainer>
+              <MenuTextContainer>
+                <MenuText>{item.title}</MenuText>
+                <MenuSubText>{item.subTitle}</MenuSubText>
+              </MenuTextContainer>
+              <Animated.View style={{
+                transform: [{
+                  scale: anim.iconScale.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1]
+                  })
+                }]
+              }}>
+                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+              </Animated.View>
+            </MenuItem>
+          );
+        })}
+        
+        <SectionTitle
+          style={{
+            transform: [{
+              translateX: sectionTitleAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-20, 0]
+              })
+            }],
+            opacity: sectionTitleAnim
+          }}
+        >
+          APP
+        </SectionTitle>
+        
+        {menuItems.slice(isManager ? 2 : 1).map((item, index) => {
+          const animIndex = isManager ? index + 2 : index + 1;
+          const anim = menuItemAnims[animIndex];
+          return (
+            <MenuItem 
+              key={`app-${index}`}
+              onPress={item.action}
+              style={{
+                transform: [{ scale: anim.scale }],
+                opacity: anim.opacity
+              }}
+              activeOpacity={0.7}
+            >
+              <MenuIconContainer style={{
+                transform: [{ scale: anim.iconScale }]
+              }}>
+                {item.icon}
+              </MenuIconContainer>
+              <MenuTextContainer>
+                <MenuText>{item.title}</MenuText>
+                <MenuSubText>{item.subTitle}</MenuSubText>
+              </MenuTextContainer>
+              <Animated.View style={{
+                transform: [{
+                  scale: anim.iconScale.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1]
+                  })
+                }]
+              }}>
+                <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+              </Animated.View>
+            </MenuItem>
+          );
+        })}
       </MenuContainer>
     </Container>
   );

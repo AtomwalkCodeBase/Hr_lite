@@ -70,14 +70,14 @@ const AddAppointee = ({ navigation }) => {
 
         try {
             const res = await imagetotext(formData);
-            console.log('Response received');
+            // console.log('Response received');
 
             if (res?.data) {
                 const scannedData = res.data.f_data_list;
                 const filteredText = res.data.text?.filter(item => item.trim() !== '') || [];
                 const extractedText = filteredText.join('\n');
 
-                console.log("Scan ata---",scannedData);
+                // console.log("Scan ata---",scannedData);
 
                 if (scannedData) {
                     setValue('name', filteredText[0]?.trim() || "");
@@ -212,7 +212,7 @@ const AddAppointee = ({ navigation }) => {
                 visible={isSuccessModalVisible} 
                 onClose={() => {
                     setIsSuccessModalVisible(false);
-                    router.push('home');
+                    handleBackPress();
                 }} 
             />
         </SafeAreaView>

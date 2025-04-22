@@ -220,7 +220,7 @@ const HomePage = () => {
     }, [empId]);
 
     
-  console.log("Home Profile===",profile)
+  // console.log("Home Profile===",profile)
 
     useEffect(() => {
       // fetchData();

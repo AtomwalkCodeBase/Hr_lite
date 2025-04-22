@@ -70,7 +70,7 @@ const HelpScreen = (props) => {
     getRequestCategory()
       .then((res) => {
         setRequestCategories(res.data);
-        console.log("setRequestCategories", res.data)
+        // console.log("setRequestCategories", res.data)
         const filtered = res.data.filter(category => category.request_type === 'R');
         setFilteredCategories(filtered);
       })
@@ -88,7 +88,7 @@ const HelpScreen = (props) => {
     });
   };
 
-  console.log("Request===",requestData)
+  // console.log("Request===",requestData)
 
   const fetchRequest = () => {
     setLoading(true);
@@ -111,13 +111,13 @@ const HelpScreen = (props) => {
   };
 
   const handleCardPress = (item) => {
-    console.log("Card data===",item)
+    // console.log("Card data===",item)
     setSelectedRequest(item);
     setIsModalVisible(true);
   };
 
   const handleUpdateRequest = (item) => {
-    console.log("Passed data===",item)
+    // console.log("Passed data===",item)
     router.push({
       pathname: 'UpdateHelp',
       params: {

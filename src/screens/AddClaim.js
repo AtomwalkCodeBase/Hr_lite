@@ -94,7 +94,7 @@ const AddClaim = () => {
     }
   };
 
-  console.log("Emp id===+",empId)
+  // console.log("Emp id===+",empId)
 
 
   const handleBackPress = () => {
@@ -162,9 +162,9 @@ const AddClaim = () => {
 
     try {
       const res = await postClaim(formData);
-      console.log("Claim Res OUT---",res)
+      // console.log("Claim Res OUT---",res)
       if (res.status === 200) {
-        console.log("Claim Res---",res)
+        // console.log("Claim Res---",res)
         setIsSuccessModalVisible(true); // Show success modal on successful submission
       } else {
         console.error('Unexpected response:', res);

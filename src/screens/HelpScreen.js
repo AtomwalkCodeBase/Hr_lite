@@ -81,7 +81,7 @@ const HelpScreen = (props) => {
       });
   };
 
-  console.log("Emp Id====", empId);
+  // console.log("Emp Id====", empId);
 
   const handleBackPress = () => {
     router.push({

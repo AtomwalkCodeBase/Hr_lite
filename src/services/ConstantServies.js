@@ -8,7 +8,7 @@ const getDbName = async () => {
 const localhost = "https://www.atomwalk.com"
 
 const apiURL = "/api";
-const db_name = "PMA_00001";
+const db_name = "TR_012";
 
 // console.log("Db name===",AsyncStorage.getItem('dbName'));
 

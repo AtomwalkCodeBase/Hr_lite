@@ -41,7 +41,7 @@ const ClaimScreen = (props) => {
       fetchEmpId();
     }, []);
 
-  console.log("Emp---",empId)
+  // console.log("Emp---",empId)
 
 
   // First useEffect to set empId from props
@@ -78,7 +78,7 @@ const ClaimScreen = (props) => {
     });
   };
 
-  console.log("Props data---", empId);
+  // console.log("Props data---", empId);
 
   useLayoutEffect(() => {
     navigation.setOptions({

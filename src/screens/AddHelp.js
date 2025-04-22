@@ -37,7 +37,7 @@ const AddHelp = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
-  console.log(filteredCategories,"filteredCategories")
+  // console.log(filteredCategories,"filteredCategories")
   const call_type = props.data.call_type;
   // Dynamic header title based on call_type
   const headerTitle = props?.data?.headerTitle?props?.data?.headerTitle:call_type === 'H' ? 'Add Help Request' : 'Add General Request';
@@ -137,7 +137,7 @@ const AddHelp = (props) => {
 
     try {
       const res = await postEmpRequest(formData);
-      console.log('API Response:', res);
+      // console.log('API Response:', res);
       
       if (res.status === 200) {
         setIsSuccessModalVisible(true);
@@ -161,7 +161,7 @@ const AddHelp = (props) => {
     } finally {
       setIsLoading(false);
 
-      console.log('Form Data==',formData)
+      // console.log('Form Data==',formData)
     }
   };
   useEffect(() => {
