@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, SafeAreaView, View, Alert, Linking } from 'react-native';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -10,6 +10,7 @@ import ApplyButton from '../components/ApplyButton';
 import Loader from '../components/old_components/Loader';
 import styled from 'styled-components/native';
 import EmptyMessage from '../components/EmptyMessage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Container = styled.View`
   flex: 1;
@@ -35,12 +36,20 @@ const ClaimScreen = (props) => {
   const [empId, setEmpId] = useState('');
   const navigation = useNavigation();
 
-  // First useEffect to set empId from props
+
   useEffect(() => {
-    if (props?.data?.empId) {
-      setEmpId(props.data.empId);
-    }
-  }, [props.data?.empId]);
+      fetchEmpId();
+    }, []);
+
+  console.log("Emp---",empId)
+
+
+  // First useEffect to set empId from props
+  // useEffect(() => {
+  //   if (props?.data?.empId) {
+  //     setEmpId(props.data.empId);
+  //   }
+  // }, [props.data?.empId]);
 
   // Second useEffect to fetch claims when empId changes
   useEffect(() => {
@@ -48,6 +57,15 @@ const ClaimScreen = (props) => {
       fetchClaimDetails();
     }
   }, [empId]);
+
+  const fetchEmpId = async () => {
+    try {
+      const id = await AsyncStorage.getItem('empNoId');
+      setEmpId(id);
+    } catch (error) {
+      console.error("Error fetching employee ID:", error);
+    }
+  };
 
   const fetchClaimDetails = () => {
     setIsLoading(true);
@@ -107,7 +125,7 @@ const ClaimScreen = (props) => {
     }
   };
 
-  console.log("Claims---",claimData)
+  // console.log("Claims---",claimData)
 
   const getStatusText = (status) => {
     switch (status) {

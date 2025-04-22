@@ -13,6 +13,7 @@ import SuccessModal from '../components/SuccessModal'; // Import SuccessModal co
 import Loader from '../components/old_components/Loader'; // Import Loader component
 import styled from 'styled-components/native';
 import { colors } from '../Styles/appStyle';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Container = styled.ScrollView`
   flex: 1;
@@ -28,6 +29,7 @@ const AddClaim = () => {
   const [fileUri, setFileUri] = useState('');
   const [fileMimeType, setFileMimeType] = useState('');
   const [claimItem, setClaimItem] = useState([]);
+  const [empId, setEmpId] = useState('');
   const [projectList, setProjectList] = useState([]);
   const [item, setItem] = useState('');
   const [project, setProject] = useState('');
@@ -47,7 +49,9 @@ const AddClaim = () => {
   useEffect(() => {
     fetchClaimItemList();
     fetchProjectList();
+    fetchEmpId();
   }, []);
+
 
   const fetchClaimItemList = async () => {
     setIsLoading(true); // Show loader while fetching data
@@ -80,6 +84,18 @@ const AddClaim = () => {
       setIsLoading(false); // Hide loader when data is fetched
     }
   };
+
+  const fetchEmpId = async () => {
+    try {
+      const id = await AsyncStorage.getItem('empId');
+      setEmpId(id);
+    } catch (error) {
+      console.error("Error fetching employee ID:", error);
+    }
+  };
+
+  console.log("Emp id===+",empId)
+
 
   const handleBackPress = () => {
     router.push('ClaimScreen');
@@ -138,6 +154,7 @@ const AddClaim = () => {
     formData.append('quantity', '1');
     formData.append('expense_amt', claimAmount);
     formData.append('expense_date', expense_date);
+    formData.append('emp_id', empId);
 
     if (project) {
       formData.append('project', project);
@@ -145,7 +162,9 @@ const AddClaim = () => {
 
     try {
       const res = await postClaim(formData);
+      console.log("Claim Res OUT---",res)
       if (res.status === 200) {
+        console.log("Claim Res---",res)
         setIsSuccessModalVisible(true); // Show success modal on successful submission
       } else {
         console.error('Unexpected response:', res);

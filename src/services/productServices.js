@@ -28,7 +28,7 @@ export function getEmpLeave(leave_type , emp_id) {
     if (claim_data) {
       data = claim_data;
     }
-    // console.log('Data to be sent:', claim_data);
+    console.log('Data to be sent:', claim_data);
     return authAxiosFilePost(addClaim, claim_data)
   }
 
