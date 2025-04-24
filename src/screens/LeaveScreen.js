@@ -94,6 +94,7 @@ const LeaveScreen = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false); // Loader state
+  const [totalLeaveSum, setTotalLeaveSum] = useState(0);
 
   const generateRandomValue = () => {
     return Math.floor(Math.random() * 100);
@@ -125,20 +126,31 @@ const LeaveScreen = () => {
     leaveDetails();
   }, [empId, selectedTab, randomValue]);
 
-  // console.log("Leave screen profile===",empId)
+  console.log("Leave screen profile===",leaveData)
 
   const leaveDetails = () => {
     setLoading(true);
     getEmpLeave(selectedTab === 'My Leave' ? 'EL' : selectedTab === 'My WFH' ? 'WH' : 'EL', empId)
       .then((res) => {
-        const filteredData = selectedTab === 'My Leave'
-          ? res.data.filter((leave) => leave.status_display !== 'Cancelled')
+        // First filter out Optional Holidays (OH)
+        const allNonOHLeaves = res.data.filter((leave) => leave.leave_type !== 'OH');
+        
+        // Calculate total leave sum (excluding cancelled leaves)
+        const totalSum = allNonOHLeaves
+          .filter(leave => leave.status_display !== 'Cancelled')
+          .reduce((sum, leave) => sum + parseFloat(leave.no_leave_count || 0), 0);
+        setTotalLeaveSum(totalSum);
+  
+        // Then apply tab-specific filters
+        const tabFilteredData = selectedTab === 'My Leave'
+          ? allNonOHLeaves.filter((leave) => leave.status_display !== 'Cancelled')
           : selectedTab === 'My Cancel Leave'
-          ? res.data.filter((leave) => leave.status_display === 'Cancelled')
-          : res.data;
-        setLeaveData(filteredData);
+          ? allNonOHLeaves.filter((leave) => leave.status_display === 'Cancelled')
+          : allNonOHLeaves;
+          
+        setLeaveData(tabFilteredData);
       })
-      .finally(() => setLoading(false)); // Set loading to false after data is fetched
+      .finally(() => setLoading(false));
   };
 
   
@@ -163,7 +175,8 @@ const LeaveScreen = () => {
   };
 
   const count = leaveData.length;
-  const max_leave = profile?.max_no_leave;
+  const leaveSum = leaveData.reduce((sum, leave) => sum + parseFloat(leave.no_leave_count || 0), 0);
+  const max_leave = profile?.emp_data?.max_no_leave;
 
   // console.log('Emp data',profile)
 
@@ -199,14 +212,16 @@ const LeaveScreen = () => {
     <>
       <HeaderComponent headerTitle="My Leaves" onBackPress={handleBackPress} />
       <Container>
-        <CardRow>
-          <LeaveCard bgColor="#eaffea" borderColor="#66cc66">
-            <LeaveNumber color="#66cc66">Total Leave Application: {count}</LeaveNumber>
-          </LeaveCard>
-          <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
-            <LeaveNumber color="#4d88ff">Max Leave for Year: {max_leave}</LeaveNumber>
-          </LeaveCard>
-        </CardRow>
+      <CardRow>
+        <LeaveCard bgColor="#eaffea" borderColor="#66cc66">
+          <LeaveNumber color="#66cc66">
+            {selectedTab === 'My WFH' ? 'Total WFH' : 'Total Leave Days'}: {selectedTab === 'My Cancel Leave' ? totalLeaveSum : leaveSum}
+          </LeaveNumber>
+        </LeaveCard>
+        <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
+          <LeaveNumber color="#4d88ff">Max Leave for Year: {max_leave}</LeaveNumber>
+        </LeaveCard>
+      </CardRow>
 
         <TabContainer>
           <TabButton onPress={() => setSelectedTab('My Leave')}>

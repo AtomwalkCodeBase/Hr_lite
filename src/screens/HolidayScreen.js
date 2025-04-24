@@ -11,6 +11,7 @@ import Loader from '../components/old_components/Loader'; // Import the Loader c
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const monthNameMap = {
   'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4,
@@ -91,79 +92,73 @@ const HolidayName = styled.Text`
 
 const HolidayScreen = () => {
   const [holidays, setHolidays] = useState({});
-  const [holidaydata, setHolidaydata] = useState({});
+  const [holidaydata, setHolidaydata] = useState(null); // Initialize as null
   const [activeTab, setActiveTab] = useState('Company Holiday');
-  const [profile, setProfile] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // Modal visibility state
-  const [successMessage, setSuccessMessage] = useState(''); // Success message state
-  const [errorModalVisible, setErrorModalVisible] = useState(false); // Error modal visibility state
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true); // Start with true
+  const [modalVisible, setModalVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [eId, setEId] = useState(null);
-  const navigation = useNavigation();
-  const currentYear = new Date().getFullYear();
+  const [retryCount, setRetryCount] = useState(0); // For retry mechanism
+  const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [selectedAction, setSelectedAction] = useState(null);
+  const [selectedHolidayDate, setSelectedHolidayDate] = useState(null);
 
+  const currentYear = new Date().getFullYear();
+  const navigation = useNavigation();
   const router = useRouter();
 
+  // Fetch employee ID with retry logic
   useEffect(() => {
     const fetchEId = async () => {
-      const id = await AsyncStorage.getItem('eId');
-      setEId(id);
-    };
-    fetchEId();
-  }, []);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: false });
-  }, [navigation]);
-
-  // First fetch the employee ID
-  // useEffect(() => {
-  //   const fetchEmployeeData = async () => {
-  //     try {
-  //       const res = await getEmployeeInfo();
-  //       const employeeId = res?.data[0]?.id;
-  //       setEId(employeeId);
-  //       console.log("Employee ID:", employeeId);
-  //     } catch (error) {
-  //       console.log("Error fetching employee info:", error);
-  //     }
-  //   };
-  //   fetchEmployeeData();
-  // }, []);
-
-  // Then fetch profile and holiday data when eId is available
-  useEffect(() => {
-    if (!eId) return; // Don't proceed if eId isn't set yet
-
-    const fetchData = async () => {
       try {
-        const data = { 
-          year: currentYear, 
-          eId: String(eId) // Ensure eId is passed as string
-        };
-        const profileRes = await getProfileInfo();
-        setProfile(profileRes.data);
-        await fetchAttendanceDetails(data);
+        const id = await AsyncStorage.getItem('eId');
+        if (!id) {
+          throw new Error('Employee ID not found');
+        }
+        setEId(id);
       } catch (error) {
-        console.log("Error fetching data:", error);
+        console.error("Error fetching employee ID:", error);
+        if (retryCount < 3) {
+          setTimeout(() => setRetryCount(prev => prev + 1), 2000);
+        }
       }
     };
-    fetchData();
-  }, [currentYear, eId]); // Add eId to dependency array
+    fetchEId();
+  }, [retryCount]);
 
-  const fetchAttendanceDetails = async (data) => {
-    setIsLoading(true);
-    try {
-      const res = await getEmpHoliday(data);
-      processHolidayData(res.data);
-      setHolidaydata(res.data);
-    } catch (error) {
-      console.log("Holiday Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Fetch data when eId is available
+  useEffect(() => {
+    if (!eId) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [profileRes, holidayRes] = await Promise.all([
+          getProfileInfo(),
+          getEmpHoliday({ year: currentYear, eId: String(eId) })
+        ]);
+
+        if (!holidayRes.data) {
+          throw new Error('No holiday data received');
+        }
+
+        setProfile(profileRes.data);
+        setHolidaydata(holidayRes.data);
+        processHolidayData(holidayRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setErrorMessage("Failed to load holiday data. Please try again.");
+        setErrorModalVisible(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [eId, currentYear]);
 
   const handleBackPress = () => {
     router.navigate({
@@ -172,29 +167,53 @@ const HolidayScreen = () => {
     });
   };
 
-  const processHolidayData = data => {
-    const holidayMap = {};
-    for (let i = 0; i < 12; i++) holidayMap[i] = [];
+  const handleConfirmAction = () => {
+    setConfirmationModalVisible(false);
+    if (selectedAction && selectedHolidayDate) {
+      handleHolidayAction(selectedHolidayDate, selectedAction);
+    }
+  };
 
-    if (data.h_list && Array.isArray(data.h_list)) {
-      data.h_list.forEach(holiday => {
-        const { day, h_type, remarks, is_opted } = holiday;
-        const [dayNum, monthName, year] = day.split('-');
+  const showConfirmationModal = (date, actionType) => {
+    setSelectedAction(actionType);
+    setSelectedHolidayDate(date);
+    setConfirmationModalVisible(true);
+  };
+  
+
+  // Improved holiday data processing
+  const processHolidayData = (data) => {
+    if (!data?.h_list) {
+      console.warn("No holiday list in data");
+      return;
+    }
+
+    const holidayMap = Array(12).fill().reduce((acc, _, i) => {
+      acc[i] = [];
+      return acc;
+    }, {});
+
+    data.h_list.forEach(holiday => {
+      try {
+        const [dayNum, monthName, year] = holiday.day.split('-');
         const month = monthNameMap[monthName];
+        
         if (month !== undefined && parseInt(year, 10) === currentYear) {
           const dateObj = new Date(year, month, dayNum);
           const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
 
           holidayMap[month].push({
-            name: remarks,
-            date: day,
-            weekday: weekday,
-            type: h_type === 'O' ? 'Optional' : 'Mandatory',
-            is_opted: is_opted || false,
+            name: holiday.remarks,
+            date: holiday.day,
+            weekday,
+            type: holiday.h_type === 'O' ? 'Optional' : 'Mandatory',
+            is_opted: holiday.is_opted || false,
           });
         }
-      });
-    }
+      } catch (error) {
+        console.error("Error processing holiday:", holiday, error);
+      }
+    });
 
     setHolidays(holidayMap);
   };
@@ -271,75 +290,95 @@ const HolidayScreen = () => {
   
   
 
-  const filteredHolidays = Object.entries(holidays).filter(([monthIndex, monthHolidays]) =>
-    monthHolidays.some(holiday => activeTab === 'Company Holiday' ? holiday.type === 'Mandatory' : holiday.type === 'Optional')
-  );
+  // Render improvements
+  const renderHolidayList = () => {
+    if (isLoading) return <Loader visible={isLoading} />;
+    
+    if (!holidaydata) {
+      return <EmptyMessage data="holiday" />;
+    }
+
+    const filteredMonths = Object.entries(holidays).filter(([_, monthHolidays]) => 
+      monthHolidays.some(holiday => 
+        activeTab === 'Company Holiday' 
+          ? holiday.type === 'Mandatory' 
+          : holiday.type === 'Optional'
+      )
+    );
+
+    if (filteredMonths.length === 0) {
+      return <EmptyMessage data="holiday" />;
+    }
+
+    return (
+      <HolidayList>
+        {filteredMonths.map(([monthIndex, monthHolidays]) => (
+          <View key={monthIndex}>
+            <HolidayInfo>
+              <HolidayName>
+                {Object.keys(monthFullNameMap)[monthIndex]}
+              </HolidayName>
+            </HolidayInfo>
+            {monthHolidays
+              .filter(holiday => 
+                activeTab === 'Company Holiday' 
+                  ? holiday.type === 'Mandatory' 
+                  : holiday.type === 'Optional'
+              )
+              .map((holiday, index) => (
+                <HolidayCard
+                  key={`${monthIndex}-${index}`}
+                  holiday={holiday}
+                  onOptClick={() => showConfirmationModal(holiday.date, 'opt')}
+                  onCancelClick={() => showConfirmationModal(holiday.date, 'cancel')}
+                />
+              ))}
+          </View>
+        ))}
+      </HolidayList>
+    );
+  };
 
   return (
     <>
       <HeaderComponent headerTitle="Holiday List" onBackPress={handleBackPress} />
       <Container>
-        <CardRow>
-          <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
-            <LeaveNumber color="#4d88ff">Max Optional Holiday : {holidaydata?.no_optional_holidays}</LeaveNumber>
-          </LeaveCard>
-        </CardRow>
+        {holidaydata && (
+          <CardRow>
+            <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
+              <LeaveNumber color="#4d88ff">
+                Max Optional Holiday: {holidaydata.no_optional_holidays || 0}
+              </LeaveNumber>
+            </LeaveCard>
+          </CardRow>
+        )}
 
         {holidaydata?.no_optional_holidays ? (
           <TabContainer>
-            <Tab active={activeTab === 'Company Holiday'} onPress={() => setActiveTab('Company Holiday')}>
-              <TabText active={activeTab === 'Company Holiday'}>{'Company Holiday'}</TabText>
+            <Tab active={activeTab === 'Company Holiday'} 
+                 onPress={() => setActiveTab('Company Holiday')}>
+              <TabText active={activeTab === 'Company Holiday'}>
+                Company Holiday
+              </TabText>
             </Tab>
-            <Tab active={activeTab === 'Optional Holiday'} onPress={() => setActiveTab('Optional Holiday')}>
-              <TabText active={activeTab === 'Optional Holiday'}>{'Optional Holiday'}</TabText>
+            <Tab active={activeTab === 'Optional Holiday'} 
+                 onPress={() => setActiveTab('Optional Holiday')}>
+              <TabText active={activeTab === 'Optional Holiday'}>
+                Optional Holiday
+              </TabText>
             </Tab>
           </TabContainer>
         ) : null}
 
-
-        {/* <TabContainer>
-          <Tab active={activeTab === 'Company Holiday'} onPress={() => setActiveTab('Company Holiday')}>
-            <TabText active={activeTab === 'Company Holiday'}>Company Holiday</TabText>
-          </Tab>
-          {holidaydata?.no_optional_holidays && (
-            <>
-          <Tab active={activeTab === 'Optional Holiday'} onPress={() => setActiveTab('Optional Holiday')}>
-            <TabText active={activeTab === 'Optional Holiday'}>Optional Holiday</TabText>
-          </Tab>
-            </>
-          )}
-
-        </TabContainer> */}
-
-        {isLoading ? (
-          <Loader visible={isLoading} />
-        ) : (
-          <HolidayList>
-            {filteredHolidays.length > 0 ? (
-              filteredHolidays.map(([monthIndex, monthHolidays]) => (
-                <View key={monthIndex}>
-                  <HolidayInfo>
-                    <HolidayName>{Object.keys(monthFullNameMap)[monthIndex]}</HolidayName>
-                  </HolidayInfo>
-                  {monthHolidays
-                    .filter(holiday => activeTab === 'Company Holiday' ? holiday.type === 'Mandatory' : holiday.type === 'Optional')
-                    .map((holiday, index) => (
-                      <HolidayCard
-                        key={index}
-                        holiday={holiday}
-                        onOptClick={() => handleHolidayAction(holiday.date, 'opt')}
-                        onCancelClick={() => handleHolidayAction(holiday.date, 'cancel')}
-                      />
-                    ))}
-                </View>
-              ))
-            ) : (
-              <EmptyMessage data={`holiday`}/>
-            )}
-          </HolidayList>
-        )}
+        {renderHolidayList()}
       </Container>
 
+      <ConfirmationModal
+        visible={confirmationModalVisible}
+        message={`Are you sure you want to ${selectedAction === 'opt' ? 'apply for' : 'cancel'} this optional holiday?`}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmationModalVisible(false)}
+      />
       <SuccessModal 
         visible={modalVisible} 
         message={successMessage} 
