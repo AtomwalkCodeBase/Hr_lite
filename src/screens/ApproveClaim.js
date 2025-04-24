@@ -337,23 +337,7 @@ const ApproveClaim = () => {
               />
               <Text style={[styles.buttonText, styles.viewButtonText]}>View File</Text>
             </TouchableOpacity>
-          )}
-  
-          {/* Return Button (only for submitted claims) */}
-          {isSubmitted && (
-            <TouchableOpacity 
-              style={[styles.buttonBase, styles.returnButton]}
-              onPress={() => handleApprove(item, 'Return')}
-            >
-              <MaterialIcons 
-                name="undo" 
-                size={18} 
-                color="#fff" 
-                style={styles.buttonIcon}
-              />
-              <Text style={[styles.buttonText, styles.actionButtonText]}>Return</Text>
-            </TouchableOpacity>
-          )}
+          )}          
   
           {/* Approve Button (only show if not already approved) */}
           {!isApproved && (
@@ -376,6 +360,21 @@ const ApproveClaim = () => {
               <Text style={[styles.buttonText, styles.actionButtonText]}>
                 {isSubmitted ? 'Approve' : status}
               </Text>
+            </TouchableOpacity>
+          )}
+
+          {isSubmitted && (
+            <TouchableOpacity 
+              style={[styles.buttonBase, styles.returnButton]}
+              onPress={() => handleApprove(item, 'Return')}
+            >
+              <MaterialIcons 
+                name="undo" 
+                size={18} 
+                color="#fff" 
+                style={styles.buttonIcon}
+              />
+              <Text style={[styles.buttonText, styles.actionButtonText]}>Return</Text>
             </TouchableOpacity>
           )}
         </View>

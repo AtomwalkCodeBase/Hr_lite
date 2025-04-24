@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
-  Text, 
-  Image, 
+  Text,
   Dimensions,
   Platform,
   StatusBar,
@@ -10,77 +9,68 @@ import {
   TouchableOpacity,
   SafeAreaView
 } from 'react-native';
-
-const { width, height } = Dimensions.get('window');
-
-// Scaling function based on screen width
-const scale = (size) => Math.floor((width / 375) * size);
+import { Ionicons } from '@expo/vector-icons';
 
 const HeaderComponent = ({ headerTitle, onBackPress }) => {
   return (
     <>
-      {/* Handle status bar area separately */}
-      {Platform.OS === 'ios' && height > 800 ? (
-        <SafeAreaView style={styles.safeArea} />
-      ) : null}
+      {/* Handle status bar separately for Android */}
+      {Platform.OS === 'android' && <View style={styles.statusBar} />}
       
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>{headerTitle}</Text>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={onBackPress}
-          activeOpacity={0.7}
-        >
-          <Image 
-            source={require('../../assets/images/back_icon.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-      </View>
+      {/* SafeAreaView handles iOS notches automatically */}
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            onPress={onBackPress}
+            style={styles.backButton}
+            activeOpacity={0.6}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerText} numberOfLines={1}>
+            {headerTitle}
+          </Text>
+          
+          <View style={styles.spacer} />
+        </View>
+      </SafeAreaView>
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  statusBar: {
+    height: StatusBar.currentHeight,
+    backgroundColor: '#fff',
+  },
   safeArea: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
   },
   headerContainer: {
-    backgroundColor: 'white',
-    paddingVertical: scale(15),
-    paddingHorizontal: scale(20),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    elevation: 2,
-    width: '100%',
-    minHeight: scale(60),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    // Handle marginTop based on platform and device
-    ...Platform.select({
-      ios: {
-        marginTop: height > 800 ? 0 : scale(20),
-      },
-      android: {
-        marginTop: StatusBar.currentHeight || scale(20),
-      },
-    }),
-  },
-  headerText: {
-    fontSize: scale(20),
-    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#fff',
   },
   backButton: {
-    padding: scale(5),
+    padding: 8,
+    marginRight: 8,
   },
-  backIcon: {
-    width: scale(24),
-    height: scale(24),
+  headerText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 8,
+  },
+  spacer: {
+    width: 40,
   },
 });
 

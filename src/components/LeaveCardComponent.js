@@ -8,94 +8,159 @@ const ApplicationCard = styled.TouchableOpacity`
   background-color: #fff;
   padding: 16px;
   border-radius: 12px;
-  border-width: 1px;
-  border-color: ${props => props.borderColor || '#ddd'};
+  border-left-width: 4px;
+  border-left-color: ${props => props.borderColor || '#ddd'};
   margin-bottom: 12px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+  elevation: 3;
 `;
 
-const ApplicationStatusContainer = styled.View`
+const CardHeader = styled.View`
   flex-direction: row;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  margin-bottom: 12px;
 `;
 
-const ApplicationStatus = styled.View`
+const LeaveType = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+`;
+
+const DaysBadge = styled.View`
+  background-color: #f0f7ff;
+  padding: 4px 8px;
+  border-radius: 12px;
+`;
+
+const DaysText = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #4d88ff;
+`;
+
+const CardBody = styled.View`
+  margin-bottom: 12px;
+`;
+
+const DateRow = styled.View`
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  background-color: ${props => props.bgColor || 'transparent'};
-  padding: 2px 8px;
-  border-radius: 20px;
+  margin-bottom: 6px;
 `;
 
-const ApplicationStatusText = styled.Text`
+const DateText = styled.Text`
   font-size: 14px;
-  font-weight: bold;
-  padding: 2px;
-  color: ${props => props.color || '#000'};
-  /* margin-left: 8px; */
+  color: #666;
+  margin-left: 6px;
 `;
 
-const DetailText = styled.Text`
+const RemarksText = styled.Text`
   font-size: 14px;
-  color: #333;
+  color: #666;
+  font-style: italic;
 `;
 
-const DetailHighlight = styled.Text`
-  font-weight: bold;
-  color: #333;
+const CardFooter = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border-top-width: 1px;
+  border-top-color: #f0f0f0;
+  padding-top: 12px;
+`;
+
+const StatusBadge = styled.View`
+  flex-direction: row;
+  align-items: center;
+  background-color: ${props => props.bgColor || '#f5f5f5'};
+  padding: 4px 10px;
+  border-radius: 14px;
+`;
+
+const StatusText = styled.Text`
+  font-size: 13px;
+  font-weight: 500;
+  color: ${props => props.color || '#666'};
+  margin-left: 6px;
+`;
+
+const SubmitDate = styled.Text`
+  font-size: 12px;
+  color: #999;
 `;
 
 const CancelButton = styled.TouchableOpacity`
-  background-color: #ff2400;
-  display: flex;
+  background-color: #ffecec;
+  padding: 6px 12px;
+  border-radius: 6px;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  padding: 5px 8px;
-  border-radius: 5px;
-  margin-top: 10px;
-  /* border: 1px solid black; */
 `;
 
 const CancelButtonText = styled.Text`
-  color: #fff;
-  font-size: 14px;
-  font-weight: bold;
+  color: #ff2400;
+  font-size: 13px;
+  font-weight: 500;
+  margin-left: 4px;
 `;
 
 const LeaveCardComponent = ({ leave, statusStyles, onPress, onCancelPress, showCancelButton }) => {
-  const { bgColor, color, borderColor, icon } = statusStyles;
+  const { bgColor, color, borderColor } = statusStyles;
+
+  // Format dates if needed
+  const formatDate = (dateString) => {
+    // Add your date formatting logic here if needed
+    return dateString;
+  };
 
   return (
     <ApplicationCard onPress={() => onPress(leave)} borderColor={borderColor}>
-      <ApplicationStatusContainer>
-        <View>
-          <DetailText>
-            <DetailHighlight>{leave.leave_type_display}</DetailHighlight>
-          </DetailText>
-          <DetailText>{leave.from_date} to {leave.to_date}</DetailText>
-          <DetailText>
-            <DetailHighlight>{leave.no_leave_count} Days</DetailHighlight>
-          </DetailText>
-        </View>
-        <View style={{ flexDirection: 'column' }}>
-        <ApplicationStatus bgColor={bgColor}>
-          <ApplicationStatusText color={color}>{leave.status_display}</ApplicationStatusText>
-          {/* {icon === 'time-outline' ? (
-            <Ionicons name={icon} size={20} color={color} />
-          ) : (
-            <MaterialIcons name={icon} size={20} color={color} />
-          )} */}
-        </ApplicationStatus>
+      <CardHeader>
+        <LeaveType>{leave.leave_type_display}</LeaveType>
+        <DaysBadge>
+          <DaysText>{leave.no_leave_count} day{leave.no_leave_count !== "1.0" ? 's' : ''}</DaysText>
+        </DaysBadge>
+      </CardHeader>
 
-          {showCancelButton && (
-            <CancelButton onPress={() => onCancelPress(leave)}>
-              <CancelButtonText>Cancel</CancelButtonText>
-            </CancelButton>
-          )}
+      <CardBody>
+        <DateRow>
+          <MaterialIcons name="date-range" size={16} color="#666" />
+          <DateText>
+            {formatDate(leave.from_date)} - {formatDate(leave.to_date)}
+          </DateText>
+        </DateRow>
+        
+        {leave.remarks && (
+          <View style={{ marginTop: 8 }}>
+            <RemarksText>"{leave.remarks}"</RemarksText>
+          </View>
+        )}
+      </CardBody>
+
+      <CardFooter>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <StatusBadge bgColor={bgColor}>
+            <MaterialIcons 
+              name={leave.status === 'A' ? 'check-circle' : leave.status === 'R' ? 'cancel' : 'access-time'} 
+              size={16} 
+              color={color} 
+            />
+            <StatusText color={color}>{leave.status_display}</StatusText>
+          </StatusBadge>
+          <SubmitDate>Submitted: {formatDate(leave.submit_date)}</SubmitDate>
         </View>
-      </ApplicationStatusContainer>
+
+        {showCancelButton && (
+          <CancelButton onPress={() => onCancelPress(leave)}>
+            <MaterialIcons name="cancel" size={16} color="#ff2400" />
+            <CancelButtonText>Cancel</CancelButtonText>
+          </CancelButton>
+        )}
+      </CardFooter>
     </ApplicationCard>
   );
 };

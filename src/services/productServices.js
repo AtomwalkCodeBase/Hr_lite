@@ -120,11 +120,6 @@ export function getEmpLeave(leave_type , emp_id) {
   }
 
   export function getEmployeeRequest() { 
-    let data = {
-      'emp_id':"EMP-001",
-      'request_sub_type':"Technical Support",
-      'request_type': "H"
-    };
     return authAxios(getEmployeeRequestList)
   }
 
@@ -133,10 +128,6 @@ export function getEmpLeave(leave_type , emp_id) {
   }
 
   export function postEmpRequest(request_data) {
-    // let data = {};
-    // if (claim_data) {
-    //   data = claim_data;
-    // }
     console.log('Data to be sent:', request_data);
     return authAxiosFilePost(processEmployeeRequest, request_data)
   }
