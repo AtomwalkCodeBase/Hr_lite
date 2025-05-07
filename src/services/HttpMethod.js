@@ -15,6 +15,18 @@ export const authAxios = async (url, data) => {
     }).get(url)
 };
 
+export const authAxiosGET = async (url, data) => {
+  // let token = await AsyncStorage.getItem('userToken');
+  // console.log('authaxios', token, data)
+  return axios.create({
+      baseURL: endpoint,
+      params: data,
+      // headers: {
+      //     // Authorization: `Token ${token}`
+      // }
+  }).get(url)
+};
+
 export const authAxiosPost = async (url, data) => {
   let token = await AsyncStorage.getItem('userToken');
   // console.log('authaxios', token, url)
@@ -30,7 +42,7 @@ export const authAxiosPost = async (url, data) => {
 
 export const authAxiosFilePost = async (url, data) => {
   let token = await AsyncStorage.getItem('userToken');
-  // console.log("Data to be sent:", data);
+  console.log("Data to be sent in HTTP Method:", data);
 
   // Check if the data is FormData
   if (!(data instanceof FormData)) {
@@ -53,6 +65,8 @@ export const authAxiosFilePost = async (url, data) => {
 export const publicAxiosRequest = axios.create({
   baseURL: endpoint,
 });
+
+
 
 
 export default {

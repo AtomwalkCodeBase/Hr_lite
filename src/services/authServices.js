@@ -1,6 +1,6 @@
-import { authAxios } from "./HttpMethod";
+import { authAxios, authAxiosGET } from "./HttpMethod";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { profileInfoURL, companyInfoURL, profileDtlURL, } from "./ConstantServies";
+import { profileInfoURL, companyInfoURL, profileDtlURL, getDbList, } from "./ConstantServies";
 
 export function getProfileInfo() {
     // console.log('getProfileInfo')
@@ -26,5 +26,13 @@ export async function getEmployeeInfo() {
 
 export function getCompanyInfo() {
     return authAxios(companyInfoURL)
+}
+
+export function getDBListInfo() {
+    let data = {
+         'mobile_app_type': 'HRM_E'
+      };
+      console.log("Data pass for db name----",data)
+    return authAxiosGET(getDbList, data)
 }
 

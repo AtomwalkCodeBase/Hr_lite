@@ -5,9 +5,11 @@ import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import Logos from '../../assets/images/Atom_walk_logo.jpg';
 import { useRouter } from 'expo-router';
 import { empLoginURL } from '../../src/services/ConstantServies';
-import { getCompanyInfo } from '../../src/services/authServices';
+import { getCompanyInfo, getDBListInfo } from '../../src/services/authServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { publicAxiosRequest } from '../../src/services/HttpMethod';
+import DropdownPicker from '../../src/components/DropdownPicker';
+import CompanyDropdown from '../../src/components/ComanyDropDown';
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -17,6 +19,10 @@ const LoginScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [userPin, setUserPin] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [companyError, setCompanyError] = useState('');
+  const [dbList, setDbList] = useState([]); // Initialize as empty array instead of false
+const [selectedCompany, setSelectedCompany] = useState(null);
+
 
   useEffect(() => {
     const fetchUserPin = async () => {
@@ -30,7 +36,77 @@ const LoginScreen = () => {
     fetchUserPin();
   }, []);
 
+  useEffect(()=>{
+    fetchDbName();
+  },[])
+
+  // useEffect(() => {
+  //   if (selectedCompany && !dropdownValue) {
+  //     setDropdownValue({
+  //       label: selectedCompany.ref_cust_name,
+  //       value: selectedCompany.ref_cust_name
+  //     });
+  //   }
+  // }, [selectedCompany, dropdownValue]);
+
+  useEffect(() => {
+    if (selectedCompany && dbList.length > 0) {
+      const company = dbList.find(c => c.ref_cust_name === selectedCompany.ref_cust_name);
+      if (company) {
+        const dbName = company.name.replace('SD_', '');
+        AsyncStorage.setItem('dbName', dbName);
+      }
+    }
+  }, [selectedCompany, dbList]);
+
+  const fetchDbName = async () => {
+    try {
+      const DBData = await getDBListInfo();
+      setDbList(DBData.data || []);
+      
+      if (DBData.data?.length === 1) {
+        const company = DBData.data[0];
+        setSelectedCompany({
+          label: company.ref_cust_name,
+          value: company.ref_cust_name
+        });
+        const dbName = company.name.replace('SD_', '');
+        await AsyncStorage.setItem('dbName', dbName);
+      }
+    } catch (error) {
+      console.error('Error fetching DB List:', error);
+    }
+  };
+
+  const handleCompanyChange = async (item) => {
+    if (item) {
+      setSelectedCompany(item);
+      const selected = dbList.find(company => company.ref_cust_name === item.value);
+      if (selected) {
+        const dbName = selected.name.replace('SD_', '');
+        await AsyncStorage.setItem('dbName', dbName);
+      }
+    }
+    setCompanyError(''); // Clear error when company is selected
+  };
+
+  const getDropdownValue = () => {
+    if (!selectedCompany) return null;
+    return {
+      label: selectedCompany.ref_cust_name,
+      value: selectedCompany.ref_cust_name
+    };
+  };
+
+  
+  
+
+
   const validateInput = () => {
+    if (!selectedCompany) {
+      setCompanyError('Please select your company');
+      return false;
+    }
     if (!mobileNumber) {
       setErrorMessage('Mobile number is required');
       return false;
@@ -88,8 +164,8 @@ const LoginScreen = () => {
           const companyInfoResponse = await getCompanyInfo();
           const companyInfo = companyInfoResponse.data;
           await AsyncStorage.setItem('companyInfo', JSON.stringify(companyInfo));
-          const dbName = companyInfo.db_name.substr(3);
-          await AsyncStorage.setItem('dbName', dbName);
+          // const dbName = companyInfo.db_name.substr(3);
+          // await AsyncStorage.setItem('dbName', dbName);
           console.log('Company info stored:', companyInfo);
         } catch (error) {
           console.error('Error fetching company info:', error.message);
@@ -121,14 +197,27 @@ const LoginScreen = () => {
 
       {/* Login Text */}
       <Title>Log In</Title>
-      <Subtitle>Enter Your Mobile Number and PIN</Subtitle>
+      <Subtitle>Enter Your Mobile Number/Emp ID and PIN</Subtitle>
 
       {/* Input Fields Section */}
       <InputContainer>
+      
+      {dbList.length > 0 && (
+  <CompanyDropdown
+    label="Company"
+    data={dbList.map(company => ({
+      label: company.ref_cust_name,
+      value: company.ref_cust_name
+    }))}
+    value={selectedCompany}
+    setValue={handleCompanyChange}
+    error={companyError}
+  />
+)}
         <InputWrapper>
           <MaterialIcons name="phone" size={20} color="#6c757d" />
           <Input
-            placeholder="Enter your mobile number"
+            placeholder="Enter your mobile number/ Emp Id"
             value={mobileNumber}
             onChangeText={setMobileNumber}
             keyboardType="phone-pad"

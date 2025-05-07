@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, getAppointeeList, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, getAppointeeList, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost } from "./HttpMethod";
 
 export function getEmpLeave(leave_type , emp_id) {
@@ -93,7 +93,7 @@ export function getEmpLeave(leave_type , emp_id) {
       data['attendance_data'] = checkin_data;
       // data = checkin_data;
     }
-    // console.log('Data to be sent:', data);
+    console.log('Data to be sent:', data);
     return authAxiosPost(empCheckData, data)
   }
 
@@ -130,4 +130,34 @@ export function getEmpLeave(leave_type , emp_id) {
   export function postEmpRequest(request_data) {
     console.log('Data to be sent:', request_data);
     return authAxiosFilePost(processEmployeeRequest, request_data)
+  }
+
+  
+  export function getEvents(params = {}) {
+    const data = {
+      emp_id: params.emp_id || "",
+      event_type: params.event_type || "",
+      date_range: params.date_range || 'ALL'
+    };
+    console.log("Passed payload===>",data)
+    return authAxios(getEventtList, data);
+  }
+
+  export function getEventsResponse(params = {}) {
+    const data = {
+      event_id: params.event_id,
+      // event_type: params.event_type || "",
+      // date_range: params.date_range || 'ALL'
+    };
+    console.log("Passed payload for getting response===>",data)
+    return authAxios(getEventResponse, data);
+  }
+
+  export function processEventResponse(event_data) {
+    let data = {};
+    if (event_data) {
+      data = event_data;
+    }
+    console.log('Data to be sent:', data);
+    return authAxiosFilePost(processEventRes, data)
   }

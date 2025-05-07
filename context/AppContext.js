@@ -109,10 +109,10 @@ const AppProvider = ({ children }) => {
         setIsLoading(true);
         AsyncStorage.removeItem('userToken');
         AsyncStorage.removeItem('companyInfo');
-        AsyncStorage.removeItem('dbName');
+        // AsyncStorage.removeItem('dbName');
         setUserToken(null);
         setCompanyInfo([]);
-        setDbName(null);
+        // setDbName(null);
         setIsLoading(false);
         // setError('')
         router.replace('AuthScreen');

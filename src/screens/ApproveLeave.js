@@ -74,6 +74,7 @@ const LeaveScreen = (props) => {
       .then((res) => {
         setLeavedata(res.data);
         setFilteredData(res.data);
+        console.log("Approve leve response===>",res.data)
       })
       .catch((error) => {
         console.error("Error fetching leave data:", error);

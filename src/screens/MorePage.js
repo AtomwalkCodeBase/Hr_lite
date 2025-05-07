@@ -107,8 +107,27 @@ const MorePage = () => {
       params: { empId },
     });
   };
+
+  const handlePressEvent = () => {  
+    router.push({
+      pathname: 'EventScr',
+      params: { empId },
+    });
+  };
   
-  const handlePressProfile = () => router.push('profile');
+//   const handlePressResolve = () => {  
+//     router.push({
+//       pathname: 'ResolveHelp&Request',
+//       // params: {
+//       //   empId,
+//       // },
+//     });
+// };
+
+const handlePressProfile = () => {
+  router.push('profile');
+};
+  
   const handleBackPress = () => {
     router.navigate({
       pathname: 'home',
@@ -146,7 +165,21 @@ const MorePage = () => {
       action: handlePressRequest,
       show: true
     },
-  ].filter(item => item.show);
+  // {
+  //   title: "Resolve Help & request",
+  //   subTitle: "Resolve your Help & request",
+  //   icon: <AntDesign name="customerservice" size={24} color="#7e57c2" />,
+  //   action: handlePressResolve,
+  //   show: true
+  // },
+  {
+    title: "Updates",
+    subTitle: "Get your recent updates and events",
+    icon: <MaterialIcons name="tips-and-updates" size={24} color="#7e57c2" />,
+    action: handlePressEvent,
+    show: true
+  }
+].filter(item => item.show); // This filters out any items where show is false
 
   return (
     <Container>

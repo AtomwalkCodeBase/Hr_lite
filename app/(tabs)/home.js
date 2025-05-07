@@ -8,10 +8,10 @@ const home = () => {
   const { state } = useContext(AppContext);
 
   return (
-    <SafeAreaView>
+    <>
       <HomeScreen/>
       <PinPopup></PinPopup>
-    </SafeAreaView>
+    </>
   )
 }
 

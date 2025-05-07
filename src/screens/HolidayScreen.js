@@ -114,7 +114,7 @@ const HolidayScreen = () => {
   useEffect(() => {
     const fetchEId = async () => {
       try {
-        const id = await AsyncStorage.getItem('eId');
+        const id = await AsyncStorage.getItem('empNoId');
         if (!id) {
           throw new Error('Employee ID not found');
         }
