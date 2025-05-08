@@ -16,7 +16,6 @@ const AppProvider = ({ children }) => {
     const [companyInfo, setCompanyInfo] = useState(null);
     const [dbName, setDbName] = useState(null);
     const [isConnected, setIsConnected] = useState(true);
-    const [dropdownValue, setDropdownValue] = useState(null); 
 
     const router = useRouter();
 
@@ -160,9 +159,7 @@ const AppProvider = ({ children }) => {
             dbName,
             isConnected,
             checkNetwork,
-            setIsLoading,
-            setDropdownValue,
-            dropdownValue
+            setIsLoading
         }}>
             {children}
             {/* Show Network Error Modal only when disconnected */}
