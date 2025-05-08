@@ -25,7 +25,9 @@ const CommentInputInline = ({
   disabled = false, 
   buttonText = 'Send',
   autoFocus = false,
-  placeholder = "Write a comment..."
+  placeholder = "Write a comment...",
+  isEditing = false  // Add this new prop
+
 }) => {
   const [text, setText] = useState(initialValue);
   const [imageUri, setImageUri] = useState(null);
@@ -176,7 +178,11 @@ const CommentInputInline = ({
   };
 
   return (
-    <Animated.View style={[styles.container, { height: animatedHeight }]}>
+    <Animated.View style={[
+      styles.container, 
+      { height: animatedHeight },
+      isEditing && styles.editingContainer  // Apply editing styles when in edit mode
+    ]}>
       {imageUri && (
         <View style={styles.imagePreviewContainer}>
           <Image source={{ uri: imageUri }} style={styles.imagePreview} />
@@ -189,16 +195,23 @@ const CommentInputInline = ({
         </View>
       )}
       
-      <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
+      <View style={[
+        styles.inputContainer,
+        isEditing && styles.editingInputContainer  // Wider container in edit mode
+      ]}>
+        <View style={[
+          styles.inputWrapper,
+          isEditing && styles.editingInputWrapper  // Wider input wrapper in edit mode
+        ]}>
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[
+              styles.input,
+              isEditing && styles.editingInput  // Larger input in edit mode
+            ]}
             placeholder={placeholder}
             value={text}
             onChangeText={setText}
-
-              
             multiline
             maxLength={500}
             autoFocus={autoFocus}
@@ -326,6 +339,25 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#e0e0e0',
+  },
+  editingContainer: {
+    minHeight: 100,
+    paddingHorizontal: 0,  // Remove side padding to maximize width
+  },
+  editingInputContainer: {
+    width: '100%',  // Take full width
+    minHeight: 70,
+  },
+  editingInputWrapper: {
+    flex: 1,
+    // minHeight: 50,
+    maxWidth: '100%',  // Allow to expand fully
+    marginRight: 12,   // Slightly larger margin
+  },
+  editingInput: {
+    minHeight: 50,    // Taller input for editing
+    fontSize: 16,      // Slightly larger font
+    lineHeight: 22,    // Better line spacing
   },
 });
 

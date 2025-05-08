@@ -34,6 +34,7 @@ const AddAttendance = () => {
   const [employeeData, setEmployeeData] = useState({
     empId: 'Employee_Id',
     designation: 'Position',
+    is_shift_applicable: false
   });
   const [checkedIn, setCheckedIn] = useState(false);
   const [startTime, setStartTime] = useState(null);
@@ -43,6 +44,7 @@ const AddAttendance = () => {
   const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
 
   const navigation = useNavigation();
   const router = useRouter();
@@ -94,11 +96,26 @@ const AddAttendance = () => {
     getEmpAttendance(data).then((res) => {
       setAttData(res.data);
       processAttendanceData(res.data);
+      checkPreviousDayAttendance(res.data);
       setIsLoading(false);
     });
   };
 
-  // console.log("Attendance Data===",attData)
+  const checkPreviousDayAttendance = (attendanceData) => {
+    if (!employeeData?.is_shift_applicable) {
+      setPreviousDayUnchecked(false);
+      return;
+    }
+
+    const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
+    const yesterdayAttendance = attendanceData.find(item => item.a_date === yesterday);
+
+    if (yesterdayAttendance && !yesterdayAttendance.end_time) {
+      setPreviousDayUnchecked(true);
+    } else {
+      setPreviousDayUnchecked(false);
+    }
+  };
 
   const processAttendanceData = (data) => {
     const todayAttendance = data.find((item) => item.a_date === currentDate);
@@ -161,8 +178,6 @@ const AddAttendance = () => {
       remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
       id: attendanceId,
     };
-
-    // console.log("Checkin Payload",checkPayload)
   
     postCheckIn(checkPayload)
       .then(() => {
@@ -180,7 +195,6 @@ const AddAttendance = () => {
       });
   };
   
-  
   const handleRemarkSubmit = () => {
     if (!remark.trim()) {
       handleError('Remark cannot be empty', 'remarks');
@@ -194,10 +208,9 @@ const AddAttendance = () => {
     setIsSuccessModalVisible(false);
   };
 
-  // console.log("Emp:",employeeData)
-
   // Determine button states
-  const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time;
+  const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time || 
+                          (employeeData?.is_shift_applicable && previousDayUnchecked);
   const isCheckOutDisabled = !checkedIn || attendance.geo_status !== 'I' || !!attendance.end_time;
 
   return (
@@ -236,77 +249,73 @@ const AddAttendance = () => {
                 {employeeData?.grade_name || '--'}
               </Text>
             </View>
-            {/* <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Department</Text>
-              <Text style={styles.detailValue}>
-                {employeeData?.emp_data?.department || '--'}
-              </Text>
-            </View> */}
           </View>
         </View>
 
         {/* Attendance Action Card */}
         <View style={styles.actionCard}>
-        <Text style={styles.cardTitle}>Today's Attendance</Text>
-        
-        {attendance && attendance.start_time === null ? (
-          <View style={styles.leaveBadge}>
-            <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
-          </View>
-        ) : (
-          <View style={[
-            styles.actionButtons,
-            !attendance.start_time && styles.singleButtonContainer
-          ]}>
-            {/* Check In Button */}
-            <TouchableOpacity
-              onPress={() => handleCheck('ADD')}
-              disabled={isCheckInDisabled}
-              style={[
-                styles.attendanceButton,
-                styles.checkInButton,
-                isCheckInDisabled && styles.disabledButton,
-                !attendance.start_time && styles.singleButton
-              ]}
-            >
-              <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
-              <Text style={[
-                styles.buttonText,
-                isCheckInDisabled && styles.disabledButtonText
-              ]}>
-                {isCheckInDisabled 
-                  ? `Checked In • ${attendance.start_time}`
-                  : 'Check In'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Check Out Button - only show if start_time exists */}
-            {attendance.start_time && (
+          <Text style={styles.cardTitle}>Today's Attendance</Text>
+          
+          {attendance && attendance.start_time === null ? (
+            <View style={styles.leaveBadge}>
+              <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
+            </View>
+          ) : (
+            <View style={[
+              styles.actionButtons,
+              !attendance.start_time && styles.singleButtonContainer
+            ]}>
+              {/* Check In Button */}
               <TouchableOpacity
-                onPress={() => setIsRemarkModalVisible(true)}
-                disabled={isCheckOutDisabled}
+                onPress={() => handleCheck('ADD')}
+                disabled={isCheckInDisabled}
                 style={[
                   styles.attendanceButton,
-                  styles.checkOutButton,
-                  isCheckOutDisabled && styles.disabledButton
+                  styles.checkInButton,
+                  isCheckInDisabled && styles.disabledButton,
+                  !attendance.start_time && styles.singleButton
                 ]}
               >
-                <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
+                <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
                 <Text style={[
                   styles.buttonText,
-                  isCheckOutDisabled && styles.disabledButtonText
+                  isCheckInDisabled && styles.disabledButtonText
                 ]}>
-                  {isCheckOutDisabled
-                    ? attendance.end_time 
-                      ? `Checked Out • ${attendance.end_time}`
-                      : 'Check Out'
-                    : 'Check Out'}
+                  {employeeData?.is_shift_applicable && previousDayUnchecked 
+                    ? "Complete yesterday's checkout first"
+                    : isCheckInDisabled 
+                      ? `Checked In • ${attendance.start_time}`
+                      : 'Check In'}
                 </Text>
               </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
+
+              {/* Check Out Button - only show if start_time exists */}
+              {attendance.start_time && (
+                <TouchableOpacity
+                  onPress={() => setIsRemarkModalVisible(true)}
+                  disabled={isCheckOutDisabled}
+                  style={[
+                    styles.attendanceButton,
+                    styles.checkOutButton,
+                    isCheckOutDisabled && styles.disabledButton
+                  ]}
+                >
+                  <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
+                  <Text style={[
+                    styles.buttonText,
+                    isCheckOutDisabled && styles.disabledButtonText
+                  ]}>
+                    {isCheckOutDisabled
+                      ? attendance.end_time 
+                        ? `Checked Out • ${attendance.end_time}`
+                        : 'Check Out'
+                      : 'Check Out'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* Attendance History Button */}
         <TouchableOpacity 

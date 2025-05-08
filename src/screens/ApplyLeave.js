@@ -62,30 +62,34 @@ const ApplyLeave = (props) => {
     let isEL = res === 'EL';
     let isLP = res === 'LP';
     let isWH = res === 'WH';
-
+    let isHL = res === 'HL'; // Add this line for Half Day leave type
+  
     if (!fromDate) {
       handleError('Please select From Date', 'fromDate');
       isValid = false;
     }
-
+  
     if (!toDate) {
       handleError('Please select To Date', 'toDate');
       isValid = false;
     } else if (toDate < fromDate) {
       handleError("'To Date' should not be earlier than 'From Date.'", 'toDate');
       isValid = false;
+    } else if (isHL && fromDate.toDateString() !== toDate.toDateString()) {
+      // Add this condition for Half Day leave
+      handleError("For Half Day leave, 'From Date' and 'To Date' must be the same.", 'toDate');
+      isValid = false;
     }
-
+  
     if (!remarks) {
       handleError('Please fill the Remark field', 'remarks');
       isValid = false;
     }
-
+  
     if (isValid) {
       addLeave(res);
     }
   };
-
   // console.log("Profile Apply Leave===",profile.id)
   // console.log("Passed Data Apply Leave----",props.id)
 
@@ -146,14 +150,21 @@ const ApplyLeave = (props) => {
           label="Apply WFH"
           onPress={() => { validate('WH'); }}
           bgColor={colors.yellow}
-          textColor="white"
+          textColor="black"
         />
+        <SubmitButton
+        label="Apply Half Day"
+        onPress={() => { validate('HL'); }}
+        bgColor={colors.yellow}
+        textColor="black"
+      />
         <SubmitButton
           label="Apply LOP"
           onPress={() => { validate('LP'); }}
           bgColor={colors.red}
           textColor="white"
         />
+        
       </Container>
 
       {/* Loader */}

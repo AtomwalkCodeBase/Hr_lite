@@ -91,6 +91,8 @@ const EventDetailsScreen = (props) => {
     }
   };
 
+  console.log("Event details----",eventDetails)
+
   const fetchResponse = () => {
     setLoading(true);
     setRefreshing(true);
@@ -102,7 +104,6 @@ const EventDetailsScreen = (props) => {
     getEventsResponse(params)
       .then((res) => {
         setResponses(res.data || []);
-        console.log("Responses loaded:", responses.data);
       })
       .catch((error) => {
         console.error("Fetch Event Responses Error:", error?.response?.data);
@@ -112,6 +113,7 @@ const EventDetailsScreen = (props) => {
         setRefreshing(false);
       });
   };
+  // console.log("Responses loaded:", responses);
 
   const handleAddResponse = async (text, fileUri = null, fileName = null, fileMimeType = null) => {
     if (!text.trim() && !fileUri) {
@@ -237,12 +239,29 @@ const EventDetailsScreen = (props) => {
     }
   };
 
+  const statusConfig = {
+    'A': { label: 'Active', color: '#4CAF50' },
+    'P': { label: 'Planned', color: '#2196F3' },
+    'C': { label: 'Completed', color: '#9C27B0' },
+    'X': { label: 'Cancelled', color: '#F44336' }
+  };
+
   const renderResponseItem = (response) => {
     const isCurrentUserResponse = response.r_emp_id === empId;
+    const isEventCreator = eventDetails.emp_id === empId;
     const isEditing = editingResponse?.id === response.id;
     
     // Determine bubble width based on screen size
     const bubbleMaxWidth = width * 0.75;
+    
+    // Show actions if:
+    // 1. It's the user's own comment (can edit/delete)
+    // 2. OR if user is event creator (can only delete)
+    const showActions = isCurrentUserResponse || isEventCreator;
+    
+    // Determine which buttons to show
+    const showEditButton = isCurrentUserResponse && !isEditing;
+    const showDeleteButton = isCurrentUserResponse || isEventCreator;
     
     return (
       <Animated.View 
@@ -267,7 +286,7 @@ const EventDetailsScreen = (props) => {
             </View>
           </View>
           
-          {isCurrentUserResponse && (
+          {showActions && (
             <View style={styles.commentActions}>
               {isEditing ? (
                 <TouchableOpacity 
@@ -279,20 +298,26 @@ const EventDetailsScreen = (props) => {
                 </TouchableOpacity>
               ) : (
                 <>
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => setEditingResponse(response)}
-                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  >
-                    <Feather name="edit-2" size={18} color="#666" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.actionButton}
-                    onPress={() => handleDeleteResponse(response.id)}
-                    hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                  >
-                    <Feather name="trash-2" size={18} color="#666" />
-                  </TouchableOpacity>
+                  {/* Show edit button only if it's the user's own comment */}
+                  {showEditButton && (
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => setEditingResponse(response)}
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                    >
+                      <Feather name="edit-2" size={18} color="#666" />
+                    </TouchableOpacity>
+                  )}
+                  {/* Show delete button for both own comments and if user is event creator */}
+                  {showDeleteButton && (
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleDeleteResponse(response.id)}
+                      hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+                    >
+                      <Feather name="trash-2" size={18} color="#666" />
+                    </TouchableOpacity>
+                  )}
                 </>
               )}
             </View>
@@ -309,6 +334,7 @@ const EventDetailsScreen = (props) => {
             buttonText="Update"
             autoFocus={true}
             placeholder="Edit your comment..."
+            isEditing={true}
           />
         ) : (
           <>
@@ -405,15 +431,15 @@ const EventDetailsScreen = (props) => {
             
             <View style={[styles.eventHeader, { padding: eventCardPadding }]}>
               <Text style={[styles.eventType, { fontSize: width > 400 ? 20 : 18 }]}>
-                {eventDetails.event_type_display}
+                {eventDetails.event_text}
               </Text>
               <View style={styles.statusContainer}>
                 <View style={[
                   styles.statusIndicator, 
-                  { backgroundColor: eventDetails.event_status === 'A' ? '#4CAF50' : '#F44336' }
+                  { backgroundColor: statusConfig[eventDetails.event_status].color }
                 ]} />
                 <Text style={styles.statusText}>
-                  {eventDetails.event_status === 'A' ? 'Active' : 'Inactive'}
+                  {statusConfig[eventDetails.event_status].label}
                 </Text>
               </View>
             </View>
@@ -431,22 +457,23 @@ const EventDetailsScreen = (props) => {
                   Emp Name: {eventDetails.emp_name || 'N/A'}
                 </Text>
               </View>
-              {eventDetails.location && (
+              {eventDetails.event_type_display && (
                 <View style={styles.infoItem}>
-                  <Feather name="map-pin" size={width > 400 ? 18 : 16} color="#666" />
+                  <Feather name="eye" size={width > 400 ? 18 : 16} color="#666" />
                   <Text style={[styles.infoText, { fontSize: width > 400 ? 15 : 14 }]}>
-                    {eventDetails.location}
+                    {eventDetails.event_type_display}
                   </Text>
                 </View>
               )}
             </View>
-            
+            {eventDetails.remarks && (
             <View style={[styles.eventDescription, { padding: eventCardPadding }]}>
               <Text style={styles.descriptionTitle}>Description</Text>
               <Text style={[styles.descriptionText, { fontSize: width > 400 ? 15 : 14 }]}>
-                {eventDetails.event_description || 'No description available'}
+                {eventDetails.remarks || 'No description available'}
               </Text>
             </View>
+            )}
           </Animated.View>
           
           <View style={styles.responsesSection}>

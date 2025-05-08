@@ -49,27 +49,32 @@ const AppProvider = ({ children }) => {
         try {
             const payload = {
               mobile_number: username,
-              pin: parseInt(password, 10), // Convert pin to an integer
+              pin: parseInt(password, 10),
             };
             console.log('Sending payload:', payload);
-            const response = await publicAxiosRequest.post(empLoginURL, payload, {
+          
+            const url = await empLoginURL();  // ✅ await the URL
+            const response = await publicAxiosRequest.post(url, payload, {
               headers: { 'Content-Type': 'application/json' },
             });
+          
             console.log('API Response:', response);
+          
             if (response.status === 200) {
-              const { token, emp_id,e_id } = response.data
-              console.log('Token ====',e_id)
-              // Store token and emp_id in AsyncStorage
+              const { token, emp_id, e_id } = response.data;
+              console.log('Token ====', e_id);
               await AsyncStorage.setItem('userToken', token);
               await AsyncStorage.setItem('empId', emp_id);
               await AsyncStorage.setItem('eId', String(e_id));
               await AsyncStorage.setItem('mobileNumber', username);
               await AsyncStorage.setItem('userPin', password);
             }
+          
             router.replace({ pathname: 'home' });
-        } catch (err) {
-                console.log('Login error:', err);
-            }
+          } catch (err) {
+            console.log('Login error:', err);
+          }
+          
         // try {
         //     if (!username.includes("@")) {
         //         const userDetailResponse = await axios.get(`https://www.atomwalk.com/api/get_user_detail/?user_id=${username}`);

@@ -133,17 +133,18 @@ const [selectedCompany, setSelectedCompany] = useState(null);
     if (!validateInput()) {
       return;
     }
-
-    setLoading(true); // Start loading
-
+  
+    setLoading(true);
+  
     try {
       const payload = {
         mobile_number: mobileNumber,
-        pin: parseInt(pin, 10), // Convert pin to an integer
+        pin: parseInt(pin, 10),
       };
       console.log('Sending payload:', payload);
-
-      const response = await publicAxiosRequest.post(empLoginURL, payload, {
+  
+      const url = await empLoginURL(); // ✅ fixed: get resolved URL
+      const response = await publicAxiosRequest.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
       });
 

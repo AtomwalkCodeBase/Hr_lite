@@ -58,10 +58,12 @@ const LeaveScreen = (props) => {
   }, [empId]); // Add empId as a dependency
 
   useEffect(() => {
-      if (props?.data?.empId) {
-        setEmpId(props.data.empId);
+      if (props?.data?.empNId) {
+        setEmpId(props.data.empNId);
       }
-    }, [props.data?.empId]);
+    }, [props.data?.empNId]);
+
+    console.log("Props====",props.data)
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -145,7 +147,7 @@ const LeaveScreen = (props) => {
         <Loader visible={isLoading || refreshing} />
 
         <FlatList
-          data={filteredData}
+          data={[...filteredData].reverse()}
           renderItem={renderLeaveItem}
           keyExtractor={(item) => item.id.toString()}
           showsVerticalScrollIndicator={false}

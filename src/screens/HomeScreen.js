@@ -14,7 +14,8 @@ import {
   Animated,
   Alert,
   FlatList,
-  TextInput
+  TextInput,
+  ActivityIndicator
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppContext } from '../../context/AppContext';
@@ -34,7 +35,7 @@ import {
   MaterialCommunityIcons,
   AntDesign
 } from '@expo/vector-icons';
-import { getEmpAttendance, postCheckIn } from '../services/productServices';
+import { getEmpAttendance, getEvents, postCheckIn } from '../services/productServices';
 import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
@@ -48,6 +49,7 @@ const HomePage = ({ navigation }) => {
   const [profile, setProfile] = useState({});
   const [company, setCompany] = useState({});
   const [empId, setEmpId] = useState('');
+  const [empNId, setEmpNId] = useState('');
   const [isConnected, setIsConnected] = useState(true);
   const [isManager, setIsManager] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,9 +70,14 @@ const HomePage = ({ navigation }) => {
   const [errors, setErrors] = useState({});
   const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
   
+  // console.log("Emp Id--->",empId)
   // Active events
   const [activeEvents, setActiveEvents] = useState([]);
+  const [eventData, setEventData] = useState([]);
+const [filteredEvents, setFilteredEvents] = useState([]);
+const [eventLoading, setEventLoading] = useState(true);
   
   const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -82,6 +89,10 @@ const HomePage = ({ navigation }) => {
     }
   }, [navigation]);
 
+  useEffect(() => {
+    fetchEvents();
+  }, [empId]); // Add empId as dependency
+
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
     if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
@@ -90,77 +101,165 @@ const HomePage = ({ navigation }) => {
     return time;
   };
 
+  const checkPreviousDayAttendance = (attendanceData) => {
+    if (!employeeData?.is_shift_applicable) {
+      setPreviousDayUnchecked(false);
+      return;
+    }
+  
+    const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
+    const yesterdayAttendance = attendanceData.find(item => item.a_date === yesterday);
+  
+    if (yesterdayAttendance && !yesterdayAttendance.end_time) {
+      setPreviousDayUnchecked(true);
+    } else {
+      setPreviousDayUnchecked(false);
+    }
+  };
+
+  console.log("Emp===",profile)
+
+
   const fetchData = async () => {
     setIsLoading(true);
+  
     try {
+      // Fetch employee profile
       const profileRes = await getEmployeeInfo();
-      const profileData = profileRes.data[0];
+      const profileData = profileRes.data?.[0];
+      if (!profileData) throw new Error("Employee profile data not found.");
+  
       setProfile(profileData);
       setEmployeeData(profileData);
-      setEmpId(profileData.emp_id); // Set empId directly from the API response
-      
+      setEmpId(profileData.emp_id);
+      setEmpNId(profileData.id);
       setIsManager(profileData?.is_manager || false);
-      
-      if (profileData?.emp_data?.dob) {
-        checkIfBirthday(profileData.emp_data.dob);
-      }
   
+      // Optional: Uncomment if you want to check for birthday
+      // if (profileData?.emp_data?.dob) {
+      //   checkIfBirthday(profileData.emp_data.dob);
+      // }
+  
+      // Fetch company info
       const companyRes = await getCompanyInfo();
       setCompany(companyRes.data);
-      
-      setActiveEvents([
-        {
-          id: 1,
-          title: 'Team Building',
-          description: 'Join us for exciting team activities in the conference room.',
-          time: '2:00 PM - 4:00 PM',
-          icon: 'people'
-        },
-        {
-          id: 2,
-          title: 'Weekly Meeting',
-          description: 'Discuss project updates and upcoming deadlines.',
-          time: '10:00 AM - 11:00 AM',
-          icon: 'event-note'
-        }
-      ]);
-      
-      const date = moment().format('DD-MM-YYYY');
-      let time = moment().format('hh:mm A');
   
-      if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
+      // Set hardcoded events
+      
+  
+      // Set current date and time
+      const now = moment();
+      let time = now.format('hh:mm A');
+      const isNoonEdgeCase = now.isBetween(
+        moment().startOf('day').add(12, 'hours').add(1, 'minute'),
+        moment().startOf('day').add(13, 'hours')
+      );
+      if (isNoonEdgeCase) {
         time = time.replace(/^12/, '00');
       }
   
-      setCurrentDate(date);
+      setCurrentDate(now.format('DD-MM-YYYY'));
       setCurrentTimeStr(time);
-      
-      // Now we can use profileData.emp_id directly
+  
+      // Fetch attendance
       const data = {
         emp_id: profileData.id,
-        month: moment().format('MM'),
-        year: moment().format('YYYY'),
+        month: now.format('MM'),
+        year: now.format('YYYY'),
       };
       fetchAttendanceDetails(data);
-      
+  
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching data:", error.message || error);
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
   };
+  
 
-  // console.log("Emp Id-----",empId)
+  const fetchEvents = async () => {
+    try {
+      setEventLoading(true);
+      
+      // First fetch: Get all events without emp_id filter (company-wide and other public events)
+      const paramsAllEvents = {
+        date_range: 'D0', // Today's events
+        event_type: '', // All types
+        // No emp_id parameter
+      };
+      const resAllEvents = await getEvents(paramsAllEvents);
+      
+      // Filter events to only include specific types
+      const filteredEventTypes = ['C', 'B', 'A', 'M', 'O']; // Company, Birthday, Announcement, Meeting, Other
+      const filteredEvents = resAllEvents.data.filter(event => 
+        filteredEventTypes.includes(event.event_type)
+      );
+  
+      // Second fetch: Try with empId if available (personalized events)
+      let personalEvents = [];
+      if (empId) {
+        const paramsWithEmpId = {
+          date_range: 'D0',
+          event_type: '',
+          emp_id: empId
+        };
+        const resWithEmpId = await getEvents(paramsWithEmpId);
+        personalEvents = resWithEmpId.data;
+      }
+  
+      // Combine both results, removing duplicates
+      const combinedEvents = [...filteredEvents, ...personalEvents].reduce((acc, current) => {
+        const x = acc.find(item => item.id === current.id);
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, []);
+  
+      setEventData(combinedEvents);
+      setFilteredEvents(combinedEvents);
+    } catch (error) {
+      console.error("Fetch Event Error:", error?.response?.data);
+      // Fallback: Try to at least show company events
+      try {
+        const paramsCompanyEvents = {
+          date_range: 'D0',
+          event_type: 'C'
+        };
+        const resCompanyEvents = await getEvents(paramsCompanyEvents);
+        setEventData(resCompanyEvents.data);
+        setFilteredEvents(resCompanyEvents.data);
+      } catch (fallbackError) {
+        console.error("Fallback Fetch Error:", fallbackError);
+        setEventData([]);
+        setFilteredEvents([]);
+      }
+    } finally {
+      setEventLoading(false);
+    }
+  };
+
+
+  const handlePressApproveLeave = () => {  
+    router.push({
+      pathname: 'ApproveLeaves',
+      params: { empNId },
+    });
+  };
+
+  console.log("Emp Id-----",empId)
+  
   const fetchAttendanceDetails = async (data) => {
     setIsLoading(true);
     try {
       const res = await getEmpAttendance(data);
       setAttData(res.data);
       processAttendanceData(res.data);
+      checkPreviousDayAttendance(res.data); // Add this line
     } catch (error) {
       console.error("Error fetching attendance details:", error);
-      // Optionally reset or maintain previous state
       setAttData([]);
       setCheckedIn(false);
       setStartTime(null);
@@ -173,31 +272,26 @@ const HomePage = ({ navigation }) => {
   // console.log("Attendance data===",attData)
 
   const processAttendanceData = (data) => {
-    // Get current date in the same format as a_date
     const today = moment().format('DD-MM-YYYY');
-    
-    // Find today's attendance record
     const todayAttendance = data.find(item => item.a_date === today);
-    
+  
     if (todayAttendance) {
-      // Determine check-in/out status
       const hasCheckedIn = todayAttendance.start_time !== null;
       const hasCheckedOut = todayAttendance.end_time !== null;
       
       setCheckedIn(hasCheckedIn && !hasCheckedOut);
       setStartTime(todayAttendance.start_time);
       setAttendance(todayAttendance);
-  
-      console.log('Processed attendance:', {
-        record: todayAttendance,
-        checkedIn: hasCheckedIn && !hasCheckedOut,
-        startTime: todayAttendance.start_time
-      });
     } else {
-      // No attendance record for today
+      // No attendance record for today - enable check-in
       setCheckedIn(false);
       setStartTime(null);
       setAttendance({});
+    }
+  
+    // Check previous day's attendance for shift employees
+    if (employeeData?.is_shift_applicable) {
+      checkPreviousDayAttendance(data);
     }
   };
   
@@ -287,10 +381,12 @@ const HomePage = ({ navigation }) => {
     }, [employeeData, refreshKey]) // Add employeeData to dependencies
   );
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
+    await fetchEvents();
     setRefreshKey((prevKey) => prevKey + 1);
     fetchData();
+    setRefreshing(false);
   };
 
   const handleError = (error, input) => {
@@ -342,7 +438,8 @@ const HomePage = ({ navigation }) => {
       // console.log('Submitting check:', checkPayload);
       
       const response = await postCheckIn(checkPayload);
-      if (response.success) {
+      // console.log("Resp",response.status===200)
+      if (response.status===200) {
         setCheckedIn(data === 'ADD');
         setStartTime(data === 'ADD' ? time : null);
         setRefreshKey(prev => prev + 1);
@@ -380,14 +477,25 @@ const HomePage = ({ navigation }) => {
     setIsSuccessModalVisible(false);
   };
 
+  const handleEventPress = (event) => {
+    // console.log("Event Data===",event)
+    router.push({
+      pathname: 'EventDetails',
+      params: {
+        eventDetails: JSON.stringify(event)
+      },
+    });
+  };
+
   const formatTime = (date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   // Determine button states for check-in/out
   // Determine button states for check-in/out
-  const isCheckInDisabled = attendance.start_time !== null;
-  const isCheckOutDisabled = !checkedIn || attendance.end_time !== null;
+  const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time || 
+                          (employeeData?.is_shift_applicable && previousDayUnchecked);
+  const isCheckOutDisabled = !checkedIn || attendance.geo_status !== 'I' || !!attendance.end_time;
 
   const renderEventCard = ({ item }) => (
     <View style={styles.eventCard}>
@@ -437,7 +545,7 @@ const HomePage = ({ navigation }) => {
       id: 4,
       title: 'Approve Leave',
       icon: <Ionicons name="checkmark-done-circle-outline" size={24} color="#a970ff" />,
-      onPress: () => router.push('ApproveLeaves')
+      onPress: () => handlePressApproveLeave()
     }] : []),
     {
       id: 5,
@@ -464,6 +572,17 @@ const HomePage = ({ navigation }) => {
       onPress: () => router.push('MoreScreen')
     }
   ];
+  const getEventIcon = (eventType) => {
+    switch(eventType) {
+      case 'B': return 'cake';
+      case 'A': return 'work';
+      case 'C': return 'business';
+      case 'M': return 'favorite';
+      case 'P': return 'trending-up';
+      case 'O': return 'event';
+      default: return 'event';
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -524,60 +643,68 @@ const HomePage = ({ navigation }) => {
         
         {/* Time Card */}
         <View style={styles.timeCardContainer}>
-          <LinearGradient
-            colors={['#ffffff', '#f8f5ff']}
-            style={styles.timeCard}
-          >
-            <View style={styles.timeCardContent}>
-              <View style={styles.timeSection}>
-                <Text style={styles.dateText}>
-                  {currentTime.toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
-                  })}
-                </Text>
-                <Text style={styles.timeText}>
-                  {formatTime(currentTime)}
-                </Text>
-              </View>
-              <View style={styles.attendanceButtons}>
-                <TouchableOpacity 
-                  style={[
-                    styles.attendanceButton, 
-                    isCheckInDisabled ? styles.disabledButton : styles.checkInButton
-                  ]}
-                  onPress={handleCheckIn}
-                  disabled={isCheckInDisabled}
-                >
-                  <MaterialCommunityIcons name="login" size={20} color={isCheckInDisabled ? "#888" : "#fff"} />
-                  <Text style={[styles.attendanceButtonText, isCheckInDisabled ? styles.disabledButtonText : {}]}>
-                    Check In
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[
-                    styles.attendanceButton, 
-                    isCheckOutDisabled ? styles.disabledButton : styles.checkOutButton
-                  ]}
-                  onPress={handleCheckOut}
-                  disabled={isCheckOutDisabled}
-                >
-                  <MaterialCommunityIcons name="logout" size={20} color={isCheckOutDisabled ? "#888" : "#fff"} />
-                  <Text style={[styles.attendanceButtonText, isCheckOutDisabled ? styles.disabledButtonText : {}]}>
-                    Check Out
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {checkedIn && startTime && (
-                <Text style={styles.checkinTimeText}>
-                  Checked in at {startTime}
-                </Text>
-              )}
+        <LinearGradient
+          colors={['#ffffff', '#f8f5ff']}
+          style={styles.timeCard}
+        >
+          <View style={styles.timeCardContent}>
+            <View style={styles.timeSection}>
+              <Text style={styles.dateText}>
+                {currentTime.toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                })}
+              </Text>
+              <Text style={styles.timeText}>
+                {formatTime(currentTime)}
+              </Text>
             </View>
-          </LinearGradient>
-        </View>
+            <View style={styles.attendanceButtons}>
+            <TouchableOpacity 
+              style={[
+                styles.attendanceButton, 
+                isCheckInDisabled ? styles.disabledButton : styles.checkInButton
+              ]}
+              onPress={handleCheckIn}
+              disabled={isCheckInDisabled}
+            >
+              <MaterialCommunityIcons name="login" size={20} color={isCheckInDisabled ? "#888" : "#fff"} />
+              <Text style={[styles.attendanceButtonText, isCheckInDisabled ? styles.disabledButtonText : {}]}>
+                {employeeData?.is_shift_applicable && previousDayUnchecked 
+                  ? "Complete yesterday's checkout first"
+                  : checkedIn 
+                    ? `Checked In`
+                    : 'Check In'}
+              </Text>
+            </TouchableOpacity>
+              <TouchableOpacity 
+                style={[
+                  styles.attendanceButton, 
+                  isCheckOutDisabled ? styles.disabledButton : styles.checkOutButton
+                ]}
+                onPress={handleCheckOut}
+                disabled={isCheckOutDisabled}
+              >
+                <MaterialCommunityIcons name="logout" size={20} color={isCheckOutDisabled ? "#888" : "#fff"} />
+                <Text style={[styles.attendanceButtonText, isCheckOutDisabled ? styles.disabledButtonText : {}]}>
+                  {isCheckOutDisabled
+                    ? attendance.end_time 
+                      ? `Checked Out`
+                      : 'Check Out'
+                    : 'Check Out'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {checkedIn && startTime && (
+              <Text style={styles.checkinTimeText}>
+                Checked in at {startTime}
+              </Text>
+            )}
+          </View>
+        </LinearGradient>
+      </View>
       </View>
 
       {/* Main Content */}
@@ -590,48 +717,88 @@ const HomePage = ({ navigation }) => {
         }
       >
         {/* Birthday and Events Cards Slider */}
-        {(isBirthday || activeEvents.length > 0) && (
-        <View style={styles.eventsContainer}>
-          <Text style={styles.sectionTitle}>Today's Updates</Text>
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={[
-              ...(isBirthday ? [{ id: 'birthday', type: 'birthday' }] : []),
-              ...activeEvents.map(event => ({ ...event, type: 'event' }))
-            ]}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => 
-              item.type === 'birthday' ? (
-                <Animated.View style={[styles.birthdayCard, { opacity: fadeAnim }]}>
-                  <LinearGradient
-                    colors={['#a970ff', '#8a5bda']}
-                    start={[0, 0]}
-                    end={[1, 1]}
-                    style={{
-                      flex: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      padding: 16
-                    }}
-                  >
-                    <View style={styles.birthdayIconContainer}>
-                      <MaterialCommunityIcons name="cake-variant" size={28} color="#fff" />
-                    </View>
-                    <View style={styles.birthdayTextContainer}>
-                      <Text style={styles.birthdayText}>Happy Birthday!</Text>
-                      <Text style={styles.birthdaySubtext}>
-                        Wishing you a fantastic day filled with joy and celebration.
-                      </Text>
-                    </View>
-                  </LinearGradient>
-                </Animated.View>
-              ) : renderEventCard({ item })
-            }
-            contentContainerStyle={styles.cardsSlider}
-          />
-        </View>
-      )}
+        {(isBirthday || filteredEvents.length > 0) && (
+  <View style={styles.eventsContainer}>
+    <Text style={styles.sectionTitle}>Today's Events</Text>
+    {eventLoading ? (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color="#a970ff" />
+      </View>
+    ) : (
+      <FlatList
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        data={[
+          ...(isBirthday ? [{ id: 'birthday', type: 'birthday' }] : []),
+          ...filteredEvents.map(event => ({ 
+            ...event, 
+            type: 'event',
+            title: event.event_name,
+            description: event.event_description,
+            time: `${event.event_start_time}${event.event_end_time ? ` - ${event.event_end_time}` : ''}`,
+            icon: getEventIcon(event.event_type)
+          }))
+        ]}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => 
+          item.type === 'birthday' ? (
+            <Animated.View style={[styles.birthdayCard, { opacity: fadeAnim }]}>
+              <LinearGradient
+                colors={['#a970ff', '#8a5bda']}
+                start={[0, 0]}
+                end={[1, 1]}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: 16
+                }}
+              >
+                <View style={styles.birthdayIconContainer}>
+                  <MaterialCommunityIcons name="cake-variant" size={28} color="#fff" />
+                </View>
+                <View style={styles.birthdayTextContainer}>
+                  <Text style={styles.birthdayText}>Happy Birthday!</Text>
+                  <Text style={styles.birthdaySubtext}>
+                    Wishing you a fantastic day filled with joy and celebration.
+                  </Text>
+                </View>
+              </LinearGradient>
+            </Animated.View>
+          ) : (
+            <TouchableOpacity onPress={() => handleEventPress(item)}>
+              <View style={styles.eventCard}>
+                <LinearGradient
+                  colors={['#a970ff', '#8a5bda']}
+                  start={[0, 0]}
+                  end={[1, 1]}
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: 16
+                  }}
+                >
+                  <View style={styles.eventIconContainer}>
+                    <MaterialIcons name={item.icon} size={28} color="#fff" />
+                  </View>
+                  <View style={styles.eventTextContainer}>
+                    <Text style={styles.eventTitle}>{item.event_text}</Text>
+                    <Text style={styles.eventDescription} numberOfLines={2}>
+                      {item.event_type_display}
+                    </Text>
+                    <Text style={styles.eventTime}>{item.emp_name}</Text>
+                  </View>
+                </LinearGradient>
+              </View>
+            </TouchableOpacity>
+          )
+        }
+        contentContainerStyle={styles.cardsSlider}
+      />
+    )}
+  </View>
+)}
 
         {/* Quick Actions Section */}
         <View style={styles.sectionContainer}>
@@ -882,6 +1049,11 @@ companyName: {
   },
   cardsSlider: {
     paddingRight: 20,
+  },
+  loadingContainer: {
+    height: 120, // Match your card height
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // birthdayCard: {
   //   width: width * 0.75,

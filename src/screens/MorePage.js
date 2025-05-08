@@ -173,7 +173,7 @@ const handlePressProfile = () => {
   //   show: true
   // },
   {
-    title: "Updates",
+    title: "Event Updates",
     subTitle: "Get your recent updates and events",
     icon: <MaterialIcons name="tips-and-updates" size={24} color="#7e57c2" />,
     action: handlePressEvent,
