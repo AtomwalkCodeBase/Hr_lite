@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { View, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { publicAxiosRequest } from '../../src/services/HttpMethod';
 import DropdownPicker from '../../src/components/DropdownPicker';
 import CompanyDropdown from '../../src/components/ComanyDropDown';
+import { AppContext } from '../../context/AppContext';
 
 const LoginScreen = () => {
   const router = useRouter();
@@ -22,6 +23,8 @@ const LoginScreen = () => {
   const [companyError, setCompanyError] = useState('');
   const [dbList, setDbList] = useState([]); // Initialize as empty array instead of false
 const [selectedCompany, setSelectedCompany] = useState(null);
+const { setDropdownValue } = useContext(AppContext);
+const [dbnameval,setDbnameval] = useState(""); // Initialize as null
 
 
   useEffect(() => {
@@ -70,8 +73,6 @@ const [selectedCompany, setSelectedCompany] = useState(null);
           label: company.ref_cust_name,
           value: company.ref_cust_name
         });
-        const dbName = company.name.replace('SD_', '');
-        await AsyncStorage.setItem('dbName', dbName);
       }
     } catch (error) {
       console.error('Error fetching DB List:', error);
@@ -85,6 +86,8 @@ const [selectedCompany, setSelectedCompany] = useState(null);
       if (selected) {
         const dbName = selected.name.replace('SD_', '');
         await AsyncStorage.setItem('dbName', dbName);
+        setDropdownValue(dbName);
+        setDbnameval(dbName); // Set the dbnameval state
       }
     }
     setCompanyError(''); // Clear error when company is selected
@@ -145,7 +148,7 @@ const [selectedCompany, setSelectedCompany] = useState(null);
       };
       console.log('Sending payload:', payload);
 
-      const response = await publicAxiosRequest.post(empLoginURL, payload, {
+      const response = await publicAxiosRequest.post(empLoginURL+`${dbnameval}/`, payload, {
         headers: { 'Content-Type': 'application/json' },
       });
 

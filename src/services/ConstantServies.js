@@ -49,7 +49,7 @@ export const addressDeleteURL = id => `${endpoint}/address/delete/${db_name}/${i
 export const userSignUpURL = `${endpoint}/customer_sign_up/${db_name}/`;
 export const userLoginURL = `${endpoint}/customer_login/${db_name}/`;
 export const loginURL = `${localhost}/rest-auth/login/`;
-export const empLoginURL = `${newendpoint}/emp_user_login/${db_name}/`;
+export const empLoginURL = `${newendpoint}/emp_user_login/`;
 export const resetPasswordURL = `${endpoint}/reset_password/${db_name}/`;
 export const resetPasswordConfirmURL = `${endpoint}/reset_password_confirm/`;
 export const changePasswordURL = `${endpoint}/change_password/`;
