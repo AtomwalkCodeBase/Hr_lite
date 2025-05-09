@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getDbName = async (path) => {
   let dbData = await AsyncStorage.getItem('dbName');
-  console.log("Current dbName:", dbData);
+  // console.log("Current dbName:", dbData);
   return dbData
 };
 
@@ -20,13 +20,13 @@ const apiURL = "/api";
 const apiURLHR = "/hr_api";
 const db_name = getDbName();
 
-console.log("Out db===>",db_name)
+// console.log("Out db===>",db_name)
 
 
 //End Points
-export const endpoint = `${localhost}${apiURL}`;
+export const endpoint = `${newlocalhost}${apiURL}`;
 export const newendpoint = `${newlocalhost}${apiURLHR}`;
-export const newendpointAll = `${newlocalhost}${apiURL}`;
+// export const newendpointAll = `${newlocalhost}${apiURL}`;
 
 
 //URLs
@@ -112,7 +112,7 @@ export const processClaim = async () => {
 // export const getEmpClaimdata = `${endpoint}/get_claim_list/${db_name}/`;
 export const getEmpClaimdata = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/get_claim_list/${db_name}/`;
+  return `${newendpoint}/get_claim_list/${db_name}/`;
 };
 // export const getExpenseItemList = `${endpoint}/expense_item_list/${db_name}/`;
 export const getExpenseItemList = async () => {
@@ -122,7 +122,7 @@ export const getExpenseItemList = async () => {
 // export const getProjectList = `${endpoint}/project_list/${db_name}/`;
 export const getProjectList = async () => {
   const db_name = await getDbName();
-  return `${newendpointAll}/project_list/${db_name}/`;
+  return `${endpoint}/project_list/${db_name}/`;
 };
 // export const getEmpAttendanceData = `${newendpoint}/get_employee_attendance/${db_name}/`;
 export const getEmpAttendanceData = async () => {
@@ -185,7 +185,7 @@ export const processEventRes = async () => {
   const db_name = await getDbName();
   return `${newendpoint}/process_emp_event_response/${db_name}/`;
 };
-export const getDbList = `${newendpointAll}/get_applicable_site/`;
+export const getDbList = `${endpoint}/get_applicable_site/`;
 // export const getEmpSal = `${newendpoint}/get_emp_salary_data/${db_name}/`;
 export const getEmpSal = async () => {
   const db_name = await getDbName();

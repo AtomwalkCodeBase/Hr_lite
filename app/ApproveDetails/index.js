@@ -4,8 +4,7 @@ import ApproveClaimDetails from '../../src/screens/ApproveClaimDetails';
 const index = () => {
   const route = useRoute();
   const claim_data = route?.params
-//   console.log(route)
-    // console.log(claim_data)
+
   return (
     <View style={{ flex: 1,
         

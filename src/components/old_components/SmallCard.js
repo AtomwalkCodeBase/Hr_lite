@@ -106,7 +106,6 @@ const SmallCard = ({data, navigation, colour, title, subTitle, date, dateTitle, 
     const cardColour = colour ? colour: colors.primary
     
     const handleNavigation = () => {
-      // console.log('Navigation Screen name', buttonScreen, data);
       if (buttonScreen == 'UpdateInterest' || buttonScreen == 'UpdateTaskInterest'){
         navigation.navigate(buttonScreen,  
                             {task_id: data.task_id, variation_name_id: data.variation_name?data.variation_name.id: '', 
@@ -132,7 +131,6 @@ const SmallCard = ({data, navigation, colour, title, subTitle, date, dateTitle, 
     }
 
     const handleIconNavigation = () => {
-        // console.log('Icon Screen name', iconScreen, data);
         if (iconScreen == 'ViewInterest' || iconScreen == 'ViewTaskInterest'){
             navigation.navigate(iconScreen, {data: data, call_mode: callMode, delete_mode: ''});
         } 
@@ -146,7 +144,6 @@ const SmallCard = ({data, navigation, colour, title, subTitle, date, dateTitle, 
       }
       
     const handleDeleteNavigation = () => {
-        // console.log('Icon Screen name', iconScreen, data);
         if (iconScreen == 'ViewInterest' || iconScreen == 'ViewTaskInterest'){
             navigation.navigate(iconScreen, {data: data, call_mode: callMode, delete_mode: 'Y', screen:iconScreen});
         } 

@@ -7,8 +7,7 @@ const index = () => {
 
   const route = useRoute();
   const data = route?.params;
-  // const emp_data_id = leave.id
-  // console.log(emp_data_id,"data--->")
+
   return (
     <View style={{ flex: 1,
         

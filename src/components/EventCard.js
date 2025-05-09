@@ -31,7 +31,6 @@ const EventCard = ({ event, onPress }) => {
     return typeColors[type] || { bg: '#F5F5F5', text: '#757575' }; // Default - Light Grey
   };
 
-  console.log("Ind Event---",event)
   // Format the date for display (handles DD-MM-YYYY format)
   const formatEventDate = (dateString) => {
     try {

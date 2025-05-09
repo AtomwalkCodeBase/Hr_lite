@@ -26,7 +26,6 @@ const DateInput = ({
         var date_obj = new Date();
         date_obj.setFullYear(y, m, d)
         setSelectedDate(date_obj)
-        // console.log('Date', d, m, y, date_obj)
                
       }
 

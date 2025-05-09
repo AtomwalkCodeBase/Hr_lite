@@ -11,7 +11,6 @@ const TimeInput = ({
     error
 }) => {
 
-    // console.log('TimeInput', time)
 
     const [TimePickerVisible, setTimePickerVisible] = useState(false);
     const [displayText, setDisplayText] = useState(time ? time: 'Select Time');
@@ -24,7 +23,6 @@ const TimeInput = ({
           const d = new Date();
           d.setHours(Number(t_list[0]), Number(t_list[1]), 0);
           setSelectedTime(d);
-          // console.log(Number(t_list[0]));
           let t_str = ''  
           if(Number(t_list[0]) > 11){
             t_str = (Number(t_list[0]) - 12).toString() + ':' + t_list[1] + ' PM' ;
@@ -32,11 +30,9 @@ const TimeInput = ({
             t_str = time + ' AM' ;
           }
 
-          // console.log(t_str);
           setDisplayText(t_str);
           onSelectTime(t_str);
 
-          // console.log('Time', d)
         }
   
       } , []);
@@ -62,7 +58,6 @@ const TimeInput = ({
         onSelectTime(t_str);
         setSelectedTime(date);
         setTimePickerVisible(false);
-        // console.log('handleconfirm', TimePickerVisible)
     };    
     
   return (

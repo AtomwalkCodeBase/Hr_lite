@@ -94,7 +94,6 @@ const AddClaim = () => {
     }
   };
 
-  // console.log("Emp id===+",empId)
 
 
   const handleBackPress = () => {
@@ -162,9 +161,7 @@ const AddClaim = () => {
 
     try {
       const res = await postClaim(formData);
-      // console.log("Claim Res OUT---",res)
       if (res.status === 200) {
-        // console.log("Claim Res---",res)
         setIsSuccessModalVisible(true); // Show success modal on successful submission
       } else {
         console.error('Unexpected response:', res);
@@ -198,12 +195,14 @@ const AddClaim = () => {
             setValue={setItem}
             error={errors.item}
           />
-          <DropdownPicker
-            label="Project"
-            data={projectList}
-            value={project}
-            setValue={setProject}
-          />
+          {projectList.length > 0 && (
+            <DropdownPicker
+              label="Project"
+              data={projectList}
+              value={project}
+              setValue={setProject}
+            />
+          )}  
           <DatePicker 
             cDate={expenseDate} 
             label="Expense Date" 

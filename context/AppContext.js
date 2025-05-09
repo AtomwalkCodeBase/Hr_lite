@@ -60,18 +60,15 @@ const AppProvider = ({ children }) => {
                     pin: parseInt(password, 10),
                   };
 
-            console.log('Sending payload:', payload);
           
             const url = await empLoginURL();
             const response = await publicAxiosRequest.post(url, payload, {
                 headers: { 'Content-Type': 'application/json' },
             });
           
-            console.log('API Response:', response);
           
             if (response.status === 200) {
                 const { token, emp_id, e_id } = response.data;
-              console.log('Token ====', e_id);
               await AsyncStorage.setItem('userToken', token);
               await AsyncStorage.setItem('empId', emp_id);
               await AsyncStorage.setItem('eId', String(e_id));

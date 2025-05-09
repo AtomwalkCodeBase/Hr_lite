@@ -63,9 +63,7 @@ const ProfileScreen = () => {
     return require('../../assets/images/default-profile.jpg'); // Make sure you have this asset
   };
 
-  // console.log("Profile==",profile)
-  // console.log("Response Data====",fetchData)
-
+  
   return (
     <>
       <HeaderComponent headerTitle="Employee Profile" onBackPress={handleBackPress} />

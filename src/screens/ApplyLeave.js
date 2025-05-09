@@ -90,8 +90,7 @@ const ApplyLeave = (props) => {
       addLeave(res);
     }
   };
-  // console.log("Profile Apply Leave===",profile.id)
-  // console.log("Passed Data Apply Leave----",props.id)
+  
 
   const addLeave = (res) => {
     setIsLoading(true); // Show loader before submission
@@ -115,7 +114,6 @@ const ApplyLeave = (props) => {
           'Leave Application Failed',
           'Please verify the selected dates. Either the dates are already approved or fall on a holiday.'
         );
-        console.log('Error==',error)
       });
   };
 

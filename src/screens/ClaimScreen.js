@@ -41,8 +41,6 @@ const ClaimScreen = (props) => {
       fetchEmpId();
     }, []);
 
-  // console.log("Emp---",empId)
-
 
   // First useEffect to set empId from props
   // useEffect(() => {
@@ -78,7 +76,6 @@ const ClaimScreen = (props) => {
     });
   };
 
-  // console.log("Props data---", empId);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -125,7 +122,6 @@ const ClaimScreen = (props) => {
     }
   };
 
-  // console.log("Claims---",claimData)
 
   const getStatusText = (status) => {
     switch (status) {

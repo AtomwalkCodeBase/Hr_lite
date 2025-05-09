@@ -34,7 +34,6 @@ const ResetPasswordScreen = () => {
 
   const handleSubmit = async () => {
     const userPassword = await AsyncStorage.getItem('Password');
-    console.log(userPassword,"yrfyfyr")
     const finalUsername = await AsyncStorage.getItem('Username');
     if (userPassword !== password) {
       setErrorMessage('Wrong Password');

@@ -131,10 +131,6 @@ const AttendanceStatus = (props) => {
   const empId = props.id;
   
   const navigation = useNavigation();
-
-  // console.log('Att Data====>',attData[2]?.geo_data)
-  // console.log('Attendance Data---->',attendance)
-
   
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -163,7 +159,6 @@ const AttendanceStatus = (props) => {
       processAttendanceData(res.data);
     });
     getEmpHoliday(data).then((res) => {
-      // console.log('Holiday Data---',res.data)
       processHolidayData(res.data);
     });
   };
@@ -243,12 +238,10 @@ const AttendanceStatus = (props) => {
       // Check if the day is Sunday (0 represents Sunday)
       if (date.getDay() === 0) {
         holidayMap[day] = 'H'; // Mark this day as a holiday
-        // console.log(`Marking ${day}-${currentMonth + 1}-${currentYear} as holiday (Sunday)`);
       }
     }
 
     setHoliday(holidayMap);
-    // console.log('Processed Holiday Map:', holidayMap);
   };
 
   // Days of the week

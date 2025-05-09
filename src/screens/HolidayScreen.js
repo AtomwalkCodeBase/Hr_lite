@@ -268,7 +268,6 @@ const HolidayScreen = () => {
         // If using Axios
         if (error.response && error.response.data && error.response.data.message) {
           errorMessage = error.response.data.message;
-          console.log("Error message===",error.response)
         } 
         // If using Fetch or generic error with a message
         else if (error.message) {
@@ -280,7 +279,6 @@ const HolidayScreen = () => {
           errorMessage
         );
       
-        console.log("Error details ===", error);
       })
       
       .finally(() => {

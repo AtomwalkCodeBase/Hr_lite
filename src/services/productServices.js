@@ -36,7 +36,6 @@ export async function postEmpLeave(leave_type) {
     if (claim_data) {
       data = claim_data;
     }
-    console.log('Data to be sent:', claim_data);
     const url = await addClaim();
     return authAxiosFilePost(url, claim_data);
     // return authAxiosFilePost(addClaim, claim_data)
@@ -47,7 +46,6 @@ export async function postEmpLeave(leave_type) {
     if (claim_type) {
       data['claim_data'] = claim_type;
     }
-    console.log('Data to be sent:', data);
     const url = await processClaim();
     return authAxiosPost(url, data);
     // return authAxiosPost(processClaim, data)
@@ -69,7 +67,6 @@ export async function postEmpLeave(leave_type) {
     if (emp_id){
         data['emp_id'] = emp_id;
     }
-    console.log('Claim===',data)
     const url = await getEmpClaimdata();
     return authAxios(url, data);
     // return authAxios(getEmpClaimdata, data)
@@ -94,7 +91,6 @@ export async function postEmpLeave(leave_type) {
       'month':res.month,
       'year': res.year
     };
-    console.log('Final response data',data)
     const url = await getEmpAttendanceData();
     return authAxios(url, data);
     // return authAxios(getEmpAttendanceData, data)
@@ -105,7 +101,6 @@ export async function postEmpLeave(leave_type) {
       'year': res.year,
       'emp_id':res.eId,
     };
-    console.log('Final response data', data)
     const url = await getEmpHolidayData();
     return authAxios(url, data);
     // return authAxios(getEmpHolidayData, data)
@@ -117,7 +112,6 @@ export async function postEmpLeave(leave_type) {
       data['attendance_data'] = checkin_data;
       // data = checkin_data;
     }
-    console.log('Data to be sent:', data);
     const url = await empCheckData();
     return authAxiosPost(url, data);
     // return authAxiosPost(empCheckData, data)
@@ -196,7 +190,6 @@ export async function postEmpLeave(leave_type) {
       // event_type: params.event_type || "",
       // date_range: params.date_range || 'ALL'
     };
-    console.log("Passed payload for getting response===>",data)
     const url = await getEventResponse();
     return authAxios(url, data);
     // return authAxios(getEventResponse, data);
@@ -207,7 +200,6 @@ export async function postEmpLeave(leave_type) {
     if (event_data) {
       data = event_data;
     }
-    console.log('Data to be sent:', data);
     const url = await processEventRes();
     return authAxiosFilePost(url, data);
     // return authAxiosFilePost(processEventRes, data)

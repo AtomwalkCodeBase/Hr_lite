@@ -91,7 +91,6 @@ const EventDetailsScreen = (props) => {
     }
   };
 
-  console.log("Event details----",eventDetails)
 
   const fetchResponse = () => {
     setLoading(true);
@@ -113,7 +112,6 @@ const EventDetailsScreen = (props) => {
         setRefreshing(false);
       });
   };
-  // console.log("Responses loaded:", responses);
 
   const handleAddResponse = async (text, fileUri = null, fileName = null, fileMimeType = null) => {
     if (!text.trim() && !fileUri) {
@@ -146,7 +144,6 @@ const EventDetailsScreen = (props) => {
         fetchResponse(); // Refresh comments
         setIsSuccessModalVisible(true);
         setTimeout(() => setIsSuccessModalVisible(false), 2000);
-        console.log("Success--->",res)
       } else {
         console.error('Unexpected response:', res);
         Alert.alert('Comment Submission Error', 'Failed to add comment. Unexpected response.');
@@ -189,7 +186,6 @@ const EventDetailsScreen = (props) => {
       }
     } catch (error) {
       Alert.alert('Update Failed', `Failed to update comment: ${error.response?.data?.detail || error.message}`);
-      console.log('Response error---',error.response?.data?.detail || error.message)
     } finally {
       setLoading(false);
     }

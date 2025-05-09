@@ -44,7 +44,6 @@ export function getDBListInfo() {
     let data = {
          'mobile_app_type': 'HRM_E'
       };
-      console.log("Data pass for db name----",data)
     return authAxiosGET(getDbList, data)
 }
 

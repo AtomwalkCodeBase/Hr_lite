@@ -146,7 +146,7 @@ const handlePressProfile = () => {
     },
     {
       title: "Add Appointee",
-      subTitle: "Manage team members",
+      subTitle: "Scan your appointee resume",
       icon: <MaterialIcons name="person-add" size={24} color="#7e57c2" />,
       action: handleAppointee,
       show: isManager

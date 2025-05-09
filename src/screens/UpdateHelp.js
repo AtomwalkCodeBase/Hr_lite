@@ -135,7 +135,6 @@ const UpdateHelp = (props) => {
 
     try {
       const res = await postEmpRequest(formData);
-      // console.log('API Response:', res);
       
       if (res.status === 200) {
         setIsSuccessModalVisible(true);
@@ -159,7 +158,6 @@ const UpdateHelp = (props) => {
     } finally {
       setIsLoading(false);
 
-      // console.log('Form Data==',formData)
     }
   };
 

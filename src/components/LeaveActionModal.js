@@ -83,7 +83,6 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
         getEmployeeInfo()
         .then((res) => {
             setEmpId(res?.data[0]?.id)
-            console.log("Aprove Profile response===",res.data)
         })
         .catch((error) => {
           console.log("Error==++",error)
@@ -96,7 +95,6 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
     REJECT: 'Leave rejected successfully',
   };
 
-  console.log("Leavve Data---",leave);
 
   const handleAction = () => {
     if (!remarks.trim()) {
@@ -115,7 +113,6 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
       hrm_lite: ''
     };
 
-    console.log("Action payload=====---",leavePayload)
 
     postEmpLeave(leavePayload)
       .then(() => {
@@ -128,7 +125,6 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
       })
       .catch((error) => {
         setError(`Failed to ${actionType.toLowerCase()} leave: ${error.message}`);
-        console.log('Error message---',error)
       });
   };
 

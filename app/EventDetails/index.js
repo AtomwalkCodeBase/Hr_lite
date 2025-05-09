@@ -5,7 +5,6 @@ const index = () => {
   const route = useRoute();
   const event_data = route?.params
 
-  console.log("Event Data----?",event_data)
   return (
     <View style={{ flex: 1,
         

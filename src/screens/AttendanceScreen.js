@@ -348,7 +348,7 @@ const AddAttendance = () => {
               remark={remark}
               setRemark={setRemark}
               error={errors.remarks}
-              placeholder="Enter reason for check out"
+              placeholder="Please enter your check out remark"
             />
 
             <TouchableOpacity 

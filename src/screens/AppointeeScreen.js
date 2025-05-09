@@ -163,7 +163,6 @@ const AppointeeScreen = () => {
       .finally(() => setLoading(false)); // Set loading to false after data is fetched
   };
 
-//   console.log('Response===',appointees)
 
   const handleBackPress = () => {
     router.push('home');

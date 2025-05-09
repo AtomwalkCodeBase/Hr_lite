@@ -132,18 +132,15 @@ const LoginScreen = () => {
             pin: parseInt(pin, 10),
           };
           
-      console.log('Sending payload:', payload);
   
       const url = await empLoginURL();
       const response = await publicAxiosRequest.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      console.log('API Response:', response);
 
       if (response.status === 200) {
         const { token, emp_id, e_id } = response.data;
-        console.log("Emfdnsjhbvkd===",emp_id)
         await AsyncStorage.setItem('userToken', token);
         // Determine if the input is a mobile number (10 digits) or employee ID
         const isMobileNumber = /^\d{10}$/.test(mobileNumberOrEmpId);
@@ -162,7 +159,6 @@ const LoginScreen = () => {
           const companyInfoResponse = await getCompanyInfo();
           const companyInfo = companyInfoResponse.data;
           await AsyncStorage.setItem('companyInfo', JSON.stringify(companyInfo));
-          console.log('Company info stored:', companyInfo);
         } catch (error) {
           console.error('Error fetching company info:', error.message);
         }

@@ -9,7 +9,6 @@ export const CircleButton = ({ imgUrl, handlePress, data, icon, text, ...props }
   const [item, setItem] = useState(data)
   
   const onPress = () => {
-    // console.log(item)
     handlePress(item)
   }
 

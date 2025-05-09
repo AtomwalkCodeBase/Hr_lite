@@ -74,7 +74,6 @@ const ApproveClaimDetails = (props) => {
     });
   }, [navigation]);
 
-  // console.log("mANAGER==",managers)
 
   // Parse and calculate dates for claim submission
   const parseDate = (dateString) => {
@@ -192,7 +191,6 @@ const ApproveClaimDetails = (props) => {
       setShowSuccessModal(true);
     } catch (error) {
       Alert.alert('Action Failed', `Failed to ${res1} claim.`);
-      console.log("Error==",error.data)
     } finally {
       setIsLoading(false);
     }

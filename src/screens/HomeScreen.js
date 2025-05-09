@@ -72,7 +72,6 @@ const HomePage = ({ navigation }) => {
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
   
-  // console.log("Emp Id--->",empId)
   // Active events
   const [activeEvents, setActiveEvents] = useState([]);
   const [eventData, setEventData] = useState([]);
@@ -117,7 +116,6 @@ const [eventLoading, setEventLoading] = useState(true);
     }
   };
 
-  console.log("Emp===",profile)
 
 
   const fetchData = async () => {
@@ -249,7 +247,6 @@ const [eventLoading, setEventLoading] = useState(true);
     });
   };
 
-  console.log("Emp Id-----",empId)
   
   const fetchAttendanceDetails = async (data) => {
     setIsLoading(true);
@@ -269,7 +266,6 @@ const [eventLoading, setEventLoading] = useState(true);
     }
   };
 
-  // console.log("Attendance data===",attData)
 
   const processAttendanceData = (data) => {
     const today = moment().format('DD-MM-YYYY');
@@ -435,10 +431,8 @@ const [eventLoading, setEventLoading] = useState(true);
           id: attendance?.id || null,
         };
   
-      // console.log('Submitting check:', checkPayload);
       
       const response = await postCheckIn(checkPayload);
-      // console.log("Resp",response.status===200)
       if (response.status===200) {
         setCheckedIn(data === 'ADD');
         setStartTime(data === 'ADD' ? time : null);
@@ -478,7 +472,6 @@ const [eventLoading, setEventLoading] = useState(true);
   };
 
   const handleEventPress = (event) => {
-    // console.log("Event Data===",event)
     router.push({
       pathname: 'EventDetails',
       params: {

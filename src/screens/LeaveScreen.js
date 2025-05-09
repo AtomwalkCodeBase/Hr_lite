@@ -126,7 +126,6 @@ const LeaveScreen = () => {
     leaveDetails();
   }, [empId, selectedTab, randomValue]);
 
-  // console.log("Leave screen profile===",profile)
 
   const leaveDetails = () => {
     setLoading(true);
@@ -134,7 +133,6 @@ const LeaveScreen = () => {
       .then((res) => {
         // First filter out Optional Holidays (OH)
         const allNonOHLeaves = res.data.filter((leave) => leave.leave_type !== 'OH');
-        // console.log("Leave Res===",res.data)
         
         // Calculate total leave sum (excluding cancelled leaves)
         const totalSum = allNonOHLeaves
@@ -168,7 +166,6 @@ const LeaveScreen = () => {
   };
 
   const handlePress = (leave) => {
-    // console.log("Passing Leave Data===",leave)
     router.push({
       pathname: '/LeaveApply',
       params: leave,
@@ -179,7 +176,6 @@ const LeaveScreen = () => {
   const leaveSum = leaveData.reduce((sum, leave) => sum + parseFloat(leave.no_leave_count || 0), 0);
   const max_leave = profile?.max_no_leave;
 
-  // console.log('Emp data',profile)
 
   const getStatusStyles = (status_display) => {
     switch (status_display) {

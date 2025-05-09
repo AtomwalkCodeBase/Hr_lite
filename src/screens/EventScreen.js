@@ -113,7 +113,6 @@ const EventScreen = (props) => {
       });
   };
 
-  console.log("Event Res",eventData)
 
   const applyFilter = (typeCode, data) => {
     if (typeCode === 'All') {
@@ -125,7 +124,6 @@ const EventScreen = (props) => {
   };
 
   const handleCardPress = (event) => {
-    console.log("Card===", event);
     const formattedEventDetails = typeof event === 'object'
       ? JSON.stringify(event)
       : event;

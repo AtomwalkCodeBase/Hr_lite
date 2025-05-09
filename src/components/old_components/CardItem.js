@@ -139,7 +139,6 @@ const CardItem = ({data, navigation, screen, handleIconPress, icon, buttonTittle
     const cardColour = colour ? colour: colors.primary
     
     const handleNavigation = () => {
-      console.log('Screen name', screen);
       if (screen == 'CustomerTasks'){
         navigation.navigate('CustomerTasks',  {customer_id: data.id, name: data.name, lead_id: '', call_mode:'C' });
       }else if (screen == 'LeadTasks'){
@@ -157,7 +156,6 @@ const CardItem = ({data, navigation, screen, handleIconPress, icon, buttonTittle
 
     
   const handleIconNavigation2 = () => {
-      console.log('Icon Screen name', iconScreen2, data);
       if (iconScreen2 == 'ViewInterest'){
           navigation.navigate(iconScreen2, {data: data, call_mode: callMode, delete_mode: 'Y'});
       } 

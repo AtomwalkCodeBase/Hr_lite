@@ -172,7 +172,7 @@ const HelpScreen = (props) => {
 
         <ApplyButton             
           onPress={handleCreateRequest}
-          buttonText="Create New Request"
+          buttonText="Create New Help Request"
           iconName="add"
         />
       </View>

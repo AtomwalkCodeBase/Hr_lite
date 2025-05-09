@@ -70,14 +70,12 @@ const AddAppointee = ({ navigation }) => {
 
         try {
             const res = await imagetotext(formData);
-            // console.log('Response received');
 
             if (res?.data) {
                 const scannedData = res.data.f_data_list;
                 const filteredText = res.data.text?.filter(item => item.trim() !== '') || [];
                 const extractedText = filteredText.join('\n');
 
-                // console.log("Scan ata---",scannedData);
 
                 if (scannedData) {
                     setValue('name', filteredText[0]?.trim() || "");
