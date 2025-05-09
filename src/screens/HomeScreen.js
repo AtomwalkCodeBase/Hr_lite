@@ -188,10 +188,11 @@ const [eventLoading, setEventLoading] = useState(true);
       };
       const resAllEvents = await getEvents(paramsAllEvents);
       
-      // Filter events to only include specific types
+      // Filter events to only include specific types AND status A/P
       const filteredEventTypes = ['C', 'B', 'A', 'M', 'O']; // Company, Birthday, Announcement, Meeting, Other
       const filteredEvents = resAllEvents.data.filter(event => 
-        filteredEventTypes.includes(event.event_type)
+        filteredEventTypes.includes(event.event_type) && 
+        (event.event_status === 'A' || event.event_status === 'P')
       );
   
       // Second fetch: Try with empId if available (personalized events)
@@ -203,7 +204,10 @@ const [eventLoading, setEventLoading] = useState(true);
           emp_id: empId
         };
         const resWithEmpId = await getEvents(paramsWithEmpId);
-        personalEvents = resWithEmpId.data;
+        // Filter personal events to only include status A/P
+        personalEvents = resWithEmpId.data.filter(event => 
+          event.event_status === 'A' || event.event_status === 'P'
+        );
       }
   
       // Combine both results, removing duplicates
@@ -220,15 +224,18 @@ const [eventLoading, setEventLoading] = useState(true);
       setFilteredEvents(combinedEvents);
     } catch (error) {
       console.error("Fetch Event Error:", error?.response?.data);
-      // Fallback: Try to at least show company events
+      // Fallback: Try to at least show company events with status A/P
       try {
         const paramsCompanyEvents = {
           date_range: 'D0',
           event_type: 'C'
         };
         const resCompanyEvents = await getEvents(paramsCompanyEvents);
-        setEventData(resCompanyEvents.data);
-        setFilteredEvents(resCompanyEvents.data);
+        const filteredCompanyEvents = resCompanyEvents.data.filter(event => 
+          event.event_status === 'A' || event.event_status === 'P'
+        );
+        setEventData(filteredCompanyEvents);
+        setFilteredEvents(filteredCompanyEvents);
       } catch (fallbackError) {
         console.error("Fallback Fetch Error:", fallbackError);
         setEventData([]);

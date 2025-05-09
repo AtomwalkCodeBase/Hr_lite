@@ -98,11 +98,14 @@ const EventScreen = (props) => {
       date_range: dateRange
     };
     
-  
     getEvents(params)
       .then((res) => {
-        setEventData(res.data);
-        applyFilter(activeFilter, res.data);
+        // Filter events to only include those with status 'A' or 'P'
+        const filteredData = res.data.filter(event => 
+          event.event_status === 'A' || event.event_status === 'P'
+        );
+        setEventData(filteredData);
+        applyFilter(activeFilter, filteredData);
       })
       .catch((error) => {
         console.error("Fetch Event Error:", error?.response?.data);
