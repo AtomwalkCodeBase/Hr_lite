@@ -117,12 +117,12 @@ export const getEmpClaimdata = async () => {
 // export const getExpenseItemList = `${endpoint}/expense_item_list/${db_name}/`;
 export const getExpenseItemList = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/expense_item_list/${db_name}/`;
+  return `${newendpoint}/expense_item_list/${db_name}/`;
 };
 // export const getProjectList = `${endpoint}/project_list/${db_name}/`;
 export const getProjectList = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/project_list/${db_name}/`;
+  return `${newendpointAll}/project_list/${db_name}/`;
 };
 // export const getEmpAttendanceData = `${newendpoint}/get_employee_attendance/${db_name}/`;
 export const getEmpAttendanceData = async () => {

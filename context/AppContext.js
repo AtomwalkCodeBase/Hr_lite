@@ -1,9 +1,8 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { publicAxiosRequest } from "../src/services/HttpMethod";
-import { empLoginURL, loginURL } from "../src/services/ConstantServies";
+import { empLoginURL } from "../src/services/ConstantServies";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCompanyInfo } from '../src/services/authServices';
-import axios from "axios";
 import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import NetworkErrorModal from '../src/components/NetworkErrorModal';
@@ -24,14 +23,14 @@ const AppProvider = ({ children }) => {
         setIsConnected(netState.isConnected);
         return netState.isConnected;
     };
+
     const onRetry = async () => {
         const networkStatus = await checkNetwork();
         if (networkStatus) {
-            setIsConnected(true); // Update state to reflect network restoration
+            setIsConnected(true);
         }
     };
     
-
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
@@ -46,32 +45,42 @@ const AppProvider = ({ children }) => {
             setIsLoading(false);
             return;
         }
+
         try {
-            const payload = {
-              mobile_number: username,
-              pin: parseInt(password, 10),
-            };
+            // Determine if the input is a mobile number (10 digits) or employee ID
+            const isMobileNumber = /^\d{10}$/.test(username);
+            
+            const payload = isMobileNumber 
+                ? {
+                    mobile_number: username,
+                    pin: parseInt(password, 10),
+                  }
+                : {
+                    emp_id: username,
+                    pin: parseInt(password, 10),
+                  };
+
             console.log('Sending payload:', payload);
           
-            const url = await empLoginURL();  // ✅ await the URL
+            const url = await empLoginURL();
             const response = await publicAxiosRequest.post(url, payload, {
-              headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
             });
           
             console.log('API Response:', response);
           
             if (response.status === 200) {
-              const { token, emp_id, e_id } = response.data;
+                const { token, emp_id, e_id } = response.data;
               console.log('Token ====', e_id);
               await AsyncStorage.setItem('userToken', token);
               await AsyncStorage.setItem('empId', emp_id);
               await AsyncStorage.setItem('eId', String(e_id));
               await AsyncStorage.setItem('mobileNumber', username);
               await AsyncStorage.setItem('userPin', password);
-            }
-          
-            router.replace({ pathname: 'home' });
-          } catch (err) {
+                }
+
+                router.replace({ pathname: 'home' });
+        } catch (err) {
             console.log('Login error:', err);
           }
           
@@ -115,19 +124,19 @@ const AppProvider = ({ children }) => {
         AsyncStorage.removeItem('userToken');
         AsyncStorage.removeItem('companyInfo');
         // AsyncStorage.removeItem('dbName');
-        setUserToken(null);
+            setUserToken(null);
         setCompanyInfo([]);
         // setDbName(null);
-        setIsLoading(false);
+            setIsLoading(false);
         // setError('')
         router.replace('AuthScreen');
     };
 
     const isLoggedIn = async () => {
-        const networkStatus = await checkNetwork();
-        if (!networkStatus) {
-            return;
-        }
+            const networkStatus = await checkNetwork();
+            if (!networkStatus) {
+                return;
+            }
 
         try {
             setIsLoading(true);
@@ -136,12 +145,27 @@ const AppProvider = ({ children }) => {
                 router.replace('AuthScreen');
                 return;
             }
+
             setUserToken(userToken);
-            const dbName = await AsyncStorage.getItem('dbName');
-            setDbName(dbName);
-            const storedCompanyInfo = await AsyncStorage.getItem('companyInfo');
-            if (storedCompanyInfo) {
-                setCompanyInfo(JSON.parse(storedCompanyInfo));
+
+            // Retrieve all stored data
+            const [
+                companyInfo,
+                dbName,
+                loginType,
+                identifier
+            ] = await Promise.all([
+                AsyncStorage.getItem('companyInfo'),
+                AsyncStorage.getItem('dbName'),
+                AsyncStorage.getItem('loginType'),
+                AsyncStorage.getItem(loginType === 'mobile' ? 'mobileNumber' : 'empId')
+            ]);
+
+            if (companyInfo) {
+                setCompanyInfo(JSON.parse(companyInfo));
+            }
+            if (dbName) {
+                setDbName(dbName);
             }
         } catch (e) {
             console.log('Login Status Error:', e);
@@ -167,13 +191,11 @@ const AppProvider = ({ children }) => {
             setIsLoading
         }}>
             {children}
-            {/* Show Network Error Modal only when disconnected */}
             <NetworkErrorModal 
                 visible={!isConnected} 
                 onRetry={onRetry} 
                 onNetworkRestore={() => setIsConnected(true)} 
             />
-
         </AppContext.Provider>
     );
 };

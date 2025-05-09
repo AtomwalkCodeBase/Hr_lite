@@ -13,22 +13,21 @@ import CompanyDropdown from '../../src/components/ComanyDropDown';
 
 const LoginScreen = () => {
   const router = useRouter();
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [mobileNumberOrEmpId, setMobileNumberOrEmpId] = useState('');
   const [pin, setPin] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [userPin, setUserPin] = useState(null);
   const [loading, setLoading] = useState(false);
   const [companyError, setCompanyError] = useState('');
-  const [dbList, setDbList] = useState([]); // Initialize as empty array instead of false
-const [selectedCompany, setSelectedCompany] = useState(null);
-
+  const [dbList, setDbList] = useState([]);
+  const [selectedCompany, setSelectedCompany] = useState(null);
 
   useEffect(() => {
     const fetchUserPin = async () => {
       try {
         const storedPin = await AsyncStorage.getItem('userPin');
-        setUserPin(storedPin); // storedPin will be `null` if no value is found
+        setUserPin(storedPin);
       } catch (error) {
         console.error('Error fetching userPin from AsyncStorage:', error);
       }
@@ -36,18 +35,9 @@ const [selectedCompany, setSelectedCompany] = useState(null);
     fetchUserPin();
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchDbName();
-  },[])
-
-  // useEffect(() => {
-  //   if (selectedCompany && !dropdownValue) {
-  //     setDropdownValue({
-  //       label: selectedCompany.ref_cust_name,
-  //       value: selectedCompany.ref_cust_name
-  //     });
-  //   }
-  // }, [selectedCompany, dropdownValue]);
+  }, []);
 
   useEffect(() => {
     if (selectedCompany && dbList.length > 0) {
@@ -85,7 +75,7 @@ const [selectedCompany, setSelectedCompany] = useState(null);
         await AsyncStorage.setItem('dbName', dbName);
       }
     }
-    setCompanyError(''); // Clear error when company is selected
+    setCompanyError('');
   };
 
   const getDropdownValue = () => {
@@ -96,21 +86,13 @@ const [selectedCompany, setSelectedCompany] = useState(null);
     };
   };
 
-  
-  
-
-
   const validateInput = () => {
     if (!selectedCompany) {
       setCompanyError('Please select your company');
       return false;
     }
-    if (!mobileNumber) {
-      setErrorMessage('Mobile number is required');
-      return false;
-    }
-    if (!/^\d{10}$/.test(mobileNumber)) {
-      setErrorMessage('Please enter a valid 10-digit mobile number');
+    if (!mobileNumberOrEmpId) {
+      setErrorMessage('Mobile number or Employee ID is required');
       return false;
     }
     if (!pin) {
@@ -137,13 +119,22 @@ const [selectedCompany, setSelectedCompany] = useState(null);
     setLoading(true);
   
     try {
-      const payload = {
-        mobile_number: mobileNumber,
-        pin: parseInt(pin, 10),
-      };
+      // Determine if the input is a mobile number (10 digits) or employee ID
+      const isMobileNumber = /^\d{10}$/.test(mobileNumberOrEmpId);
+      
+      const payload = isMobileNumber 
+        ? {
+            mobile_number: mobileNumberOrEmpId,
+            pin: parseInt(pin, 10),
+          }
+        : {
+            emp_id: mobileNumberOrEmpId,
+            pin: parseInt(pin, 10),
+          };
+          
       console.log('Sending payload:', payload);
   
-      const url = await empLoginURL(); // ✅ fixed: get resolved URL
+      const url = await empLoginURL();
       const response = await publicAxiosRequest.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -151,10 +142,18 @@ const [selectedCompany, setSelectedCompany] = useState(null);
       console.log('API Response:', response);
 
       if (response.status === 200) {
-        const { token, emp_id, e_id } = response.data;     
-        // Store token and emp_id in AsyncStorage
+        const { token, emp_id, e_id } = response.data;
+        console.log("Emfdnsjhbvkd===",emp_id)
         await AsyncStorage.setItem('userToken', token);
-        await AsyncStorage.setItem('mobileNumber', mobileNumber);
+        // Determine if the input is a mobile number (10 digits) or employee ID
+        const isMobileNumber = /^\d{10}$/.test(mobileNumberOrEmpId);
+        
+        if (isMobileNumber) {
+          await AsyncStorage.setItem('mobileNumber', mobileNumberOrEmpId);
+        } else {
+          await AsyncStorage.setItem('empId', mobileNumberOrEmpId);
+        }
+        // await AsyncStorage.setItem('mobileNumber', mobileNumberOrEmpId);
         await AsyncStorage.setItem('empId', emp_id);
         await AsyncStorage.setItem('empNoId', String(e_id));
         await AsyncStorage.setItem('userPin', pin);
@@ -163,27 +162,25 @@ const [selectedCompany, setSelectedCompany] = useState(null);
           const companyInfoResponse = await getCompanyInfo();
           const companyInfo = companyInfoResponse.data;
           await AsyncStorage.setItem('companyInfo', JSON.stringify(companyInfo));
-          // const dbName = companyInfo.db_name.substr(3);
-          // await AsyncStorage.setItem('dbName', dbName);
           console.log('Company info stored:', companyInfo);
         } catch (error) {
           console.error('Error fetching company info:', error.message);
         }
         router.push('/home');
       } else {
-        setErrorMessage('Invalid mobile number or PIN');
+        setErrorMessage('Invalid credentials');
       }
     } catch (error) {
-      console.error('API call error:', error.response.data);
+      console.error('API call error:', error.response?.data || error.message);
       if (error.response) {
-        setErrorMessage(`Error: ${error.response.data.error || 'Invalid mobile number or PIN'}`);
+        setErrorMessage(`Error: ${error.response.data.error || 'Invalid credentials'}`);
       } else if (error.request) {
         setErrorMessage('No response from the server. Please check your connection.');
       } else {
         setErrorMessage('An error occurred. Please try again.');
       }
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -200,41 +197,41 @@ const [selectedCompany, setSelectedCompany] = useState(null);
 
       {/* Input Fields Section */}
       <InputContainer>
-      
-      {dbList.length > 0 && (
-  <CompanyDropdown
-    label="Company"
-    data={dbList.map(company => ({
-      label: company.ref_cust_name,
-      value: company.ref_cust_name
-    }))}
-    value={selectedCompany}
-    setValue={handleCompanyChange}
-    error={companyError}
-  />
-)}
+        {dbList.length > 0 && (
+          <CompanyDropdown
+            label="Company"
+            data={dbList.map(company => ({
+              label: company.ref_cust_name,
+              value: company.ref_cust_name
+            }))}
+            value={selectedCompany}
+            setValue={handleCompanyChange}
+            error={companyError}
+          />
+        )}
+        
         <InputWrapper>
-          <MaterialIcons name="phone" size={20} color="#6c757d" />
+          <MaterialIcons name="person" size={20} color="#6c757d" />
           <Input
-            placeholder="Enter your mobile number/ Emp Id"
-            value={mobileNumber}
-            onChangeText={setMobileNumber}
-            keyboardType="phone-pad"
+            placeholder="Enter your mobile number or Emp ID"
+            value={mobileNumberOrEmpId}
+            onChangeText={setMobileNumberOrEmpId}
+            keyboardType="default" // Changed to default to allow both numbers and text
             placeholderTextColor="#6c757d"
-            maxLength={10}
+            maxLength={20} // Increased max length for employee IDs
           />
         </InputWrapper>
 
         <InputWrapper>
           <MaterialIcons name="lock-outline" size={20} color="#6c757d" />
           <Input
-            placeholder="Enter your PIN"
+            placeholder="Enter your PIN (min 4 digits)"
             value={pin}
             onChangeText={setPin}
             secureTextEntry={!isPasswordVisible}
             keyboardType="numeric"
             placeholderTextColor="#6c757d"
-            maxLength={4}
+            maxLength={10} // Increased max length but validation still requires min 4
           />
           <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
             <MaterialIcons
@@ -274,7 +271,7 @@ const [selectedCompany, setSelectedCompany] = useState(null);
   );
 };
 
-// Styled Components
+// Styled Components (remain the same as in your original code)
 const Container = styled.View`
   flex: 1;
   background-color: #fff;
