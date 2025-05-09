@@ -247,11 +247,11 @@ const EventScreen = (props) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f9fafc',
+    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f9fafc',
+    backgroundColor: '#fff',
   },
   headerSection: {
     paddingHorizontal: responsiveWidth(5),
