@@ -4,7 +4,7 @@
     "slug": "atomwalkhrmslite",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/adaptive-icons.png",
+    "icon": "./assets/images/adaptive-icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -22,7 +22,7 @@
         "WRITE_EXTERNAL_STORAGE"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icons.png",
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.atomwalk.atomwalkhrmslite"
