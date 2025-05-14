@@ -511,7 +511,7 @@ const [eventLoading, setEventLoading] = useState(true);
   // Determine button states for check-in/out
   // Determine button states for check-in/out
   const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time || 
-                          (employeeData?.is_shift_applicable && previousDayUnchecked);
+                          (employeeData?.is_shift_applicable && previousDayUnchecked) || (attendance && attendance.start_time === null);
   const isCheckOutDisabled = !checkedIn || attendance.geo_status !== 'I' || !!attendance.end_time;
 
   const renderEventCard = ({ item }) => (
