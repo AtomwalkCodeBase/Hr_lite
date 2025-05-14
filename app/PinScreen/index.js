@@ -23,6 +23,7 @@ import { AppContext } from '../../context/AppContext';
 import Loader from '../../src/components/old_components/Loader';
 import ErrorModal from '../../src/components/ErrorModal';
 import { LinearGradient } from 'expo-linear-gradient';
+import ConfirmationModal from '../../src/components/ConfirmationModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +31,8 @@ const scaleWidth = (size) => (width / 375) * size;
 const scaleHeight = (size) => (height / 812) * size;
 
 const AuthScreen = () => {
+    
+      const { logout } = useContext(AppContext);
     const { login, setIsLoading, isLoading } = useContext(AppContext);
     const router = useRouter();
     const [mPIN, setMPIN] = useState(['', '', '', '']);
@@ -41,6 +44,7 @@ const AuthScreen = () => {
     const [showBiomatricOption, setShowBiomatricOption] = useState(false);
     const [showPinInput, setShowPinInput] = useState(!showBiomatricOption);
     const [showFingerprint, setShowFingerprint] = useState(false);
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
     const openPopup = () => setModalVisible(true);
     const maxAttempts = 5;
@@ -103,11 +107,11 @@ const AuthScreen = () => {
             } else {
                 const remaining = attemptsRemaining - 1;
                 setAttemptsRemaining(remaining);
-                if (remaining > 0) {
-                    Alert.alert('Incorrect PIN', `${remaining} attempts remaining`);
-                } else {
-                    Alert.alert('Account Locked', 'Too many incorrect attempts.');
-                }
+                // if (remaining > 0) {
+                //     Alert.alert('Incorrect PIN', `${remaining} attempts remaining`);
+                // } else {
+                //     Alert.alert('Account Locked', 'Too many incorrect attempts.');
+                // }
             }
         }, 1000);
     };
@@ -240,10 +244,14 @@ const AuthScreen = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        {/* <TouchableOpacity onPress={openPopup} style={styles.forgotContainer}>
-                            <Icon name="help-circle-outline" size={16} color="#9C5EF9" />
-                            <Text style={styles.forgotText}>Forgot PIN</Text>
-                        </TouchableOpacity> */}
+                        <TouchableOpacity 
+                            onPress={() => setIsLogoutModalVisible(true)}
+                            style={styles.forgotContainer}
+                        // onPress={openPopup}
+                        >
+                            <Icon name="log-out-outline" size={16} color="#9C5EF9" />
+                            <Text style={styles.forgotText}>Logout</Text>
+                        </TouchableOpacity>
                         
                         {showBiomatricOption && (
                             <TouchableOpacity 
@@ -293,6 +301,17 @@ const AuthScreen = () => {
                 onClose={() => setIsNetworkError(false)}
                 onRetry={checkNetworkAndAuthenticate}
             />
+            <ConfirmationModal
+            visible={isLogoutModalVisible}
+            message="Are you sure you want to logout?"
+            onConfirm={() => {
+              setIsLogoutModalVisible(false);
+              logout();
+            }}
+            onCancel={() => setIsLogoutModalVisible(false)}
+            confirmText="Logout"
+            cancelText="Cancel"
+          />
         </SafeAreaView>
     );
 };
