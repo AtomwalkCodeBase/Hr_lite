@@ -13,6 +13,7 @@ import ApplyButton from '../components/ApplyButton';
 import EmptyMessage from '../components/EmptyMessage';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
+import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
 
 const screenHeight = Dimensions.get('window').height;
 const responsiveMarginBottom = screenHeight * 0.125;
@@ -195,7 +196,7 @@ const LeaveScreen = () => {
   const renderLeaveItem = ({ item: leave }) => {
     const statusStyles = getStatusStyles(leave.status_display);
     return (
-      <LeaveCardComponent
+      <NewLeaveCardComponent
         leave={leave}
         statusStyles={statusStyles}
         onPress={handleCardPress}
@@ -210,13 +211,14 @@ const LeaveScreen = () => {
       <HeaderComponent headerTitle="My Leaves" onBackPress={handleBackPress} />
       <Container>
       <CardRow>
-        <LeaveCard bgColor="#eaffea" borderColor="#66cc66">
-          <LeaveNumber color="#66cc66">
+        <LeaveCard bgColor="#a970ff" borderColor="#a970ff">
+          <LeaveNumber color="#fff">
             {selectedTab === 'My WFH' ? 'Total WFH' : 'Total Leave Days'}: {selectedTab === 'My Cancel Leave' ? totalLeaveSum : leaveSum}
           </LeaveNumber>
         </LeaveCard>
-        <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
-          <LeaveNumber color="#4d88ff">Max Leave for Year: {max_leave}</LeaveNumber>
+        
+          <LeaveCard bgColor="#a970ff" borderColor="#a970ff">
+          <LeaveNumber color="#fff">Max Leave for Year: {max_leave}</LeaveNumber>
         </LeaveCard>
       </CardRow>
 
@@ -270,6 +272,8 @@ const LeaveScreen = () => {
             isVisible={isModalVisible}
             leave={selectedLeave}
             onClose={closeModal}
+            onCancelLeave={cancelLeave}  // Add this line
+            showCancelButton={selectedLeave.status_display === 'Submitted'}
           />
         )}
         {selectedLeave && (

@@ -3,7 +3,7 @@ import { Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
+const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCancelLeave, showCancelButton  }) => {
   return (
     <Modal visible={isVisible} transparent={true} animationType="fade">
       <ModalOverlay>
@@ -23,8 +23,8 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
             {leave && (
               <DetailContainer>
                 <DetailItem>
-                  <DetailLabel>Leave Type</DetailLabel>
-                  <DetailValue>{leave.leave_type_display}</DetailValue>
+                  <DetailLabel bold>Leave Type</DetailLabel>
+                  <DetailValue bold>{leave.leave_type_display}</DetailValue>
                 </DetailItem>
                 <DetailItem>
                   <DetailLabel>Duration</DetailLabel>
@@ -34,8 +34,15 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
                 </DetailItem>
                 <DetailItem>
                   <DetailLabel>Status</DetailLabel>
-                  <DetailValue status={leave.status_display.toLowerCase()}>
+                  <DetailValue status={leave.status_display?.toLowerCase()}>
+
                     {leave.status_display}
+                  </DetailValue>
+                </DetailItem>
+                <DetailItem>
+                  <DetailLabel>Submitted:</DetailLabel>
+                  <DetailValue>
+                    {leave.submit_date}
                   </DetailValue>
                 </DetailItem>
                 {leave.remarks && (
@@ -50,21 +57,34 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
             {claim && (
               <DetailContainer>
                 <DetailItem>
-                  <DetailLabel>Claim ID</DetailLabel>
+                  <DetailLabel bold>Claim ID</DetailLabel>
                   <DetailValue bold>{claim.claim_id}</DetailValue>
                 </DetailItem>
                 <DetailItem>
-                  <DetailLabel>Date</DetailLabel>
-                  <DetailValue>{claim.submitted_date}</DetailValue>
+                  <DetailLabel bold>Amount</DetailLabel>
+                  <DetailValue bold>₹{claim.expense_amt}</DetailValue>
                 </DetailItem>
                 <DetailItem>
-                  <DetailLabel>Amount</DetailLabel>
-                  <DetailValue>₹{claim.expense_amt}</DetailValue>
+                  <DetailLabel>Submitted</DetailLabel>
+                  <DetailValue>{claim.submitted_date}</DetailValue>
                 </DetailItem>
+                {claim.expense_date && (
+                  <DetailItem>
+                    <DetailLabel>Expense Date</DetailLabel>
+                    <DetailValue>{claim.expense_date}</DetailValue>
+                  </DetailItem>
+                )}
+                
                 {claim.project_name && (
                   <DetailItem>
                     <DetailLabel>Project</DetailLabel>
                     <DetailValue>{claim.project_name}</DetailValue>
+                  </DetailItem>
+                )}
+                {claim.item_name && (
+                  <DetailItem>
+                    <DetailLabel>Item Name</DetailLabel>
+                    <DetailValue>{claim.item_name}</DetailValue>
                   </DetailItem>
                 )}
                 {claim.remarks && (
@@ -73,6 +93,13 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
                     <DetailValue>{claim.remarks}</DetailValue>
                   </DetailItem>
                 )}
+                {claim.approval_remarks && (
+                  <DetailItem>
+                    <DetailLabel>Manager Remarks</DetailLabel>
+                    <DetailValue>{claim.approval_remarks}</DetailValue>
+                  </DetailItem>
+                )}
+                
               </DetailContainer>
             )}
 
@@ -111,9 +138,21 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose }) => {
           </ModalBody>
 
           <ModalFooter>
-            <ActionButton onPress={onClose}>
-              <ActionButtonText>Close</ActionButtonText>
-            </ActionButton>
+            {leave && showCancelButton ? (
+              <ActionButton 
+                onPress={() => {
+                  onCancelLeave(leave);
+                  onClose();
+                }}
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                <ActionButtonText>CANCEL</ActionButtonText>
+              </ActionButton>
+            ) : (
+              <ActionButton onPress={onClose}>
+                <ActionButtonText>Close</ActionButtonText>
+              </ActionButton>
+            )}
           </ModalFooter>
         </ModalContainer>
       </ModalOverlay>
@@ -172,7 +211,8 @@ const DetailItem = styled.View`
 
 const DetailLabel = styled.Text`
   font-size: 14px;
-  color: #6B7280;
+  color: #454545;
+  font-weight: ${props => props.bold ? '600' : '400'};
   flex: 1;
 `;
 

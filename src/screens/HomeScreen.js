@@ -39,6 +39,7 @@ import { getEmpAttendance, getEvents, postCheckIn } from '../services/productSer
 import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -120,12 +121,25 @@ const [eventLoading, setEventLoading] = useState(true);
 
   const fetchData = async () => {
     setIsLoading(true);
+
+    
   
     try {
       // Fetch employee profile
       const profileRes = await getEmployeeInfo();
       const profileData = profileRes.data?.[0];
+
+      console.log("Profile data===",profileData)
       if (!profileData) throw new Error("Employee profile data not found.");
+
+      if (profileData) {
+        // Store the entire profile data
+        await AsyncStorage.setItem('profile', JSON.stringify(profileData));
+        // Also store just the name if you need it separately
+        if (profileData?.name) {
+          await AsyncStorage.setItem('profilename', profileData.name);
+        }
+      }
   
       setProfile(profileData);
       setEmployeeData(profileData);
@@ -174,6 +188,9 @@ const [eventLoading, setEventLoading] = useState(true);
       setRefreshing(false);
     }
   };
+
+
+  
   
 
   const fetchEvents = async () => {

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Switch } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
 import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
@@ -9,6 +9,7 @@ import QRModal from '../components/QRModal';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import moment from 'moment';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const { width } = Dimensions.get('window');
 
@@ -19,6 +20,11 @@ const ProfileScreen = () => {
   const [userPin, setUserPin] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+const [useFingerprint, setUseFingerprint] = useState(false);  // actual setting
+const [pendingValue, setPendingValue] = useState(null);        // for storing new value
+const [modalVisible, setModalVisible] = useState(false);       // controls confirmation modal
+
 
   const router = useRouter();
   const navigation = useNavigation();
@@ -48,6 +54,43 @@ const ProfileScreen = () => {
     fetchUserPin();
   }, []);
 
+  useEffect(() => {
+  const fetchFingerprintPreference = async () => {
+    const stored = await AsyncStorage.getItem('useFingerprint');
+    if (stored !== null) {
+      const value = stored === 'true';
+      setUseFingerprint(value);
+    }
+  };
+  fetchFingerprintPreference();
+}, []);
+
+
+const toggleFingerprint = async () => {
+  const newValue = !useFingerprint;
+  setUseFingerprint(newValue);
+  await AsyncStorage.setItem('useFingerprint', newValue.toString());
+};
+
+const handleSwitchToggle = (newValue) => {
+  setPendingValue(newValue); // Store intended value
+  setModalVisible(true);     // Show confirmation modal
+};
+
+  const handleConfirm = async () => {
+  setUseFingerprint(pendingValue);
+  await AsyncStorage.setItem('useFingerprint', pendingValue.toString());
+  setModalVisible(false);
+  setPendingValue(null);
+};
+
+// Called when user cancels in modal
+const handleCancel = () => {
+  setModalVisible(false);
+  setPendingValue(null);
+};
+
+
   const handleBackPress = () => router.back();
   const handlePressPassword = () => router.push({ pathname: 'ResetPassword' });
   const handleQRPress = () => setIsModalVisible(true);
@@ -73,23 +116,26 @@ const ProfileScreen = () => {
         <ScrollView contentContainerStyle={styles.container}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>
-            <View style={styles.avatarContainer}>
+            <TouchableOpacity 
+            style={styles.avatarContainer}
+                onPress={handleQRPress}>
               <Image
                 source={profile?.image ? { uri: profile.image } : require('../../assets/images/default-profile.jpg')}
                 style={styles.profileImage}
+                onPress={handleQRPress}
                 onError={handleImageError}
                 defaultSource={require('../../assets/images/default-profile.jpg')}
               />
-            </View>
+            </TouchableOpacity>
             <View style={styles.profileTitle}>
               <Text style={styles.userName}>{profile?.name || 'Employee Name'}</Text>
               <Text style={styles.userPosition}>{profile?.grade_name || 'Position'}</Text>
             </View>
           </View>
 
-          {/* QR Button */}
-          <TouchableOpacity style={styles.qrButton} onPress={handleQRPress}>
-            <MaterialIcons name="qr-code" size={24} color="#2c3e50" />
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.qrButton} onPress={() => setIsLogoutModalVisible(true)}>
+            <MaterialIcons name="logout" size={24} color="#FF0031" />
           </TouchableOpacity>
 
           {/* Employee Details Section */}
@@ -139,6 +185,24 @@ const ProfileScreen = () => {
               value={profile?.max_no_leave || 17} 
             />
           </View>
+          {/* Bio Matric switch */}
+
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>SECURITY SETTINGS</Text>
+            <View style={styles.switchRow}>
+              <MaterialIcons name="fingerprint" size={20} color="#7f8c8d" style={styles.infoIcon} />
+              <View style={styles.switchLabelContainer}>
+                <Text style={styles.bioLabel}>Use Fingerprint for Login</Text>
+              </View>
+              <Switch
+                value={useFingerprint}
+                onValueChange={handleSwitchToggle}
+                trackColor={{ false: "#dcdcdc", true: "#4CAF50" }}
+                thumbColor={useFingerprint ? "#fff" : "#f4f3f4"}
+              />
+
+            </View>
+          </View>
 
           {/* Action Buttons */}
           <View style={styles.actionContainer}>
@@ -152,7 +216,7 @@ const ProfileScreen = () => {
             
             <TouchableOpacity 
               style={[styles.actionButton, styles.secondaryButton]}
-              onPress={() => {logout()}}
+              onPress={() => setIsLogoutModalVisible(true)}
             >
               <MaterialIcons name="logout" size={20} color="#e74c3c" />
               <Text style={[styles.buttonText, styles.logoutText]}>LOGOUT</Text>
@@ -165,6 +229,27 @@ const ProfileScreen = () => {
             onClose={handleCloseModal}
             qrValue={profile?.emp_id || 'EMP-007'}
           />
+
+          <ConfirmationModal
+            visible={isLogoutModalVisible}
+            message="Are you sure you want to logout?"
+            onConfirm={() => {
+              setIsLogoutModalVisible(false);
+              logout();
+            }}
+            onCancel={() => setIsLogoutModalVisible(false)}
+            confirmText="Logout"
+            cancelText="Cancel"
+          />
+
+          <ConfirmationModal
+            visible={modalVisible}
+            message="Are you sure you want to change this setting?"
+            onConfirm={handleConfirm}
+            onCancel={handleCancel}
+          />
+
+
         </ScrollView>
       )}
     </>
@@ -228,7 +313,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 30,
     right: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FBE6EA',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -272,14 +357,32 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 13,
-    color: '#95a5a6',
+    color: '#353535',
     marginBottom: 3,
+  },
+  bioLabel: {
+    fontSize: 13,
+    color: '#353535',
+    marginBottom: 3,
+    fontWeight: '500',
   },
   infoValue: {
     fontSize: 16,
     color: '#34495e',
     fontWeight: '500',
   },
+
+  switchRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  paddingVertical: 10,
+},
+switchLabelContainer: {
+  flex: 1,
+  marginLeft: 15,
+},
+
   actionContainer: {
     padding: 20,
   },

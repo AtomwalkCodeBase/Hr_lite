@@ -56,6 +56,8 @@ const DateText = styled.Text`
   font-size: 14px;
   color: #666;
   margin-left: 6px;
+  
+  font-weight: 600;
 `;
 
 const RemarksText = styled.Text`
@@ -117,33 +119,13 @@ const LeaveCardComponent = ({ leave, statusStyles, onPress, onCancelPress, showC
     return dateString;
   };
 
+  console.log("Leave----",leave)
   return (
     <ApplicationCard onPress={() => onPress(leave)} borderColor={borderColor}>
       <CardHeader>
         <LeaveType>{leave.leave_type_display}</LeaveType>
-        <DaysBadge>
-          <DaysText>{leave.no_leave_count} day{leave.no_leave_count !== "1.0" ? 's' : ''}</DaysText>
-        </DaysBadge>
-      </CardHeader>
 
-      <CardBody>
-        <DateRow>
-          <MaterialIcons name="date-range" size={16} color="#666" />
-          <DateText>
-            {formatDate(leave.from_date)} - {formatDate(leave.to_date)}
-          </DateText>
-        </DateRow>
-        
-        {leave.remarks && (
-          <View style={{ marginTop: 8 }}>
-            <RemarksText>"{leave.remarks}"</RemarksText>
-          </View>
-        )}
-      </CardBody>
-
-      <CardFooter>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <StatusBadge bgColor={bgColor}>
+        <StatusBadge bgColor={bgColor}>
             <MaterialIcons 
               name={leave.status === 'A' ? 'check-circle' : leave.status === 'R' ? 'cancel' : 'access-time'} 
               size={16} 
@@ -151,15 +133,57 @@ const LeaveCardComponent = ({ leave, statusStyles, onPress, onCancelPress, showC
             />
             <StatusText color={color}>{leave.status_display}</StatusText>
           </StatusBadge>
-          <SubmitDate>Submitted: {formatDate(leave.submit_date)}</SubmitDate>
-        </View>
+      </CardHeader>
+      {/* <CardHeader>
+      <DateRow>
+          <MaterialIcons name="date-range" size={16} color="#666" />
+          <DateText>
+            {formatDate(leave.from_date)} - {formatDate(leave.to_date)}
+          </DateText>
+        </DateRow>
+        <StatusBadge bgColor={bgColor}>
+            <MaterialIcons 
+              name={leave.status === 'A' ? 'check-circle' : leave.status === 'R' ? 'cancel' : 'access-time'} 
+              size={16} 
+              color={color} 
+            />
+            <StatusText color={color}>{leave.status_display}</StatusText>
+          </StatusBadge>
+      </CardHeader> */}
 
-        {showCancelButton && (
+      {/* <CardBody> */}
+        {/* <DateRow>
+          <MaterialIcons name="date-range" size={16} color="#666" />
+          <DateText>
+            {formatDate(leave.from_date)} - {formatDate(leave.to_date)}
+          </DateText>
+          
+        </DateRow> */}
+        
+        
+        {/* {leave.remarks && (
+          <View style={{ marginTop: 8 }}>
+            <RemarksText>"{leave.remarks}"</RemarksText>
+          </View>
+        )} */}
+      {/* </CardBody> */}
+
+      <CardFooter>
+      <DateRow>
+          <MaterialIcons name="date-range" size={16} color="#666" />
+          <DateText>
+            {formatDate(leave.from_date)} - {formatDate(leave.to_date)}
+          </DateText>
+        </DateRow>
+        <DaysBadge>
+          <DaysText>{leave.no_leave_count} day{leave.no_leave_count !== "1.0" ? 's' : ''}</DaysText>
+        </DaysBadge>
+        {/* {showCancelButton && (
           <CancelButton onPress={() => onCancelPress(leave)}>
             <MaterialIcons name="cancel" size={16} color="#ff2400" />
             <CancelButtonText>Cancel</CancelButtonText>
           </CancelButton>
-        )}
+        )} */}
       </CardFooter>
     </ApplicationCard>
   );

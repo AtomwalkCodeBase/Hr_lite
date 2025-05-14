@@ -39,6 +39,16 @@ const AppProvider = ({ children }) => {
         return () => unsubscribe();
     }, []);
 
+//     useEffect(() => {
+//     const fetchFingerprintSetting = async () => {
+//         const value = await AsyncStorage.getItem('useFingerprint');
+//         setIsFingerprint(value === 'true'); // optional: convert string to boolean
+//     };
+
+//     fetchFingerprintSetting();
+// }, []);
+
+
     const login = async (username, password) => {
         setIsLoading(true);
         if (!isConnected) {
@@ -119,7 +129,7 @@ const AppProvider = ({ children }) => {
     const logout = () => {
         setIsLoading(true);
         AsyncStorage.removeItem('userToken');
-        AsyncStorage.removeItem('companyInfo');
+        AsyncStorage.removeItem('companyInfo');        
         // AsyncStorage.removeItem('dbName');
             setUserToken(null);
         setCompanyInfo([]);

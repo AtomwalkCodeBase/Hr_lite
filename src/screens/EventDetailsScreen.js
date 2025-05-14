@@ -23,6 +23,8 @@ import ImageViewer from 'react-native-image-zoom-viewer';
 import { getEventsResponse, processEventResponse } from '../services/productServices';
 import moment from 'moment';
 import CommentInputInline from '../components/CommentInputInline';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SuccessModal from '../components/SuccessModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -32,42 +34,43 @@ const EventDetailsScreen = (props) => {
   const [empId, setEmpId] = useState("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentUserEmpId, setCurrentUserEmpId] = useState(""); 
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
   const [responses, setResponses] = useState([]);
   const [editingResponse, setEditingResponse] = useState(null);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [successModalMessage, setSuccessModalMessage] = useState("");
   const scrollViewRef = useRef(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    const fetchEmpId = async () => {
+      try {
+        const profileData = await AsyncStorage.getItem('profile');
+        if (profileData) {
+          const parsedProfile = JSON.parse(profileData);
+          const empIdFromStorage = parsedProfile?.emp_id || '';
+          // setEmpId(empIdFromStorage);
+          setCurrentUserEmpId(empIdFromStorage);
+        }
+      } catch (error) {
+        console.error("Error fetching empId from AsyncStorage:", error);
+      }
+    };
+  
+    fetchEmpId();
     fetchResponse();
+    
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
       useNativeDriver: true,
     }).start();
   }, []);
-
-  useEffect(() => {
-    // First try to get empId from props.data
-    if (props?.data?.empId) {
-      setEmpId(props.data.empId);
-    } 
-    // If not available in props.data, try to get from eventDetails
-    else if (props?.event_data?.eventDetails) {
-      try {
-        const eventData = props.event_data.eventDetails;
-        const parsedData = typeof eventData === 'string' ? JSON.parse(eventData) : eventData;
-        if (parsedData?.emp_id) {
-          setEmpId(parsedData.emp_id);
-        }
-      } catch (error) {
-        console.error("Error parsing event details for empId:", error);
-      }
-    }
-  }, [props?.data?.empId, props?.event_data?.eventDetails]);
+  
+  console.log("Current user empid---",currentUserEmpId)
   
   // Parse the event details from props
   let eventDetails = {};
@@ -133,7 +136,7 @@ const EventDetailsScreen = (props) => {
       });
     }
     
-    formData.append('emp_id', empId);
+    formData.append('emp_id', currentUserEmpId);
     formData.append('event_id', `${eventDetails.id}`);
     formData.append('call_mode', 'ADD');
     formData.append('r_text', text);
@@ -142,8 +145,8 @@ const EventDetailsScreen = (props) => {
       const res = await processEventResponse(formData);
       if (res.status === 200) {
         fetchResponse(); // Refresh comments
+        setSuccessModalMessage("Comment posted successfully!");
         setIsSuccessModalVisible(true);
-        setTimeout(() => setIsSuccessModalVisible(false), 2000);
       } else {
         console.error('Unexpected response:', res);
         Alert.alert('Comment Submission Error', 'Failed to add comment. Unexpected response.');
@@ -168,7 +171,7 @@ const EventDetailsScreen = (props) => {
       });
     }
     
-    formData.append('emp_id', empId);
+    formData.append('emp_id', currentUserEmpId);
     // formData.append('event_id', `${eventDetails.id}`);
     formData.append('event_id', `${responseId}`);
     formData.append('call_mode', 'UPDATE');
@@ -179,7 +182,8 @@ const EventDetailsScreen = (props) => {
       if (res.status === 200) {
         fetchResponse(); // Refresh comments
         setEditingResponse(null);
-        Alert.alert('Success', 'Your comment has been updated.');
+        setSuccessModalMessage("Comment updated successfully!");
+        setIsSuccessModalVisible(true);
       } else {
         console.error('Unexpected response:', res);
         Alert.alert('Update Error', 'Failed to update comment. Unexpected response.');
@@ -204,7 +208,7 @@ const EventDetailsScreen = (props) => {
             setLoading(true);
             
             const formData = new FormData();
-            formData.append('emp_id', empId);
+            formData.append('emp_id', currentUserEmpId);
             // formData.append('event_id', `${eventDetails.id}`);
             formData.append('event_id', `${responseId}`);
             formData.append('call_mode', 'DELETE');
@@ -213,7 +217,8 @@ const EventDetailsScreen = (props) => {
               const res = await processEventResponse(formData);
               if (res.status === 200) {
                 fetchResponse(); // Refresh comments
-                Alert.alert('Success', 'Your comment has been deleted.');
+                setSuccessModalMessage("Comment deleted successfully!");
+                setIsSuccessModalVisible(true);
               } else {
                 console.error('Unexpected response:', res);
                 Alert.alert('Delete Error', 'Failed to delete comment. Unexpected response.');
@@ -242,9 +247,11 @@ const EventDetailsScreen = (props) => {
     'X': { label: 'Cancelled', color: '#F44336' }
   };
 
+  
+
   const renderResponseItem = (response) => {
-    const isCurrentUserResponse = response.r_emp_id === empId;
-    const isEventCreator = eventDetails.emp_id === empId;
+    const isCurrentUserResponse = response.r_emp_id === currentUserEmpId;
+    const isEventCreator = eventDetails.emp_id === currentUserEmpId;
     const isEditing = editingResponse?.id === response.id;
     
     // Determine bubble width based on screen size
@@ -507,6 +514,11 @@ const EventDetailsScreen = (props) => {
           />
         </View>
       </SafeAreaView>
+      <SuccessModal
+  visible={isSuccessModalVisible}
+  onClose={() => setIsSuccessModalVisible(false)}
+  message={successModalMessage}
+/>
     </KeyboardAvoidingView>
   );
 };
