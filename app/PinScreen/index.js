@@ -227,7 +227,7 @@ const AuthScreen = () => {
                                 styles.submitButton,
                                 !mPIN.every(digit => digit !== '') && {
                                     backgroundColor: '#fff',
-                                    borderColor: '#4d88ff',
+                                    borderColor: 'rgb(207, 214, 221)',
                                     borderWidth: 1,
                                     shadowColor: 'transparent',
                                     elevation: 0,
@@ -238,7 +238,7 @@ const AuthScreen = () => {
                         >
                             <Text style={[
                                 styles.submitButtonText,
-                                !mPIN.every(digit => digit !== '') && { color: '#666' }
+                                !mPIN.every(digit => digit !== '') && { color: '#3333' }
                             ]}>
                                 LOGIN
                             </Text>
