@@ -122,6 +122,6 @@ export const getEmpSal = async () => {
 };
 export const setUserPinURL =  async () => {
   const db_name = await getDbName();
-  return `${newendpoint}/set_user_pin/${db_name}/`;
+  return `${endpoint}/set_user_pin/${db_name}/`;
 }
 

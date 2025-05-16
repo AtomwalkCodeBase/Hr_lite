@@ -206,13 +206,13 @@ const handleCancel = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionContainer}>
-            {/* <TouchableOpacity 
+            <TouchableOpacity 
               style={[styles.actionButton, styles.primaryButton]}
               onPress={handlePressPassword}
             >
               <MaterialIcons name="lock" size={20} color="#fff" />
               <Text style={styles.buttonText}>{userPin ? 'UPDATE SECURITY PIN' : 'SET SECURITY PIN'}</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.actionButton, styles.secondaryButton]}

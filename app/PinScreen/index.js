@@ -222,6 +222,8 @@ const AuthScreen = () => {
                                 </Text>
                             </View>
                         )}
+
+                        
                         <TouchableOpacity 
                             style={[
                                 styles.submitButton,
@@ -287,6 +289,21 @@ const AuthScreen = () => {
                         </TouchableOpacity>
                     </View>
                 )}
+
+                <View style={styles.securityNote}>
+                    <Icon name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
+                    <View style={styles.noteContent}>
+                        <Text style={styles.noteTitle}>Security Notice</Text>
+                        <Text style={styles.noteText}>
+                            <Text style={styles.bulletPoint}>• </Text>
+                            Never share your PIN with anyone
+                            {'\n'}
+                            <Text style={styles.bulletPoint}>• </Text>
+                            If you've updated your PIN using web app, please logout and login again with your new PIN
+                            (Login with PIN - Logout)
+                        </Text>
+                    </View>
+                </View>
                 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>© 2025 ATOMWALK. All rights reserved.</Text>
@@ -533,6 +550,40 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 5,
     },
+    securityNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 167, 38, 0.1)', // 10% opacity of warning color
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFA726',
+    width: '100%',
+},
+noteIcon: {
+    marginRight: 12,
+    marginTop: 3,
+},
+noteContent: {
+    flex: 1,
+},
+noteTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFA726',
+    marginBottom: 6,
+},
+noteText: {
+    fontSize: 13,
+    color: '#757575',
+    lineHeight: 20,
+},
+bulletPoint: {
+    fontWeight: 'bold',
+    color: '#FFA726',
+},
 });
 
 export default AuthScreen;
