@@ -32,10 +32,10 @@ const scaleHeight = (size) => (height / 812) * size;
 
 const AuthScreen = () => {
     
-      const { logout } = useContext(AppContext);
+    const { logout } = useContext(AppContext);
     const { login, setIsLoading, isLoading } = useContext(AppContext);
     const router = useRouter();
-    const [mPIN, setMPIN] = useState(['', '', '', '']);
+    const [value, setValue] = useState('');
     const [attemptsRemaining, setAttemptsRemaining] = useState(5);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -48,7 +48,7 @@ const AuthScreen = () => {
 
     const openPopup = () => setModalVisible(true);
     const maxAttempts = 5;
-    const inputRefs = Array(4).fill().map(() => useRef(null));
+    // const inputRefs = Array(4).fill().map(() => useRef(null));
 
     useEffect(() => {
         const loadUserName = async () => {
@@ -81,12 +81,13 @@ const AuthScreen = () => {
     };
 
     const handleMPINChange = (text, index) => {
-        const updatedMPIN = [...mPIN];
-        updatedMPIN[index] = text;
-        setMPIN(updatedMPIN);
+        // const updatedMPIN = [...mPIN];
+        // updatedMPIN[index] = text;
+        // setMPIN(updatedMPIN);
 
-        if (text && index < 3) inputRefs[index + 1].current.focus();
-        if (!text && index > 0) inputRefs[index - 1].current.focus();
+        // if (text && index < 3) inputRefs[index + 1].current.focus();
+        // if (!text && index > 0) inputRefs[index - 1].current.focus();
+        setValue(text);
     };
 
     const handleMPINSubmit = async () => {
@@ -100,20 +101,32 @@ const AuthScreen = () => {
         const finalUsername = await AsyncStorage.getItem('empId');
         const userPassword = await AsyncStorage.getItem('userPin');
     
-        setTimeout(() => {
-            if (mPIN.join('') === correctMPIN) {
-                setIsAuthenticated(true);
-                login(finalUsername, userPassword);
-            } else {
-                const remaining = attemptsRemaining - 1;
-                setAttemptsRemaining(remaining);
-                // if (remaining > 0) {
-                //     Alert.alert('Incorrect PIN', `${remaining} attempts remaining`);
-                // } else {
-                //     Alert.alert('Account Locked', 'Too many incorrect attempts.');
-                // }
+        // setTimeout(() => {
+        //     if (mPIN.join('') === correctMPIN) {
+        //         setIsAuthenticated(true);
+        //         login(finalUsername, userPassword);
+        //     } else {
+        //         const remaining = attemptsRemaining - 1;
+        //         setAttemptsRemaining(remaining);
+        //          if (remaining > 0) {
+        //              Alert.alert('Incorrect PIN', `${remaining} attempts remaining`);
+        //          } else {
+        //              Alert.alert('Account Locked', 'Too many incorrect attempts.');
+        //          }
+        //     }
+        // }, 1000);
+         if (value === correctMPIN) {
+            setIsAuthenticated(true);
+            login(finalUsername, userPassword);
+        } else {
+            const remaining = attemptsRemaining - 1;
+            setAttemptsRemaining(remaining);
+             if (remaining < 4 ) {
+            setErrorMessage('Incorrect PIN,Try again...');
+            triggerShake();
+            return;
             }
-        }, 1000);
+        }
     };
 
     const handleBiometricAuthentication = async () => {
@@ -197,7 +210,7 @@ const AuthScreen = () => {
                 ) : showPinInput ? (
                     <View style={styles.card}>
                         <Text style={styles.title}>Enter your 4-digit PIN</Text>
-                        <View style={styles.mPINContainer}>
+                        {/* <View style={styles.mPINContainer}>
                             {mPIN.map((value, index) => (
                                 <TextInput
                                     key={index}
@@ -213,7 +226,25 @@ const AuthScreen = () => {
                                     onChangeText={(text) => handleMPINChange(text, index)}
                                 />
                             ))}
-                        </View>
+                        </View> */}
+                         <TextInput
+                                style={[styles.input, { height: 50, width: '100%', backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 10 }]}
+                                placeholder="Enter your PIN"
+                                secureTextEntry
+                                keyboardType="numeric"
+                                maxLength={10}
+                                value={value}
+                                onChangeText={handleMPINChange}
+                                placeholderTextColor="#888" // Ensure placeholder text is visible
+                            />
+                        {/* {attemptsRemaining < maxAttempts && (
+                            <View style={styles.errorContainer}>
+                                <Icon name="alert-circle-outline" size={16} color="#E02020" />
+                                <Text style={styles.errorText}>
+                                    Incorrect PIN. {attemptsRemaining} attempts remaining.
+                                </Text>
+                            </View>
+                        )} */}
                         {attemptsRemaining < maxAttempts && (
                             <View style={styles.errorContainer}>
                                 <Icon name="alert-circle-outline" size={16} color="#E02020" />
@@ -227,7 +258,7 @@ const AuthScreen = () => {
                         <TouchableOpacity 
                             style={[
                                 styles.submitButton,
-                                !mPIN.every(digit => digit !== '') && {
+                                value.length < 4  && {
                                     backgroundColor: '#fff',
                                     borderColor: 'rgb(207, 214, 221)',
                                     borderWidth: 1,
@@ -236,11 +267,11 @@ const AuthScreen = () => {
                                 }
                             ]}
                             onPress={handleMPINSubmit}
-                            disabled={!mPIN.every(digit => digit !== '')}
+                            disabled={ value.length < 4 }
                         >
                             <Text style={[
                                 styles.submitButtonText,
-                                !mPIN.every(digit => digit !== '') && { color: '#3333' }
+                                 value.length < 4 && { color: '#666' }
                             ]}>
                                 LOGIN
                             </Text>
@@ -550,39 +581,16 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 5,
     },
-    securityNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 167, 38, 0.1)', // 10% opacity of warning color
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#FFA726',
-    width: '100%',
-},
-noteIcon: {
-    marginRight: 12,
-    marginTop: 3,
-},
-noteContent: {
-    flex: 1,
-},
-noteTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFA726',
-    marginBottom: 6,
-},
-noteText: {
-    fontSize: 13,
-    color: '#757575',
-    lineHeight: 20,
-},
-bulletPoint: {
-    fontWeight: 'bold',
-    color: '#FFA726',
+    input: {
+    color: '#9C5EF9',
+    fontSize: 16,
+    padding: 10, // Added padding for better visibility
+    letterSpacing: 2, // Adds spacing between characters for PIN input
+    borderWidth: 1, // Added border for visibility
+    borderColor: '#ddd', // Light gray border
+    borderRadius: 8, // Rounded corners
+    backgroundColor: '#fff', // White background
+    marginBottom:15
 },
 });
 
