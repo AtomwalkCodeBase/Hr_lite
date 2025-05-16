@@ -1,116 +1,79 @@
 import React from 'react';
-import styled from 'styled-components/native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Dimensions,
+  Platform 
+} from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const CardContainer = styled.TouchableOpacity`
-  background-color: #fff;
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 16px;
-  shadow-color: #000;
-  shadow-opacity: 0.1;
-  shadow-radius: 6px;
-  elevation: 3;
-  border-left-width: 6px;
-  border-left-color: ${props => props.leaveTypeColor};
-`;
+const { width } = Dimensions.get('window');
 
-const HeaderRow = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-`;
+const NewLeaveCardComponent = ({ leave, onPress }) => {
+  const leaveTypeColor = getLeaveTypeColor(leave.leave_type);
+  const statusStyles = getStatusStyles(leave.status);
+  const isHalfOrFullDay = leave.no_leave_count === '0.5' || leave.no_leave_count === '0.0' || leave.no_leave_count === '1.0' || leave.leave_type === 'WH';
 
+  return (
+    <TouchableOpacity 
+      style={[
+        styles.cardContainer,
+        { borderLeftColor: leaveTypeColor }
+      ]}
+      onPress={() => onPress(leave)}
+    >
+      <View style={styles.headerRow}>
+        <View style={styles.dateContainer}>
+          <View style={styles.dateRow}>
+            <MaterialIcons name="event" size={18} color="#666" />
+            <Text style={styles.dateText}>{formatDateWithoutYear(leave.from_date)}</Text>
+          </View>
+          
+          {!isHalfOrFullDay && (
+            <View style={[styles.dateRow, styles.lastDateRow]}>
+              <MaterialIcons name="event" size={18} color="#666" />
+              <Text style={styles.dateText}>{formatDateWithoutYear(leave.to_date)}</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.badgeContainer}>
+          <View style={[styles.leaveTypeBadge, { backgroundColor: leaveTypeColor }]}>
+            <Text style={styles.leaveTypeText}>{getLeaveTypeDisplay(leave.leave_type)}</Text>
+          </View>
+          {!isHalfOrFullDay && (
+            <Text style={styles.daysText}>
+              {formatLeaveCount(leave.no_leave_count)} {leave.no_leave_count === '1.0' ? 'day' : 'days'}
+            </Text>
+          )}
+        </View>
 
-const DateContainer = styled.View`
-  width: 33%;
-`;
+        <View style={[styles.statusBadge, { backgroundColor: statusStyles.bgColor }]}>
+          <MaterialIcons 
+            name={statusStyles.icon} 
+            size={16} 
+            color={statusStyles.color} 
+          />
+          <Text style={[styles.statusText, { color: statusStyles.color }]}>
+            {leave.status_display}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
-const DateRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: ${props => props.last ? '0' : '6px'};
-`;
-
-const DateText = styled.Text`
-  font-size: 16px;
-  color: #444;
-  font-weight: 600;
-  margin-left: 8px;
-`;
-
-const BadgeContainer = styled.View`
-  width: 33%;
-  align-items: center;
-`;
-
-const LeaveTypeBadge = styled.View`
-  background-color: ${props => props.color};
-  padding: 6px 12px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  min-width: 100px; /* Minimum width */
-  align-items: center;
-`;
-
-const LeaveTypeText = styled.Text`
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-`;
-
-const DaysText = styled.Text`
-  font-size: 15px;
-  color: #555;
-  font-weight: 500;
-  text-align: right;
-`;
-
-const StatusContainer = styled.View`
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top-width: 1px;
-  border-top-color: #f5f5f5;
-`;
-
-const StatusBadge = styled.View`
-  flex-direction: row;
-  align-items: center;
-  background-color: ${props => props.bgColor};
-  padding: 6px 12px;
-  border-radius: 16px;
-  justify-content: center;
-  min-width: 100px; /* Ensures a minimum width */
-  max-width: 120px; /* Prevents excessive stretching */
-  margin-left: auto; /* Pushes it to the right if needed */
-`;
-
-const StatusText = styled.Text`
-  font-size: 13px;
-  font-weight: 600;
-  color: ${props => props.color};
-  margin-left: 6px;
-`;
-
-const SubmittedText = styled.Text`
-  font-size: 12px;
-  color: #888;
-`;
-
+// Helper functions (same as before)
 const getLeaveTypeColor = (type) => {
   const colors = {
-    'EL': '#4CAF50',  // Green for Earned Leave
-    'WH': '#2196F3',  // Blue for Work From Home
-    'HL': '#FF9800',  // Orange for Half Day
-    'LP': '#F44336'   // Red for Loss of Pay
+    'EL': '#4CAF50',
+    'WH': '#2196F3',
+    'HL': '#FF9800',
+    'LP': '#F44336'
   };
-  return colors[type] || '#9E9E9E'; // Default gray
+  return colors[type] || '#9E9E9E';
 };
 
 const getLeaveTypeDisplay = (type) => {
@@ -125,40 +88,38 @@ const getLeaveTypeDisplay = (type) => {
 
 const getStatusStyles = (status) => {
   switch (status) {
-    case 'A': // Approved (Green)
+    case 'A':
       return { 
         bgColor: '#E8F5E9', 
         color: '#2E7D32', 
-        icon: 'check-circle-outline'  // More modern outline variant
+        icon: 'check-circle-outline'
       };
-    case 'S': // Submitted/Pending Approval (Blue)
+    case 'S':
       return { 
         bgColor: '#E3F2FD', 
-        color: '#0D47A1',             // Darker blue for better contrast
-        icon: 'schedule'              // Clock icon for "pending approval"
+        color: '#0D47A1',
+        icon: 'schedule'
       };
-    case 'C': // Cancelled (Red)
+    case 'C':
       return { 
         bgColor: '#FFEBEE', 
         color: '#C62828', 
-        icon: 'cancel-presentation'   // More distinct "cancelled" icon
+        icon: 'cancel-presentation'
       };
-    case 'R': // Rejected (Dark Red)
+    case 'R':
       return { 
         bgColor: '#FCE4EC', 
         color: '#B71C1C', 
-        icon: 'block'                 // Stronger "rejected" connotation
+        icon: 'block'
       };
-    default: // Pending (Orange)
+    default:
       return { 
         bgColor: '#FFF3E0', 
-        color: '#E65100',             // Darker orange for readability
-        icon: 'hourglass-empty'      // Clear "waiting" metaphor
+        color: '#E65100',
+        icon: 'hourglass-empty'
       };
   }
 };
-
-
 
 const formatDateWithoutYear = (dateString) => {
   const [day, month, year] = dateString.split('-');
@@ -167,69 +128,98 @@ const formatDateWithoutYear = (dateString) => {
   return date.toLocaleDateString('en-US', options);
 };
 
-
-const formatSubmitDate = (dateString) => {
-  const [day, month, year] = dateString.split('-');
-  const date = new Date(`${year}-${month}-${day}`);
-  const options = { day: 'numeric', month: 'short', year: 'numeric' };
-  return date.toLocaleDateString('en-US', options);
+const formatLeaveCount = (count) => {
+  const num = parseFloat(count);
+  if (num % 1 === 0) {
+    return num.toString();
+  }
+  return count;
 };
 
-
-const NewLeaveCardComponent = ({ leave, onPress }) => {
-  const leaveTypeColor = getLeaveTypeColor(leave.leave_type);
-  const statusStyles = getStatusStyles(leave.status);
-  const isHalfOrFullDay = leave.no_leave_count === '0.5' || leave.no_leave_count === '1.0' || leave.leave_type === 'WH';
-
-  console.log("Leave---0",leave)
-  
-  return (
-    <CardContainer onPress={() => onPress(leave)} leaveTypeColor={leaveTypeColor}>
-      <HeaderRow>
-        <DateContainer>
-          <DateRow>
-            <MaterialIcons name="event" size={18} color="#666" />
-            <DateText>{formatDateWithoutYear(leave.from_date)}</DateText>
-          </DateRow>
-          
-          {!isHalfOrFullDay && (
-            <DateRow last>
-              <MaterialIcons name="event" size={18} color="#666" />
-              <DateText>{formatDateWithoutYear(leave.to_date)}</DateText>
-            </DateRow>
-          )}
-        </DateContainer>
-        
-        <BadgeContainer>
-          <LeaveTypeBadge color={leaveTypeColor}>
-            <LeaveTypeText>{getLeaveTypeDisplay(leave.leave_type)}</LeaveTypeText>
-          </LeaveTypeBadge>
-          {!isHalfOrFullDay && (
-          <DaysText>
-            {leave.no_leave_count === '1.0' ? '1 day' : `${leave.no_leave_count} days`}
-          </DaysText>
-          )}
-        </BadgeContainer>
-
-        <StatusBadge bgColor={statusStyles.bgColor}>
-          <MaterialIcons 
-            name={statusStyles.icon} 
-            size={16} 
-            color={statusStyles.color} 
-          />
-          <StatusText color={statusStyles.color}>
-            {leave.status_display}
-          </StatusText>
-        </StatusBadge>
-      </HeaderRow>
-
-      {/* <StatusContainer>
-        
-        
-        <SubmittedText>Applied on {formatSubmitDate(leave.submit_date)}</SubmittedText>
-      </StatusContainer> */}
-    </CardContainer>
-  );
-};
+// Styles
+const styles = StyleSheet.create({
+  cardContainer: {
+    backgroundColor: '#fff',
+    padding: width * 0.04, // Responsive padding
+    borderRadius: 12,
+    marginBottom: width * 0.04,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+    borderLeftWidth: 6,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 1,
+  },
+  dateContainer: {
+    width: '33%',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  lastDateRow: {
+    marginBottom: 0,
+  },
+  dateText: {
+    fontSize: width > 400 ? 16 : 14, // Larger font on bigger screens
+    color: '#444',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  badgeContainer: {
+    width: '33%',
+    alignItems: 'center',
+  },
+  leaveTypeBadge: {
+    padding: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginBottom: 8,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  leaveTypeText: {
+    fontSize: width > 400 ? 13 : 12,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  daysText: {
+    fontSize: width > 400 ? 15 : 14,
+    color: '#555',
+    fontWeight: '500',
+    textAlign: 'right',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    justifyContent: 'center',
+    minWidth: 100,
+    maxWidth: 120,
+    marginLeft: 'auto',
+  },
+  statusText: {
+    fontSize: width > 400 ? 13 : 12,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+});
 
 export default NewLeaveCardComponent;

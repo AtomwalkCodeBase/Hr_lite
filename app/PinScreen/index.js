@@ -97,7 +97,7 @@ const AuthScreen = () => {
         }
     
         const correctMPIN = await AsyncStorage.getItem('userPin');
-        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const finalUsername = await AsyncStorage.getItem('empId');
         const userPassword = await AsyncStorage.getItem('userPin');
     
         setTimeout(() => {
@@ -117,7 +117,7 @@ const AuthScreen = () => {
     };
 
     const handleBiometricAuthentication = async () => {
-        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const finalUsername = await AsyncStorage.getItem('empId');
         const userPassword = await AsyncStorage.getItem('userPin');
 
         try {
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     submitButton: {
-        backgroundColor: '#4d88ff',
+        backgroundColor: '#007AFF',
         paddingVertical: 15,
         paddingHorizontal: 50,
         borderRadius: 8,

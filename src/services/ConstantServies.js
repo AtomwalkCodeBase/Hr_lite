@@ -8,7 +8,7 @@ const getDbName = async (path) => {
 };
 
 
-const localhost = "https://www.atomwalk.com"
+const localhost = "https://crm.atomwalk.com"
 const newlocalhost = "https://crm.atomwalk.com"
 
 const apiURL = "/api";
@@ -120,4 +120,8 @@ export const getEmpSal = async () => {
   const db_name = await getDbName();
   return `${newendpoint}/get_emp_salary_data/${db_name}/`;
 };
+export const setUserPinURL =  async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/set_user_pin/${db_name}/`;
+}
 

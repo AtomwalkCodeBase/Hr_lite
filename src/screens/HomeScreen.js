@@ -122,14 +122,12 @@ const [eventLoading, setEventLoading] = useState(true);
   const fetchData = async () => {
     setIsLoading(true);
 
-    
-  
     try {
       // Fetch employee profile
       const profileRes = await getEmployeeInfo();
       const profileData = profileRes.data?.[0];
 
-      console.log("Profile data===",profileData)
+      console.log("Profile data===", profileData);
       if (!profileData) throw new Error("Employee profile data not found.");
 
       if (profileData) {
@@ -147,17 +145,13 @@ const [eventLoading, setEventLoading] = useState(true);
       setEmpNId(profileData.id);
       setIsManager(profileData?.is_manager || false);
   
-      // Optional: Uncomment if you want to check for birthday
-      // if (profileData?.emp_data?.dob) {
-      //   checkIfBirthday(profileData.emp_data.dob);
-      // }
-  
       // Fetch company info
       const companyRes = await getCompanyInfo();
+      if (companyRes.status !== 200) {
+        console.error("Company info fetch failed with status:", companyRes.status);
+        throw new Error("Failed to fetch company information");
+      }
       setCompany(companyRes.data);
-  
-      // Set hardcoded events
-      
   
       // Set current date and time
       const now = moment();

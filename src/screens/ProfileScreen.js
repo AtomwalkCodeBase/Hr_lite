@@ -197,7 +197,7 @@ const handleCancel = () => {
               <Switch
                 value={useFingerprint}
                 onValueChange={handleSwitchToggle}
-                trackColor={{ false: "#dcdcdc", true: "#4CAF50" }}
+                trackColor={{ false: "#dcdcdc", true: "#2A73FC" }}
                 thumbColor={useFingerprint ? "#fff" : "#f4f3f4"}
               />
 
