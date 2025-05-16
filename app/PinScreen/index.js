@@ -338,7 +338,7 @@ const AuthScreen = () => {
                 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>© 2025 ATOMWALK. All rights reserved.</Text>
-                    <Text style={styles.versionText}>Version 1.0.8</Text>
+                    <Text style={styles.versionText}>Version 1.0.15</Text>
                 </View>
             </View>
 
@@ -591,6 +591,40 @@ const styles = StyleSheet.create({
     borderRadius: 8, // Rounded corners
     backgroundColor: '#fff', // White background
     marginBottom:15
+},
+securityNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 167, 38, 0.1)', // 10% opacity of warning color
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFA726',
+    width: '100%',
+},
+noteIcon: {
+    marginRight: 12,
+    marginTop: 3,
+},
+noteContent: {
+    flex: 1,
+},
+noteTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFA726',
+    marginBottom: 6,
+},
+noteText: {
+    fontSize: 13,
+    color: '#757575',
+    lineHeight: 20,
+},
+bulletPoint: {
+    fontWeight: 'bold',
+    color: '#FFA726',
 },
 });
 
