@@ -285,7 +285,7 @@ const AuthScreen = () => {
                             onPress={() => setShowFingerprint(false)}
                         >
                             <Icon name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
-                            <Text style={styles.backButtonText}>Use PIN instead</Text>
+                            <Text style={styles.backButtonText}>Back to Login Options</Text>
                         </TouchableOpacity>
                     </View>
                 )}

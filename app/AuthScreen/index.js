@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { publicAxiosRequest } from '../../src/services/HttpMethod';
 import DropdownPicker from '../../src/components/DropdownPicker';
 import CompanyDropdown from '../../src/components/ComanyDropDown';
+import Loader from '../../src/components/old_components/Loader';
 
 
 
@@ -178,18 +179,22 @@ const handleCompanyChange = async (item) => {
   const validateInput = () => {
     if (!selectedCompany) {
       setCompanyError('Please select your company');
+      setLoading(false);
       return false;
     }
     if (!mobileNumberOrEmpId) {
       setErrorMessage('Mobile number or Employee ID is required');
+      setLoading(false);
       return false;
     }
     if (!pin) {
       setErrorMessage('PIN is required');
+      setLoading(false);
       return false;
     }
     if (pin.length < 4) {
       setErrorMessage('PIN must be at least 4 characters long');
+      setLoading(false);
       return false;
     }
     setErrorMessage('');
@@ -227,11 +232,13 @@ useEffect(() => {
 }, [selectedCompany]);
 
   const handlePress = async () => {
+    
+  
+    setLoading(true);
+
     if (!validateInput()) {
       return;
     }
-  
-    setLoading(true);
   
     try {
 
@@ -431,6 +438,13 @@ useEffect(() => {
             </Footer>
           </Container>
         {/* </KeyboardAvoidingView> */}
+        <Loader 
+        visible={loading} 
+        onTimeout={() => {
+                    setLoading(false); // Hide loader
+                    Alert.alert('Timeout', 'Not able to Login.');
+                  }}
+      />
       </SafeAreaContainer>
   );
 };

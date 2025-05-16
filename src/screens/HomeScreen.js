@@ -549,25 +549,25 @@ const [eventLoading, setEventLoading] = useState(true);
     {
       id: 3,
       title: 'Leaves',
-      icon: <Ionicons name="calendar-outline" size={24} color="#a970ff" />,
+      icon: <FontAwesome5 name="calendar-alt" size={24} color="#a970ff" />,
       onPress: () => router.push('leave')
     },
     ...(isManager ? [{
       id: 4,
       title: 'Approve Leave',
-      icon: <Ionicons name="checkmark-done-circle-outline" size={24} color="#a970ff" />,
+      icon: <FontAwesome5 name="calendar-check" size={24} color="#a970ff" />,
       onPress: () => handlePressApproveLeave()
     }] : []),
     {
       id: 5,
       title: 'Claims',
-      icon: <MaterialIcons name="attach-money" size={24} color="#a970ff" />,
+      icon: <FontAwesome5 name="rupee-sign" size={24} color="#a970ff" />,
       onPress: () => router.push('ClaimScreen')
     },
     ...(isManager ? [{
       id: 6,
       title: 'Approve Claims',
-      icon: <MaterialIcons name="monetization-on" size={24} color="#a970ff" />,
+      icon: <FontAwesome5 name="money-bill-wave-alt" size={24} color="#a970ff" />,
       onPress: () => router.push('ApproveClaim')
     }] : []),
     {
