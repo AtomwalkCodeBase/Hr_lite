@@ -252,16 +252,16 @@ useEffect(() => {
       const payload = isMobileNumber 
         ? {
             mobile_number: mobileNumberOrEmpId,
-            pin: parseInt(pin, 10),
+            pin: pin,
           }
         : {
             emp_id: mobileNumberOrEmpId,
-            pin: parseInt(pin, 10),
+            pin: pin,
           };
           
   
       const url = await empLoginURL();
-      // console.log("Payload--------",payload)
+      console.log("Payload--------",payload)
       const response = await publicAxiosRequest.post(url, payload, {
         headers: { 'Content-Type': 'application/json' },
       });
@@ -269,7 +269,7 @@ useEffect(() => {
 
       if (response.status === 200) {
         const { token, emp_id, e_id } = response.data;
-        await AsyncStorage.setItem('userToken', token);
+        
         // Determine if the input is a mobile number (10 digits) or employee ID
         const isMobileNumber = /^\d{10}$/.test(mobileNumberOrEmpId);
         
@@ -279,6 +279,7 @@ useEffect(() => {
           await AsyncStorage.setItem('empId', mobileNumberOrEmpId);
         }
         // await AsyncStorage.setItem('mobileNumber', mobileNumberOrEmpId);
+        await AsyncStorage.setItem('userToken', token);
         await AsyncStorage.setItem('empId', emp_id);
         await AsyncStorage.setItem('empNoId', String(e_id));
         await AsyncStorage.setItem('userPin', pin);
@@ -403,7 +404,7 @@ useEffect(() => {
                       <LoginButton 
                         onPress={handlePress}
                         disabled={isLoginDisabled}
-                        style={{ backgroundColor: isLoginDisabled ? '#fff' : '#0062cc' }}
+                        style={{ backgroundColor: isLoginDisabled ? '#fff' : '#007AFF' }}
                       >
                         <LoginButtonText style={{ color: isLoginDisabled ? '#454545' : '#fff' }}>
                           LOGIN

@@ -24,6 +24,8 @@ export const colors = {
   green: '#32cd32',
   darkred: '#ff2020',
   darkgrey: '#4c4c4c',
+  warning: '#FFA726',  // Orange warning color (Material Design)
+  textSecondary: '#757575',  // Dark gray for secondary text (Material Design)
 };
 
 const statusBarHeight = Constants.statusBarHeight;

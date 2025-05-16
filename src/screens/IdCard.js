@@ -1,129 +1,55 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, ImageBackground, ScrollView } from 'react-native';
-import styled from 'styled-components/native';
+import { 
+  View, 
+  Text, 
+  Image,
+  TouchableOpacity, 
+  StyleSheet, 
+  Dimensions, 
+  ScrollView,
+  SafeAreaView,
+  Platform,
+  StatusBar
+} from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { useNavigation } from '@react-navigation/native';
 import { AppContext } from '../../context/AppContext';
-import { getCompanyInfo, getEmployeeInfo, getProfileInfo } from '../services/authServices';
+import { getCompanyInfo, getEmployeeInfo } from '../services/authServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import HeaderComponent from '../components/HeaderComponent';
-
 import QRCode from 'react-native-qrcode-svg';
-import QRModal from '../components/QRModal';
 import { LinearGradient } from 'expo-linear-gradient';
-import Loader from '../components/old_components/Loader';  // Import Loader component
+import { Ionicons } from '@expo/vector-icons';
+import HeaderComponent from '../components/HeaderComponent';
+import Loader from '../components/old_components/Loader';
 
-const Container = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-  background-color: #f4f4f4;
-`;
+// Get screen dimensions for responsive design
+const { width, height } = Dimensions.get('window');
 
-const StyledScrollView = styled(ScrollView).attrs({
-  showsVerticalScrollIndicator: false,  // Hide vertical scrollbar
-  showsHorizontalScrollIndicator: false, // Hide horizontal scrollbar
-  keyboardShouldPersistTaps: 'handled', // Allow taps to be handled while keyboard is open
-  contentContainerStyle: { flexGrow: 1 }, // Ensures full content scrollability
-})``;
-
-
-const CardContainer = styled.View`
-  border-radius: 15px;
-  padding: 25px;
-  width: 90%;
-  align-items: center;
-  overflow: hidden;
-  max-width: 800px;
-`;
-
-const CompanyLogo = styled.Image`
-  width: 120px;
-  height: 120px;
-  margin-top: -50px; /* Reduce space above the logo */
-  margin-bottom: -10px; /* Reduce space below the logo */
-  resize-mode: contain;
-`;
+// Custom Header Component
+const Header = ({ title, onBackPress }) => {
+  return (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={onBackPress} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>{title}</Text>
+      <View style={styles.headerRight} />
+    </View>
+  );
+};
 
 
-const ProfileImage = styled.Image`
-  width: 160px;
-  height: 160px;
-  border-radius: 80px;
-  margin-bottom: 10px;
-  border-width: 2px;
-  border-color: #ddd;
-`;
-
-const UserName = styled.Text`
-  font-size: 22px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 5px;
-`;
-
-const InfoText = styled.Text`
-  font-size: 12px;
-  color: rgb(29, 29, 29);
-  margin-bottom: 10px;
-  text-align: center;
-`;
-const GradeText = styled.Text`
-  font-size: 13px;
-  font-weight: bold;
-  color: rgb(29, 29, 29);
-  margin-bottom: 5px;
-  text-align: center;
-`;
-
-const UrlContainer = styled(LinearGradient).attrs({
-  colors: ['#2E71F7', '#2E5DB7'], // Adjusted gradient with a closer shade
-  start: { x: 0, y: 0 },
-  end: { x: 1, y: 0 }, // Horizontal gradient for a smoother transition
-})`
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 0;
-  position: absolute;
-  bottom: 0;
-`;
-
-
-const UrlText = styled.Text`
-  font-size: 12px;
-  color: #fff;
-  font-weight: bold;
-  text-align: center;
-`;
-
-const Button = styled.TouchableOpacity`
-  margin-top: 20px;
-  background-color: #00796b;
-  padding: 12px 25px;
-  border-radius: 8px;
-  align-items: center;
-  width: 100%;
-  max-width: 250px;
-`;
-
-const ButtonText = styled.Text`
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-`;
 
 const IdCard = () => {
   const navigation = useNavigation();
   const { logout } = useContext(AppContext);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [profile, setProfile] = useState({});
   const [company, setCompany] = useState({});
   const [userPin, setUserPin] = useState(null);
   const cardRef = useRef();
   const [hideButtons, setHideButtons] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserPin = async () => {
@@ -155,14 +81,6 @@ const IdCard = () => {
     navigation.goBack();
   };
 
-  const handleQRPress = () => {
-    setIsModalVisible(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalVisible(false);
-  };
-
   const handleDownload = async () => {
     try {
       setHideButtons(true);
@@ -187,100 +105,354 @@ const IdCard = () => {
     }
   };
 
+  // Format date to display nicely
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    
+    // Parse the "dd-mmm-yyyy" format manually
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return dateString; // fallback if format is unexpected
+    
+    const day = parseInt(parts[0], 10);
+    const month = parts[1];
+    const year = parseInt(parts[2], 10);
+    
+    // Create a more reliable date object
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthIndex = monthNames.indexOf(month);
+    const date = new Date(year, monthIndex, day);
+    
+    // Format the date
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+};
 
   return (
     <>
-      <HeaderComponent headerTitle="My Id" onBackPress={handleBackPress} />
-
-      {/* Loader - Appears while fetching data */}
+      <HeaderComponent headerTitle="Digital ID Card" onBackPress={handleBackPress} />
+      
       <Loader visible={isLoading} onTimeout={() => setIsLoading(false)} />
-
+      
       {!isLoading && (
-        <StyledScrollView>
-        <Container>
-          <View ref={cardRef} collapsable={false} style={{ alignItems: 'center', width: '100%' }}>
-            <ImageBackground
-              source={require('../../assets/images/Id-Bg.png')}
-              style={{
-                borderRadius: 15,
-                overflow: 'hidden',
-                padding: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                maxWidth: 800,
-                position: "relative",
-              }}
-              resizeMode="cover"
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.container}>
+            {/* ID Card */}
+            <View 
+              ref={cardRef} 
+              collapsable={false} 
+              style={styles.cardOuterContainer}
             >
-              <CardContainer>
-                  <View style={{ alignItems: 'center', marginBottom: 10 }}>
+              <LinearGradient
+                colors={['#1a237e', '#303f9f', '#3949ab']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cardContainer}
+              >
+                {/* Company Header */}
+                <View style={styles.companyHeader}>
+                  {company.image ? (
+                    <Image 
+                      source={{ uri: company.image }} 
+                      style={styles.companyLogo} 
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.companyPlaceholder}>
+                      <Text style={styles.companyPlaceholderText}>
+                        {company.name ? company.name.charAt(0) : "C"}
+                      </Text>
+                    </View>
+                  )}
+                  <Text style={styles.companyName}>{company.name || "Company Name"}</Text>
+                </View>
+                
+                {/* ID Card Body */}
+                <View style={styles.cardBody}>
+                  {/* Left side - Employee Photo */}
+                  <View style={styles.photoSection}>
+                    <View style={styles.photoContainer}>
+                      <Image 
+                        source={{ uri: profile?.image }} 
+                        style={styles.profileImage}
+                        defaultSource={require('../../assets/images/Id-Bg.png')}
+                      />
+                    </View>
+                    <View style={styles.qrCodeContainer}>
+                      <QRCode
+                        value={profile?.emp_id || 'Employee ID Not Allocated'}
+                        size={width * 0.18}
+                        backgroundColor="white"
+                      />
+                    </View>
+                  </View>
+                  
+                  {/* Right side - Employee Details */}
+                  <View style={styles.detailsSection}>
+                    <Text style={styles.employeeName}>{profile?.name || "Employee Name"}</Text>
+                    {profile?.grade_name && (
+                      <Text style={styles.designation}>{profile?.grade_name}</Text>
+                    )}
                     
-
-                    {company.image ? (
-                      <CompanyLogo source={{ uri: company.image }} />
-                    ) : (
-                      <Text style={{ color: '#fff', fontSize: 12 }}>No Logo Available</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>ID:</Text>
+                      <Text style={styles.detailValue}>{profile?.emp_id || "N/A"}</Text>
+                    </View>
+                    
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Dept:</Text>
+                      <Text style={styles.detailValue}>{profile?.department_name || "N/A"}</Text>
+                    </View>
+                    
+                    {profile?.mobile_number && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Mobile:</Text>
+                        <Text style={styles.detailValue}>{profile?.mobile_number}</Text>
+                      </View>
+                    )}
+                    
+                    {profile?.date_of_join && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Joined:</Text>
+                        <Text style={styles.detailValue}>{formatDate(profile?.date_of_join)}</Text>
+                      </View>
                     )}
                   </View>
-                <ProfileImage source={{ uri: profile?.image }} />
-                <UserName>{profile?.name}</UserName>
-                {profile?.grade_name ? (
-                      <GradeText>{profile?.grade_name}</GradeText>
-                    ) : null}
-                {/* <GradeText>{profile?.emp_data?.grade_name}</GradeText> */}
-
-                {/* Row layout for QR Code and InfoText */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <QRCode
-                  value={profile?.emp_id || 'Employee Id Not Allocated'}
-                  size={65} // Set fixed size
-                />
-                <View style={{ marginLeft: 15, alignItems: 'flex-start', marginTop: 6 }}>  
-                  <InfoText>Employee ID: {profile?.emp_id}</InfoText>
-                  <InfoText>Department: {profile?.department_name}</InfoText>
-                  {/* <InfoText>Grade: {profile?.emp_data?.grade_name}</InfoText> */}
-                  {profile?.mobile_number ? (
-                      <InfoText>Mobile: {profile?.mobile_number}</InfoText>
-                    ) : null}
-                  {/* <InfoText>Mobile: {profile?.mobile_number}</InfoText> */}
                 </View>
-              </View>
-              {company.name ? (
-                      <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#454545', margin: -5 }}>
-                      {company.name}
-                    </Text>
-                    ) : null}
-              </CardContainer>
-
-              {/* Full-width URL container - positioned at the bottom */}
-              <UrlContainer>
-                <UrlText>{company.web_page}</UrlText>
-              </UrlContainer>
-
-            </ImageBackground>
+                
+                {/* Footer */}
+                <View style={styles.cardFooter}>
+                  <Text style={styles.webpageText}>{company.web_page || "www.company.com"}</Text>
+                </View>
+              </LinearGradient>
+            </View>
+            
+            {/* Action Buttons */}
+            {!hideButtons && (
+              <TouchableOpacity 
+                style={styles.shareButton}
+                onPress={handleDownload}
+              >
+                <Ionicons name="share-outline" size={20} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Share ID Card</Text>
+              </TouchableOpacity>
+            )}
           </View>
-
-          {!hideButtons && (
-            <>
-              {/* <Button onPress={handleQRPress}>
-                <ButtonText>Show QR Code</ButtonText>
-              </Button> */}
-              <Button onPress={handleDownload}>
-                <ButtonText>Share ID Card</ButtonText>
-              </Button>
-            </>
-          )}
-
-          <QRModal
-            isVisible={isModalVisible}
-            onClose={handleCloseModal}
-            qrValue={profile?.emp_id || 'No Id'}
-          />
-        </Container>
-        </StyledScrollView>
+        </ScrollView>
       )}
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1a237e',
+    height: 56,
+    paddingHorizontal: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerRight: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingVertical: 24,
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loaderBox: {
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 8,
+  },
+  loaderText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  cardOuterContainer: {
+    width: '100%',
+    maxWidth: 500,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    marginBottom: 24,
+    borderRadius: 12,
+  },
+  cardContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  companyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.2)',
+  },
+  companyLogo: {
+    width: width * 0.18,
+    height: width * 0.18,
+    maxWidth: 80,
+    maxHeight: 80,
+    marginRight: 12,
+  },
+  companyPlaceholder: {
+    width: width * 0.18,
+    height: width * 0.18,
+    maxWidth: 80,
+    maxHeight: 80,
+    borderRadius: width * 0.09,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  companyPlaceholderText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  companyName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    flexShrink: 1,
+  },
+  cardBody: {
+    flexDirection: width > 400 ? 'row' : 'column',
+    padding: 16,
+    alignItems: 'center',
+  },
+  photoSection: {
+    alignItems: 'center',
+    marginRight: width > 400 ? 16 : 0,
+    marginBottom: width > 400 ? 0 : 16,
+  },
+  photoContainer: {
+    padding: 4,
+    backgroundColor: 'white',
+    borderRadius: width * 0.25,
+    marginBottom: 12,
+  },
+  profileImage: {
+    width: width * 0.38,
+    height: width * 0.38,
+    maxWidth: 180,
+    maxHeight: 180,
+    borderRadius: width * 0.19,
+  },
+  qrCodeContainer: {
+    padding: 5,
+    backgroundColor: 'white',
+    borderRadius: 8,
+  },
+  detailsSection: {
+    flex: 1,
+    alignItems: width > 400 ? 'flex-start' : 'center',
+    width: width > 400 ? 'auto' : '100%',
+  },
+  employeeName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textAlign: width > 400 ? 'left' : 'center',
+  },
+  designation: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 16,
+    textAlign: width > 400 ? 'left' : 'center',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    width: width > 400 ? 'auto' : '80%',
+  },
+  detailLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 15,
+    width: 60,
+  },
+  detailValue: {
+    color: '#fff',
+    fontSize: 15,
+    flex: 1,
+  },
+  cardFooter: {
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    padding: 12,
+    alignItems: 'center',
+  },
+  webpageText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    backgroundColor: '#4caf50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '80%',
+    maxWidth: 250,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
 
 export default IdCard;

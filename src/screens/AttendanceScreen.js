@@ -29,13 +29,9 @@ const { width } = Dimensions.get('window');
 const AddAttendance = () => {
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
-  const [attendance, setAttendance] = useState({});
+  const [attendance, setAttendance] = useState(null); // Changed from {} to null for better initial state
   const [attData, setAttData] = useState([]);
-  const [employeeData, setEmployeeData] = useState({
-    empId: 'Employee_Id',
-    designation: 'Position',
-    is_shift_applicable: false
-  });
+  const [employeeData, setEmployeeData] = useState(null); // Changed to null initially
   const [checkedIn, setCheckedIn] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [remark, setRemark] = useState('');
@@ -45,6 +41,7 @@ const AddAttendance = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false); // New state to track if all data is loaded
 
   const navigation = useNavigation();
   const router = useRouter();
@@ -63,6 +60,7 @@ const AddAttendance = () => {
     return time;
   }
 
+  // Initialize date and time
   useEffect(() => {
     const date = moment().format('DD-MM-YYYY');
     let time = moment().format('hh:mm A');
@@ -73,32 +71,71 @@ const AddAttendance = () => {
 
     setCurrentDate(date);
     setCurrentTime(time);
+  }, []);
 
-    getEmployeeInfo().then((res) => {
-      setEmployeeData(res.data[0]);
-      setIsLoading(false);
-    });
+  // Load employee data and then attendance data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setDataLoaded(false);
+        
+        // First load employee data
+        const empRes = await getEmployeeInfo();
+        setEmployeeData(empRes.data[0]);
+        
+        // Then load attendance data
+        const data = {
+          emp_id: empRes.data[0].id,
+          month: moment().format('MM'),
+          year: moment().format('YYYY'),
+        };
+        
+        const attRes = await getEmpAttendance(data);
+        setAttData(attRes.data);
+        processAttendanceData(attRes.data);
+        checkPreviousDayAttendance(attRes.data);
+        
+        setDataLoaded(true);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        Alert.alert('Error', 'Failed to load attendance data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [refreshKey]);
 
   useFocusEffect(
     useCallback(() => {
-      const data = {
-        emp_id: employeeData.id,
-        month: moment().format('MM'),
-        year: moment().format('YYYY'),
-      };
-      fetchAttendanceDetails(data);
+      if (employeeData) {
+        const data = {
+          emp_id: employeeData.id,
+          month: moment().format('MM'),
+          year: moment().format('YYYY'),
+        };
+        fetchAttendanceDetails(data);
+      }
     }, [employeeData, refreshKey])
   );
 
   const fetchAttendanceDetails = (data) => {
     setIsLoading(true);
-    getEmpAttendance(data).then((res) => {
-      setAttData(res.data);
-      processAttendanceData(res.data);
-      checkPreviousDayAttendance(res.data);
-      setIsLoading(false);
-    });
+    getEmpAttendance(data)
+      .then((res) => {
+        setAttData(res.data);
+        processAttendanceData(res.data);
+        checkPreviousDayAttendance(res.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching attendance:', error);
+        Alert.alert('Error', 'Failed to fetch attendance details');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   const checkPreviousDayAttendance = (attendanceData) => {
@@ -127,7 +164,7 @@ const AddAttendance = () => {
     } else {
       setCheckedIn(false);
       setStartTime(null);
-      setAttendance({});
+      setAttendance(null);
     }
   };
 
@@ -136,6 +173,8 @@ const AddAttendance = () => {
   };
 
   const handleCheck = async (data) => {
+    if (!employeeData) return;
+    
     setIsLoading(true);
     const { status } = await Location.requestForegroundPermissionsAsync();
   
@@ -179,20 +218,19 @@ const AddAttendance = () => {
       id: attendanceId,
     };
   
-    postCheckIn(checkPayload)
-      .then(() => {
-        setCheckedIn(data === 'ADD');
-        setStartTime(currentTime);
-        setRefreshKey((prevKey) => prevKey + 1);
-        setIsSuccessModalVisible(true);
-        if (data === 'UPDATE') setRemark('');
-      })
-      .catch(() => {
-        Alert.alert('Check Failure', 'Failed to Check.');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    try {
+      await postCheckIn(checkPayload);
+      setCheckedIn(data === 'ADD');
+      setStartTime(currentTime);
+      setRefreshKey((prevKey) => prevKey + 1);
+      setIsSuccessModalVisible(true);
+      if (data === 'UPDATE') setRemark('');
+    } catch (error) {
+      console.error('Check in/out error:', error);
+      Alert.alert('Check Failure', 'Failed to Check.');
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleRemarkSubmit = () => {
@@ -208,10 +246,34 @@ const AddAttendance = () => {
     setIsSuccessModalVisible(false);
   };
 
-  // Determine button states
-  const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time || 
+  // Determine button states - now with additional checks for data availability
+  const isCheckInDisabled = !dataLoaded || 
+                          !employeeData ||
+                          checkedIn || 
+                          attendance?.geo_status === 'O' || 
+                          !!attendance?.start_time || 
                           (employeeData?.is_shift_applicable && previousDayUnchecked);
-  const isCheckOutDisabled = !checkedIn || attendance.geo_status !== 'I' || !!attendance.end_time;
+                          
+  const isCheckOutDisabled = !dataLoaded || 
+                           !employeeData || 
+                           !checkedIn || 
+                           attendance?.geo_status !== 'I' || 
+                           !!attendance?.end_time;
+
+  if (!dataLoaded && isLoading) {
+    return <Loader visible={true} />;
+  }
+
+  if (!employeeData) {
+    return (
+      <View style={styles.container}>
+        <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load employee data</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -263,7 +325,7 @@ const AddAttendance = () => {
           ) : (
             <View style={[
               styles.actionButtons,
-              !attendance.start_time && styles.singleButtonContainer
+              !attendance?.start_time && styles.singleButtonContainer
             ]}>
               {/* Check In Button */}
               <TouchableOpacity
@@ -273,7 +335,7 @@ const AddAttendance = () => {
                   styles.attendanceButton,
                   styles.checkInButton,
                   isCheckInDisabled && styles.disabledButton,
-                  !attendance.start_time && styles.singleButton
+                  !attendance?.start_time && styles.singleButton
                 ]}
               >
                 <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
@@ -284,13 +346,15 @@ const AddAttendance = () => {
                   {employeeData?.is_shift_applicable && previousDayUnchecked 
                     ? "Complete yesterday's checkout first"
                     : isCheckInDisabled 
-                      ? `Checked In • ${attendance.start_time}`
+                      ? attendance?.start_time 
+                        ? `Checked In • ${attendance.start_time}`
+                        : 'Check In'
                       : 'Check In'}
                 </Text>
               </TouchableOpacity>
 
               {/* Check Out Button - only show if start_time exists */}
-              {attendance.start_time && (
+              {attendance?.start_time && (
                 <TouchableOpacity
                   onPress={() => setIsRemarkModalVisible(true)}
                   disabled={isCheckOutDisabled}
@@ -306,7 +370,7 @@ const AddAttendance = () => {
                     isCheckOutDisabled && styles.disabledButtonText
                   ]}>
                     {isCheckOutDisabled
-                      ? attendance.end_time 
+                      ? attendance?.end_time 
                         ? `Checked Out • ${attendance.end_time}`
                         : 'Check Out'
                       : 'Check Out'}
@@ -374,7 +438,23 @@ const AddAttendance = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f7fa',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    fontFamily: 'Inter-SemiBold',
+  },
   scrollContainer: {
     flexGrow: 1,
     paddingBottom: 24,

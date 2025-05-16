@@ -63,14 +63,14 @@ const AppProvider = ({ children }) => {
             const payload = isMobileNumber 
                 ? {
                     mobile_number: username,
-                    pin: parseInt(password, 10),
+                    pin: password,
                   }
                 : {
                     emp_id: username,
-                    pin: parseInt(password, 10),
+                    pin: password,
                   };
 
-          
+            console.log("Login Payload---",payload)
             const url = await empLoginURL();
             const response = await publicAxiosRequest.post(url, payload, {
                 headers: { 'Content-Type': 'application/json' },

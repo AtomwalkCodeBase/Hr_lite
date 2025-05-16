@@ -98,7 +98,7 @@ const AuthScreen = () => {
         }
     
         const correctMPIN = await AsyncStorage.getItem('userPin');
-        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const finalUsername = await AsyncStorage.getItem('empId');
         const userPassword = await AsyncStorage.getItem('userPin');
     
         // setTimeout(() => {
@@ -130,7 +130,7 @@ const AuthScreen = () => {
     };
 
     const handleBiometricAuthentication = async () => {
-        const finalUsername = await AsyncStorage.getItem('mobileNumber');
+        const finalUsername = await AsyncStorage.getItem('empId');
         const userPassword = await AsyncStorage.getItem('userPin');
 
         try {
@@ -253,12 +253,14 @@ const AuthScreen = () => {
                                 </Text>
                             </View>
                         )}
+
+                        
                         <TouchableOpacity 
                             style={[
                                 styles.submitButton,
                                 value.length < 4  && {
                                     backgroundColor: '#fff',
-                                    borderColor: '#4d88ff',
+                                    borderColor: 'rgb(207, 214, 221)',
                                     borderWidth: 1,
                                     shadowColor: 'transparent',
                                     elevation: 0,
@@ -318,6 +320,21 @@ const AuthScreen = () => {
                         </TouchableOpacity>
                     </View>
                 )}
+
+                <View style={styles.securityNote}>
+                    <Icon name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
+                    <View style={styles.noteContent}>
+                        <Text style={styles.noteTitle}>Security Notice</Text>
+                        <Text style={styles.noteText}>
+                            <Text style={styles.bulletPoint}>• </Text>
+                            Never share your PIN with anyone
+                            {'\n'}
+                            <Text style={styles.bulletPoint}>• </Text>
+                            If you've updated your PIN using web app, please logout and login again with your new PIN
+                            (Login with PIN - Logout)
+                        </Text>
+                    </View>
+                </View>
                 
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>© 2025 ATOMWALK. All rights reserved.</Text>
@@ -496,7 +513,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     submitButton: {
-        backgroundColor: '#4d88ff',
+        backgroundColor: '#007AFF',
         paddingVertical: 15,
         paddingHorizontal: 50,
         borderRadius: 8,
