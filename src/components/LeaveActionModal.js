@@ -127,6 +127,7 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
         setError(`Failed to ${actionType.toLowerCase()} leave: ${error.message}`);
       });
   };
+  console.log("Leave---",leave)
 
   return (
     <Modal visible={isVisible} transparent={true} animationType="slide">
@@ -139,7 +140,7 @@ const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSucces
             </CloseButton>
           </Header>
 
-          <LabelText>Leave Form:</LabelText>
+          <LabelText>Leave: {leave?.leave_type_display}</LabelText>
           <InputField disabled>
             <DateText>{leave?.from_date}</DateText>
           </InputField>

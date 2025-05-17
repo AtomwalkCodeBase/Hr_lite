@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Animated, Easing, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Animated, Easing, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
-// import { setUserPinView } from '../services/productServices';
-import { colors } from '../Styles/appStyle';
 import { setUserPinView } from '../services/productServices';
+import { colors } from '../Styles/appStyle';
 import HeaderComponent from '../components/HeaderComponent';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
@@ -20,9 +19,52 @@ const ResetPasswordScreen = () => {
   const [isFocusedConfirm, setIsFocusedConfirm] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMandatoryReset, setIsMandatoryReset] = useState(false);
 
-  const shakeAnim = new Animated.Value(0); // Animation for shaking error message
+  const shakeAnim = new Animated.Value(0);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkPinStatus = async () => {
+      const userPin = await AsyncStorage.getItem('userPin');
+      if (userPin === '9999') {
+        setIsMandatoryReset(true);
+      }
+    };
+    checkPinStatus();
+
+    // Handle Android back button
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
+  const handleBackPress = async () => {
+    if (isMandatoryReset) {
+      Alert.alert(
+        'PIN Update Required',
+        'You must update your default PIN to continue using the app.',
+        [{ text: 'OK' }]
+      );
+      return true; // Prevent going back
+    }
+    return false; // Allow going back
+  };
+
+  const handleCancel = async () => {
+    if (isMandatoryReset) {
+      Alert.alert(
+        'PIN Update Required',
+        'You must update your default PIN to continue using the app.',
+        [{ text: 'OK' }]
+      );
+    } else {
+      router.back();
+    }
+  };
 
   const triggerShake = () => {
     Animated.sequence([
@@ -33,104 +75,106 @@ const ResetPasswordScreen = () => {
     ]).start();
   };
 
-  
   const handleSubmit = async () => {
-  setErrorMessage('');
-   setIsLoading(true);
+    setErrorMessage('');
+    setIsLoading(true);
 
-  try {
-    const oldPinNum = await AsyncStorage.getItem('userPin');
-    const employeeId = await AsyncStorage.getItem("empId");
+    try {
+      const oldPinNum = await AsyncStorage.getItem('userPin');
+      const employeeId = await AsyncStorage.getItem("empId");
 
-    // Validation checks
-    if (!oldPin || !newPin || !confirmPin) {
-      setErrorMessage('All fields are required.');
-      triggerShake();
-      setIsLoading(false);
-      return;
-    }
+      // Validation checks
+      if (!oldPin || !newPin || !confirmPin) {
+        setErrorMessage('All fields are required.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
 
-    if (newPin !== confirmPin) {
-      setErrorMessage('New PIN and Confirm PIN do not match.');
-      triggerShake();
-      setIsLoading(false);
-      return;
-    }
+      if (newPin !== confirmPin) {
+        setErrorMessage('New PIN and Confirm PIN do not match.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
 
-    if (oldPinNum !== oldPin) {
-      setErrorMessage('Old Pin is not correct.');
-      triggerShake();
-      setIsLoading(false);
-      return;
-    }
+      if (oldPinNum !== oldPin) {
+        setErrorMessage('Old Pin is not correct.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
 
-    if (newPin.length < 4) {
-      setErrorMessage('Please enter a PIN with at least 4 digits.');
-      triggerShake();
-      setIsLoading(false);
-      return;
-    }
+      if (newPin.length < 4) {
+        setErrorMessage('Please enter a PIN with at least 4 digits.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
 
-    console.log('Calling setUserPinView with:', {
-      oldPin,
-      newPin,
-      employeeId
-    });
+      if (newPin === '9999') {
+        setErrorMessage('Cannot use the default PIN(9999). Please choose a different PIN.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
 
-    // Make the API call
-    const response = await setUserPinView(oldPin, newPin, employeeId);
-    console.log('API Response:', response);
+      const response = await setUserPinView(oldPin, newPin, employeeId);
+      console.log('API Response:', response);
 
-    if (response && response.status) {
-      await AsyncStorage.setItem('userPin', newPin);
-      setIsLoading(false);
-      setIsSuccessModalVisible(true);
-      router.push({ pathname: 'home' });
-    } else {
-      const errorMsg = response?.message || 'Failed to update PIN. Please try again.';
+      if (response && response.status) {
+        await AsyncStorage.setItem('userPin', newPin);
+        setIsLoading(false);
+        setIsSuccessModalVisible(true);
+        setIsMandatoryReset(false); // Reset mandatory flag after successful update
+        router.push({ pathname: 'home' });
+      } else {
+        const errorMsg = response?.message || 'Failed to update PIN. Please try again.';
+        setErrorMessage(errorMsg);
+        triggerShake();
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+      let errorMsg = 'An error occurred while updating your PIN.';
+      
+      if (error.response) {
+        errorMsg = error.response.data?.message || error.response.statusText || errorMsg;
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
       setErrorMessage(errorMsg);
       triggerShake();
       setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Error in handleSubmit:', error);
-    let errorMsg = 'An error occurred while updating your PIN.';
-    
-    if (error.response) {
-      // Handle HTTP errors
-      errorMsg = error.response.data?.message || error.response.statusText || errorMsg;
-    } else if (error.message) {
-      // Handle JS errors
-      errorMsg = error.message;
-    }
-    
-    setErrorMessage(errorMsg);
-    triggerShake();
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent
         headerTitle="Update Your PIN"
-        onBackPress={() => router.back()}
+        onBackPress={handleBackPress}
       /> 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
         <ScrollView 
-  contentContainerStyle={styles.scrollContent}
-  showsVerticalScrollIndicator={false}
-  showsHorizontalScrollIndicator={false}
->
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+        >
           <View style={styles.container}>
             <View style={styles.headerSection}>
               <MaterialIcons name="lock" size={48} color={colors.primary} />
-              <Text style={styles.title}>Update Your PIN</Text>
+              <Text style={styles.title}>
+                {isMandatoryReset ? 'Update Your Default PIN' : 'Update Your PIN'}
+              </Text>
               <Text style={styles.subtitle}>
-                Create a new secure PIN for your account
+                {isMandatoryReset 
+                  ? 'For security reasons, you must change your default PIN to continue'
+                  : 'Create a new secure PIN for your account'}
               </Text>
             </View>
 
@@ -206,7 +250,7 @@ const ResetPasswordScreen = () => {
 
               {errorMessage ? (
                 <Animated.View style={[styles.errorContainer, { transform: [{ translateX: shakeAnim }] }]}>
-                  <MaterialIcons name="error-outline" size={18} color={colors.error} />
+                  <MaterialIcons name="error-outline" size={18} color={colors.red} />
                   <Animated.Text style={styles.errorText}>
                     {errorMessage}
                   </Animated.Text>
@@ -218,54 +262,58 @@ const ResetPasswordScreen = () => {
                 onPress={handleSubmit}
                 activeOpacity={0.8}
               >
-                <Text style={styles.submitText}>Update PIN</Text>
+                <Text style={styles.submitText}>
+                  {isMandatoryReset ? 'UPDATE PIN (REQUIRED)' : 'Update PIN'}
+                </Text>
                 <MaterialIcons name="arrow-forward" size={20} color={colors.white} />
               </TouchableOpacity>
               
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => router.back()}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
+              {!isMandatoryReset && (
+                <TouchableOpacity 
+                  style={styles.cancelButton}
+                  onPress={handleCancel}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.securityNote}>
-  <MaterialIcons name="security" size={20} color={colors.warning} style={styles.noteIcon} />
-  <View>
-    <Text style={styles.noteTitle}>Security Notice</Text>
-    <Text style={styles.noteText}>
-      <Text style={styles.bulletPoint}>• </Text>
-      Your PIN helps keep your account secure
-      {'\n'}
-      <Text style={styles.bulletPoint}>• </Text>
-      Never share your PIN with anyone
-      {'\n'}
-      <Text style={styles.bulletPoint}>• </Text>
-      If you've updated your PIN, please logout and login again with your new PIN
-    </Text>
-  </View>
-</View>
+              <MaterialIcons name="security" size={20} color={colors.warning} style={styles.noteIcon} />
+              <View>
+                <Text style={styles.noteTitle}>Security Notice</Text>
+                <Text style={styles.noteText}>
+                  <Text style={styles.bulletPoint}>• </Text>
+                  Your PIN helps keep your account secure
+                  {'\n'}
+                  <Text style={styles.bulletPoint}>• </Text>
+                  Never share your PIN with anyone
+                  {'\n'}
+                  <Text style={styles.bulletPoint}>• </Text>
+                  If you've updated your PIN, please logout and login again with your new PIN
+                </Text>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       <SuccessModal
-  visible={isSuccessModalVisible}
-  onClose={() => {
-    setIsSuccessModalVisible(false);
-    router.push({ pathname: 'home' });
-  }}
-  message="Your PIN has been updated successfully."
-/>
-<Loader 
-  visible={isLoading}
-  onTimeout={() => {
-    setIsLoading(false);
-    setErrorMessage('Request timed out. Please try again.');
-  }}
-/>
+        visible={isSuccessModalVisible}
+        onClose={() => {
+          setIsSuccessModalVisible(false);
+          router.push({ pathname: 'home' });
+        }}
+        message="Your PIN has been updated successfully."
+      />
+      <Loader 
+        visible={isLoading}
+        onTimeout={() => {
+          setIsLoading(false);
+          setErrorMessage('Request timed out. Please try again.');
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -349,12 +397,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
-    backgroundColor: `${colors.error}15`,
+    // backgroundColor: `${colors.error}15`,
     padding: 12,
     borderRadius: 8,
   },
   errorText: {
-    color: colors.error,
+    color: colors.red,
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '500',

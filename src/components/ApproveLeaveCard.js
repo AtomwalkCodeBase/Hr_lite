@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject }) => {
+const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject, onProfilePress }) => {
   const getStatusStyles = (status_display) => {
     switch (status_display) {
       case 'Submitted':
@@ -51,6 +51,12 @@ const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject }) => {
   const { bgColor, textColor, borderColor, icon, statusBg } = getStatusStyles(leave.status_display);
   const showButtons = leave.status_display === 'Submitted';
 
+  const handleProfilePress = () => {
+    if (onProfilePress) {
+      onProfilePress(leave.emp_data.emp_id);
+    }
+  };
+
   return (
     <TouchableOpacity 
       style={[styles.cardContainer, { backgroundColor: bgColor, borderColor }]}
@@ -59,11 +65,13 @@ const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject }) => {
     >
       <View style={styles.headerContainer}>
         <View style={styles.profileContainer}>
-          <Image 
-            source={{ uri: leave.emp_data.image }} 
-            style={styles.profileImage}
-            resizeMode="cover"
-          />
+          <TouchableOpacity onPress={handleProfilePress}>
+            <Image 
+              source={{ uri: leave.emp_data.image }} 
+              style={styles.profileImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
           <View style={styles.employeeInfo}>
             <Text style={styles.employeeNameText} numberOfLines={1}>
               {leave.emp_data.name}
@@ -89,6 +97,7 @@ const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject }) => {
         </View>
       </View>
       
+      {/* Rest of the card content remains the same */}
       <View style={styles.leaveDetailsContainer}>
         <View style={styles.leaveTypeContainer}>
           <Text style={styles.leaveTypeText}>{leave.leave_type_display}</Text>
