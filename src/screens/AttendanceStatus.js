@@ -145,7 +145,7 @@ const AttendanceStatus = (props) => {
 
   useEffect(() => {
     const data = {
-      emp_id: empId,
+      eId: empId,
       month: currentMonth + 1, // Month is 0-indexed, so add 1
       year: currentYear,
     };

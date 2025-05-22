@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Keyboard, StatusBar, SafeAreaView, 
-  KeyboardAvoidingView, Platform, ScrollView, Dimensions, Image } from 'react-native';
+  KeyboardAvoidingView, Platform, ScrollView, Dimensions, Image, Text } from 'react-native';
 import { FontAwesome, Ionicons, MaterialIcons, Entypo } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Logos from '../../assets/images/Atom_walk_logo.jpg';
@@ -117,6 +117,7 @@ const LoginScreen = () => {
   // }, [selectedCompany, dbList]);
 
  const fetchDbName = async () => {
+  setLoading(true); // Add loading state at start
   try {
     const DBData = await getDBListInfo();
     setDbList(DBData.data || []);
@@ -151,6 +152,8 @@ const LoginScreen = () => {
     }
   } catch (error) {
     console.error('DB List loading error:', error);
+  } finally {
+    setLoading(false); // Ensure loading is set to false when done
   }
 };
 
@@ -219,6 +222,12 @@ const handleCompanyChange = async (item) => {
   } catch (error) {
     console.error('Error handling PIN/fingerprint login:', error);
   }
+};
+
+const handlePressForget = () => {
+  router.push({
+      pathname: 'ForgetPin',
+    });
 };
 
 
@@ -305,12 +314,35 @@ useEffect(() => {
     } catch (error) {
       console.error('API call error:', error.response?.data || error.message);
       if (error.response) {
-        setErrorMessage(`Error: ${error.response.data.error || 'Invalid credentials'}`);
-      } else if (error.request) {
-        setErrorMessage('No response from the server. Please check your connection.');
+      if (error.response.data?.error) {
+        const errorMessage = error.response.data.error;
+        
+        // Handle "Wrong Attempt [X]" case
+        const wrongAttemptMatch = errorMessage.match(/Wrong Attempt \[(\d+)\]/);
+        if (wrongAttemptMatch) {
+          const attemptCount = parseInt(wrongAttemptMatch[1]);
+          
+          if (attemptCount >= 6) {
+            setErrorMessage('Your account has been blocked due to too many failed attempts. Please contact support.');
+            // Disable login button or take other appropriate action
+            return;
+          } else {
+            setErrorMessage(`Incorrect PIN. You have ${6 - attemptCount} attempts remaining before your account gets blocked.`);
+            return;
+          }
+        }
+        
+        // Handle other error messages with brackets
+        const generalMatch = errorMessage.match(/\[(.*?)\]/);
+        setErrorMessage(generalMatch ? generalMatch[1] : errorMessage);
       } else {
-        setErrorMessage('An error occurred. Please try again.');
+        setErrorMessage('Invalid credentials. Please try again.');
       }
+    } else if (error.request) {
+      setErrorMessage('No response from the server. Please check your connection.');
+    } else {
+      setErrorMessage('An error occurred. Please try again.');
+    }
     } finally {
       setLoading(false);
     }
@@ -429,6 +461,13 @@ useEffect(() => {
                       <AlternativeLoginText>Login with PIN/Fingerprint</AlternativeLoginText>
                     </AlternativeLogin>
                   )}
+
+                  <TouchableOpacity 
+                    onPress={handlePressForget}
+                    style={styles.forgetPinButton}
+                  >
+                    <Text style={styles.forgetPinText}>Forgot PIN?</Text>
+                  </TouchableOpacity>
                 </Content>
                 </ScrollView>
                 </MainContent>
@@ -520,6 +559,19 @@ logo: {
     backgroundColor: '#fff',
     width: '100%',
   },
+
+  forgetPinButton: {
+  marginTop: scaleHeight(20),
+  alignSelf: 'center',
+  paddingVertical: scaleHeight(10),
+  paddingHorizontal: scaleWidth(20),
+},
+forgetPinText: {
+  color: 'rgb(90, 46, 249)',
+  fontSize: scaleWidth(16),
+  fontWeight: '500',
+  textDecorationLine: 'underline',
+},
 
 });
 
@@ -687,5 +739,6 @@ const FooterText = styled.Text`
   font-size: ${scaleWidth(14)}px;
   font-weight: 500;
 `;
+
 
 export default LoginScreen;

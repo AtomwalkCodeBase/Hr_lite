@@ -1,5 +1,5 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL } from "../services/ConstantServies";
-import { authAxios, authAxiosFilePost, authAxiosPost } from "./HttpMethod";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL } from "../services/ConstantServies";
+import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
   let data = {};
@@ -168,7 +168,14 @@ export async function setUserPinView(o_pin, n_pin, employeeId) {
       user_type: "EMP",
     };
 
-    console.log("Data to be sent--->",data)
+    // console.log("Data to be sent--->",data)
     const url = await setUserPinURL();
     return authAxiosPost(url, data);
   }
+
+
+export async function forgetUserPinView(data) {
+    console.log("Data to be sent--->", data);
+    const url = await forgetEmpPinURL();
+    return publicAxiosRequest.post(url, data);
+}

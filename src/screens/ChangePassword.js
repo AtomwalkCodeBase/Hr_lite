@@ -25,14 +25,6 @@ const ResetPasswordScreen = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const checkPinStatus = async () => {
-      const userPin = await AsyncStorage.getItem('userPin');
-      if (userPin === '9999') {
-        setIsMandatoryReset(true);
-      }
-    };
-    checkPinStatus();
-
     // Handle Android back button
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
@@ -107,13 +99,6 @@ const ResetPasswordScreen = () => {
 
       if (newPin.length < 4) {
         setErrorMessage('Please enter a PIN with at least 4 digits.');
-        triggerShake();
-        setIsLoading(false);
-        return;
-      }
-
-      if (newPin === '9999') {
-        setErrorMessage('Cannot use the default PIN(9999). Please choose a different PIN.');
         triggerShake();
         setIsLoading(false);
         return;
@@ -442,34 +427,34 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   securityNote: {
-  flexDirection: 'row',
-  alignItems: 'flex-start',
-  backgroundColor: `${colors.warning}15`,
-  padding: 16,
-  borderRadius: 12,
-  marginTop: 8,
-  borderLeftWidth: 4,
-  borderLeftColor: colors.warning,
-},
-noteIcon: {
-  marginRight: 12,
-  marginTop: 2,
-},
-noteTitle: {
-  fontSize: 14,
-  fontWeight: 'bold',
-  color: colors.warning,
-  marginBottom: 8,
-},
-noteText: {
-  fontSize: 13,
-  color: colors.textSecondary,
-  lineHeight: 20,
-},
-bulletPoint: {
-  fontWeight: 'bold',
-  color: colors.warning,
-},
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: `${colors.warning}15`,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.warning,
+  },
+  noteIcon: {
+    marginRight: 12,
+    marginTop: 2,
+  },
+  noteTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.warning,
+    marginBottom: 8,
+  },
+  noteText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  bulletPoint: {
+    fontWeight: 'bold',
+    color: colors.warning,
+  },
 });
 
 export default ResetPasswordScreen;

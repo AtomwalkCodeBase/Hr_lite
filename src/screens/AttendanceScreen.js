@@ -155,18 +155,21 @@ const AddAttendance = () => {
   };
 
   const processAttendanceData = (data) => {
-    const todayAttendance = data.find((item) => item.a_date === currentDate);
+  // Filter out leave records (attendance_type: "L")
+  const todayAttendance = data.find((item) => 
+    item.a_date === currentDate && item.attendance_type !== "L"
+  );
 
-    if (todayAttendance) {
-      setCheckedIn(todayAttendance.end_time === null);
-      setStartTime(todayAttendance.start_time);
-      setAttendance(todayAttendance);
-    } else {
-      setCheckedIn(false);
-      setStartTime(null);
-      setAttendance(null);
-    }
-  };
+  if (todayAttendance) {
+    setCheckedIn(todayAttendance.end_time === null);
+    setStartTime(todayAttendance.start_time);
+    setAttendance(todayAttendance);
+  } else {
+    setCheckedIn(false);
+    setStartTime(null);
+    setAttendance(null);
+  }
+};
 
   const handleError = (error, input) => {
     setErrors(prevState => ({...prevState, [input]: error}));

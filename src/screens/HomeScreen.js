@@ -287,7 +287,9 @@ const [eventLoading, setEventLoading] = useState(true);
 
   const processAttendanceData = (data) => {
     const today = moment().format('DD-MM-YYYY');
-    const todayAttendance = data.find(item => item.a_date === today);
+    const todayAttendance = data.find((item) => 
+    item.a_date === currentDate && item.attendance_type !== "L"
+  );
   
     if (todayAttendance) {
       const hasCheckedIn = todayAttendance.start_time !== null;

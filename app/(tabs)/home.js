@@ -11,7 +11,7 @@ const home = () => {
   return (
     <>
       <HomeScreen/>
-      <PinPopup></PinPopup>
+      {/* <PinPopup/> */}
       <FingerPopup/>
     </>
   )
