@@ -16,10 +16,6 @@ const NewLeaveCardComponent = ({ leave, onPress }) => {
   const statusStyles = getStatusStyles(leave.status);
   const isHalfOrFullDay = leave.no_leave_count === '0.5' || leave.no_leave_count === '0.0' || leave.no_leave_count === '1.0' || leave.leave_type === 'WH';
 
-  // Calculate dynamic widths based on screen size
-  const badgeWidth = width < 400 ? width * 0.28 : width * 0.25;
-  const dateContainerWidth = width < 400 ? width * 0.35 : width * 0.33;
-
   return (
     <TouchableOpacity 
       style={[
@@ -29,7 +25,7 @@ const NewLeaveCardComponent = ({ leave, onPress }) => {
       onPress={() => onPress(leave)}
     >
       <View style={styles.headerRow}>
-        <View style={[styles.dateContainer, { width: dateContainerWidth }]}>
+        <View style={styles.dateContainer}>
           <View style={styles.dateRow}>
             <MaterialIcons name="event" size={18} color="#666" />
             <Text style={styles.dateText}>{formatDateWithoutYear(leave.from_date)}</Text>
@@ -43,12 +39,8 @@ const NewLeaveCardComponent = ({ leave, onPress }) => {
           )}
         </View>
         
-        <View style={[styles.badgeContainer, { width: badgeWidth }]}>
-          <View style={[styles.leaveTypeBadge, { 
-            backgroundColor: leaveTypeColor,
-            minWidth: badgeWidth - 20,
-            maxWidth: badgeWidth - 10
-          }]}>
+        <View style={styles.badgeContainer}>
+          <View style={[styles.leaveTypeBadge, { backgroundColor: leaveTypeColor }]}>
             <Text style={styles.leaveTypeText}>{getLeaveTypeDisplay(leave.leave_type)}</Text>
           </View>
           {!isHalfOrFullDay && (
@@ -58,11 +50,7 @@ const NewLeaveCardComponent = ({ leave, onPress }) => {
           )}
         </View>
 
-        <View style={[styles.statusBadge, { 
-          backgroundColor: statusStyles.bgColor,
-          minWidth: badgeWidth - 20,
-          maxWidth: badgeWidth - 10
-        }]}>
+        <View style={[styles.statusBadge, { backgroundColor: statusStyles.bgColor }]}>
           <MaterialIcons 
             name={statusStyles.icon} 
             size={16} 
@@ -77,7 +65,7 @@ const NewLeaveCardComponent = ({ leave, onPress }) => {
   );
 };
 
-// Helper functions 
+// Helper functions (same as before)
 const getLeaveTypeColor = (type) => {
   const colors = {
     'EL': '#4CAF50',
@@ -152,7 +140,7 @@ const formatLeaveCount = (count) => {
 const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: '#fff',
-    padding: width * 0.04,
+    padding: width * 0.04, // Responsive padding
     borderRadius: 12,
     marginBottom: width * 0.04,
     ...Platform.select({
@@ -173,10 +161,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 1,
-    flexWrap: 'wrap',
   },
   dateContainer: {
-    // width now set dynamically in component
+    width: '33%',
   },
   dateRow: {
     flexDirection: 'row',
@@ -187,22 +174,22 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   dateText: {
-    fontSize: width > 400 ? 16 : 14,
+    fontSize: width > 400 ? 16 : 14, // Larger font on bigger screens
     color: '#444',
     fontWeight: '600',
     marginLeft: 8,
   },
   badgeContainer: {
-    // width now set dynamically in component
+    width: '33%',
     alignItems: 'center',
   },
   leaveTypeBadge: {
     padding: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     borderRadius: 6,
     marginBottom: 8,
+    minWidth: 80,
     alignItems: 'center',
-    // minWidth and maxWidth now set dynamically in component
   },
   leaveTypeText: {
     fontSize: width > 400 ? 13 : 12,
@@ -210,13 +197,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    textAlign: 'center',
   },
   daysText: {
     fontSize: width > 400 ? 15 : 14,
     color: '#555',
     fontWeight: '500',
-    textAlign: 'center',
+    textAlign: 'right',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -225,13 +211,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     justifyContent: 'center',
-    // minWidth and maxWidth now set dynamically in component
+    minWidth: 100,
+    maxWidth: 120,
+    marginLeft: 'auto',
   },
   statusText: {
     fontSize: width > 400 ? 13 : 12,
     fontWeight: '600',
     marginLeft: 6,
-    textAlign: 'center',
   },
 });
 
