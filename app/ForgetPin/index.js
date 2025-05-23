@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { publicAxiosRequest } from '../../src/services/HttpMethod';
 import CompanyDropdown from '../../src/components/ComanyDropDown';
 import Loader from '../../src/components/old_components/Loader';
+import Icon from 'react-native-vector-icons/Ionicons'; 
 import { forgetUserPinView } from '../../src/services/productServices';
 import SuccessModal from '../../src/components/SuccessModal';
 
@@ -119,7 +120,7 @@ const [successMessage, setSuccessMessage] = useState('');
       throw new Error(response?.data?.message || 'Failed to process your request');
     }
   } catch (error) {
-    // console.error('Reset PIN error:', error);
+    console.error('Reset PIN error:', error.message);
     Alert.alert(
       'Unable to proceed', "Please contact your manager to reset your PIN."
     );
@@ -199,6 +200,20 @@ const [successMessage, setSuccessMessage] = useState('');
               </BackButton>
             </Card>
           </Content>
+          <View style={styles.securityNote}>
+                              <Icon name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
+                              <View style={styles.noteContent}>
+                                  <Text style={styles.noteTitle}>Security Notice</Text>
+                                  <Text style={styles.noteText}>
+                                      <Text style={styles.bulletPoint}>• </Text>
+                                      Never share your PIN with anyone
+                                      {'\n'}
+                                      <Text style={styles.bulletPoint}>• </Text>
+                                      Please check your resistered mail-id, login with newly recived mail-id
+                                      (Login with PIN - Logout)
+                                  </Text>
+                              </View>
+                          </View>
         </ScrollView>
       </Container>
       
@@ -246,6 +261,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  securityNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 167, 38, 0.1)', // 10% opacity of warning color
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FFA726',
+    width: '100%',
+},
+noteIcon: {
+    marginRight: 12,
+    marginTop: 3,
+},
+noteContent: {
+    flex: 1,
+},
+noteTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFA726',
+    marginBottom: 6,
+},
+noteText: {
+    fontSize: 13,
+    color: '#757575',
+    lineHeight: 20,
+},
 });
 
 const SafeAreaContainer = styled(SafeAreaView)`

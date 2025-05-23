@@ -18,7 +18,6 @@ import {
 import * as LocalAuthentication from 'expo-local-authentication';
 import Logos from '../../assets/images/Atom_walk_logo.jpg'
 import Icon from 'react-native-vector-icons/Ionicons'; 
-import PinPassword from '../../src/screens/PinPassword';
 import { AppContext } from '../../context/AppContext';
 import Loader from '../../src/components/old_components/Loader';
 import ErrorModal from '../../src/components/ErrorModal';
@@ -38,7 +37,6 @@ const AuthScreen = () => {
     const [value, setValue] = useState('');
     const [attemptsRemaining, setAttemptsRemaining] = useState(5);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [modalVisible, setModalVisible] = useState(false);
     const [isNetworkError, setIsNetworkError] = useState(false);
     const [userName, setUserName] = useState('');
     const [showBiomatricOption, setShowBiomatricOption] = useState(false);
@@ -46,7 +44,6 @@ const AuthScreen = () => {
     const [showFingerprint, setShowFingerprint] = useState(false);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
-    const openPopup = () => setModalVisible(true);
     const maxAttempts = 5;
     // const inputRefs = Array(4).fill().map(() => useRef(null));
 
@@ -342,7 +339,6 @@ const AuthScreen = () => {
                 </View>
             </View>
 
-            <PinPassword setModalVisible={setModalVisible} modalVisible={modalVisible} />
             <ErrorModal
                 visible={isNetworkError}
                 message="No internet connection. Please check your network and try again."
