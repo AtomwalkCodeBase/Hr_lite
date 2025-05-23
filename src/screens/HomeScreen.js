@@ -169,7 +169,7 @@ const [eventLoading, setEventLoading] = useState(true);
   
       // Fetch attendance
       const data = {
-        emp_id: profileData.id,
+        eId: profileData.id,
         month: now.format('MM'),
         year: now.format('YYYY'),
       };
@@ -388,7 +388,7 @@ const [eventLoading, setEventLoading] = useState(true);
     useCallback(() => {
       if (employeeData?.id) { // Use employeeData.id instead of empId
         const data = {
-          emp_id: employeeData.id,
+          eId: employeeData.id,
           month: moment().format('MM'),
           year: moment().format('YYYY'),
         };

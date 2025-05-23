@@ -69,10 +69,11 @@ export async function postEmpLeave(leave_type) {
 
   export async function getEmpAttendance(res) {
     let data = {
-      'emp_id':res.emp_id,
+      'emp_id': res.eId || res.emp_id,
       'month':res.month,
       'year': res.year
     };
+    console.log("At data to be pass--",data)
     const url = await getEmpAttendanceData();
     return authAxios(url, data);
   }
@@ -82,6 +83,8 @@ export async function postEmpLeave(leave_type) {
       'year': res.year,
       'emp_id':res.eId,
     };
+
+    console.log("Data to pass--",data)
     const url = await getEmpHolidayData();
     return authAxios(url, data);
   }

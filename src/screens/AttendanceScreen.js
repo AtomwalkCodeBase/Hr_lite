@@ -84,9 +84,10 @@ const AddAttendance = () => {
         const empRes = await getEmployeeInfo();
         setEmployeeData(empRes.data[0]);
         
+        
         // Then load attendance data
         const data = {
-          emp_id: empRes.data[0].id,
+          eId: empRes.data[0].id,
           month: moment().format('MM'),
           year: moment().format('YYYY'),
         };
@@ -112,7 +113,7 @@ const AddAttendance = () => {
     useCallback(() => {
       if (employeeData) {
         const data = {
-          emp_id: employeeData.id,
+          eId: employeeData.id,
           month: moment().format('MM'),
           year: moment().format('YYYY'),
         };
