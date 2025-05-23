@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
+import ErrorModal from '../components/ErrorModal';
 
 // Styled Components
 const Container = styled.View`
@@ -118,6 +119,8 @@ const AttendanceStatus = ({ id: empId }) => {
   const [attendance, setAttendance] = useState({});
   const [holiday, setHoliday] = useState({});
   const navigation = useNavigation();
+  const [isErrorVisiable, setIsErrorVisiable ] = useState(false);
+  const [lastValidDate, setLastValidDate] = useState(null);
   
   const currentMonth = date.getMonth();
   const currentYear = date.getFullYear();
@@ -140,11 +143,16 @@ const AttendanceStatus = ({ id: empId }) => {
         const [attendanceRes, holidayRes] = await Promise.all([
           getEmpAttendance(data),
           getEmpHoliday(data)
+          
         ]);
+        // console.log("data",holidayRes.data);
         
         processAttendanceData(attendanceRes.data);
         processHolidayData(holidayRes.data);
+
+         setLastValidDate(new Date(currentYear, currentMonth, 1));
       } catch (error) {
+        setIsErrorVisiable(true);
         console.error("Error fetching data:", error);
       }
     };
@@ -296,6 +304,17 @@ const AttendanceStatus = ({ id: empId }) => {
             <StatusGuideItem status="N">N - Not Submitted</StatusGuideItem>
           </StatusGuideContainer>
         </ScrollView>
+
+         <ErrorModal
+                visible={isErrorVisiable}
+                message="Your Holiday Calender did not setup for 2026"
+                onClose={() => {
+                      setIsErrorVisiable(false);
+                      if (lastValidDate) {
+                        setDate(lastValidDate);
+                      }
+                    }}
+            />
       </Container>
     </>
   );
