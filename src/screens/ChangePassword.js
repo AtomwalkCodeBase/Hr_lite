@@ -139,7 +139,7 @@ const ResetPasswordScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent
         headerTitle="Update Your PIN"
-        onBackPress={handleBackPress}
+        onBackPress={()=>router.back()}
       /> 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

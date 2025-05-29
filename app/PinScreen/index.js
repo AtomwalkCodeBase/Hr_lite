@@ -203,6 +203,14 @@ const AuthScreen = () => {
                                 <Icon name="chevron-forward-outline" size={20} color="#777" style={styles.authButtonArrow} />
                             </TouchableOpacity>
                         )}
+                        <TouchableOpacity 
+                            onPress={() => setIsLogoutModalVisible(true)}
+                            style={styles.forgotContainer}
+                        // onPress={openPopup}
+                        >
+                            <Icon name="log-out-outline" size={16} color="#9C5EF9" />
+                            <Text style={styles.forgotText}>Logout</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : showPinInput ? (
                     <View style={styles.card}>
@@ -229,7 +237,7 @@ const AuthScreen = () => {
                                 placeholder="Enter your PIN"
                                 secureTextEntry
                                 keyboardType="numeric"
-                                maxLength={10}
+                                maxLength={6}
                                 value={value}
                                 onChangeText={handleMPINChange}
                                 placeholderTextColor="#888" // Ensure placeholder text is visible
@@ -274,14 +282,7 @@ const AuthScreen = () => {
                             </Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity 
-                            onPress={() => setIsLogoutModalVisible(true)}
-                            style={styles.forgotContainer}
-                        // onPress={openPopup}
-                        >
-                            <Icon name="log-out-outline" size={16} color="#9C5EF9" />
-                            <Text style={styles.forgotText}>Logout</Text>
-                        </TouchableOpacity>
+                        
                         
                         {showBiomatricOption && (
                             <TouchableOpacity 
@@ -327,9 +328,12 @@ const AuthScreen = () => {
                             Never share your PIN with anyone
                             {'\n'}
                             <Text style={styles.bulletPoint}>• </Text>
-                            If you've updated your PIN using web app, please logout and login again with your new PIN
-                            (Login with PIN - Logout)
+                            If you've updated your PIN using web app, please logout and login again with your new PIN.
+                            {'\n'}
+                            <Text style={styles.bulletPoint}>• </Text>
+                            If you forget the Pin, Please Logout and select forget PIN option to reset.
                         </Text>
+                        
                     </View>
                 </View>
                 
@@ -530,7 +534,8 @@ const styles = StyleSheet.create({
     forgotContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 5,
+        marginTop: 10,
     },
     forgotText: {
         color: '#9C5EF9',

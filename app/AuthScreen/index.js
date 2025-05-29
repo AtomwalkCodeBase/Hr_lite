@@ -413,7 +413,7 @@ useEffect(() => {
             onChangeText={setMobileNumberOrEmpId}
             keyboardType="default" // Changed to default to allow both numbers and text
             placeholderTextColor="#6c757d"
-            maxLength={20} // Increased max length for employee IDs
+            maxLength={15} // Increased max length for employee IDs
                         />
                       </InputWrapper>
 
@@ -427,7 +427,7 @@ useEffect(() => {
                           secureTextEntry={!isPasswordVisible}
             keyboardType="numeric"
             placeholderTextColor="#6c757d"
-            maxLength={10} // Increased max length but validation still requires min 4
+            maxLength={6} // Increased max length but validation still requires min 4
           />
           <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
             <MaterialIcons
