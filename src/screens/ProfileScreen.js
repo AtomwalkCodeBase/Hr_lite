@@ -10,6 +10,8 @@ import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import moment from 'moment';
 import ConfirmationModal from '../components/ConfirmationModal';
+import Constants from 'expo-constants';
+
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +26,8 @@ const ProfileScreen = () => {
 const [useFingerprint, setUseFingerprint] = useState(false);  // actual setting
 const [pendingValue, setPendingValue] = useState(null);        // for storing new value
 const [modalVisible, setModalVisible] = useState(false);       // controls confirmation modal
+
+  const appVersion = Constants.expoConfig?.version || '0.0.1';
 
 
   const router = useRouter();
@@ -222,6 +226,11 @@ const handleCancel = () => {
               <Text style={[styles.buttonText, styles.logoutText]}>LOGOUT</Text>
             </TouchableOpacity>
           </View>
+          <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>
+            App Version: {appVersion}
+          </Text>
+        </View>
 
           {/* QR Modal */}
           <QRModal
@@ -410,6 +419,15 @@ switchLabelContainer: {
   },
   logoutText: {
     color: '#e74c3c',
+  },
+   versionContainer: {
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#95a5a6',
   },
 });
 

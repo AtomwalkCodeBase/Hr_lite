@@ -13,6 +13,7 @@ import { publicAxiosRequest } from '../../src/services/HttpMethod';
 import DropdownPicker from '../../src/components/DropdownPicker';
 import CompanyDropdown from '../../src/components/ComanyDropDown';
 import Loader from '../../src/components/old_components/Loader';
+import Constants from 'expo-constants';
 
 
 
@@ -41,6 +42,8 @@ const LoginScreen = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [previousDbName, setPreviousDbName] = useState('');
   const [bioStatus, setBioStatus] = useState(false);
+
+  const appVersion = Constants.expoConfig?.version || '0.0.1';
   
 
       useEffect(() => {
@@ -472,7 +475,7 @@ useEffect(() => {
                 </MainContent>
 
             <Footer style={styles.fixedFooter}>
-              <FooterText>Version Code: 1.0.15</FooterText>
+              <FooterText>Version Code: {appVersion}</FooterText>
             </Footer>
           </Container>
         {/* </KeyboardAvoidingView> */}
