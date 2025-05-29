@@ -408,15 +408,14 @@ useEffect(() => {
                       <InputWrapper>
           <MaterialIcons name="person" size={20} color="#6c757d" />
                         <Input
-            placeholder="Mobile number or Emp ID"
-            value={mobileNumberOrEmpId}
-            onChangeText={setMobileNumberOrEmpId}
-            keyboardType="default" // Changed to default to allow both numbers and text
-            placeholderTextColor="#6c757d"
-            maxLength={15} // Increased max length for employee IDs
+                          placeholder="Mobile number or Emp ID"
+                          value={mobileNumberOrEmpId}
+                          onChangeText={(text) => setMobileNumberOrEmpId(text.replace(/\s/g, ''))} // This removes all spaces
+                          keyboardType="default"
+                          placeholderTextColor="#6c757d"
+                          maxLength={15}
                         />
                       </InputWrapper>
-
                       <InputLabel>Enter your PIN (min 4 digits)</InputLabel>
                       <InputWrapper>
           <MaterialIcons name="lock-outline" size={20} color="#6c757d" />
