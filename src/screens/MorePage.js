@@ -79,6 +79,7 @@ const MorePage = () => {
   const router = useRouter();
   const [isManager, setIsManager] = useState(false);
   const [empId, setEmpId] = useState([]);
+  const [empShift, setEmpShift] = useState({});
   const [loading, setLoading] = useState(false);
   const [isShift, setIsShift] = useState(false);
 
@@ -86,15 +87,19 @@ const MorePage = () => {
     setLoading(true);
     getEmployeeInfo()
       .then((res) => {
+        setEmpShift(res?.data[0]?.current_shift);
         setEmpId(res?.data[0]?.emp_id);
         setIsManager(res?.data[0]?.is_manager);
         setIsShift(res?.data[0]?.is_shift_applicable);
         setLoading(false);
+        // console.log("Emp---",res.data[0])
       })
       .catch((error) => {
         setLoading(false);
       });
   }, []);
+
+  
 
   const handlePressHelp = () => {  
     router.push({
@@ -120,7 +125,7 @@ const MorePage = () => {
   const handlePressShift = () => {  
     router.push({
       pathname: 'ShiftScr',
-      params: { empId },
+      params: { empId, empShift },
     });
   };
   
@@ -136,6 +141,7 @@ const MorePage = () => {
 const handlePressProfile = () => {
   router.push('profile');
 };
+
   
   const handleBackPress = () => {
     router.navigate({

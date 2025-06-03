@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   ScrollView, 
   TouchableOpacity, 
@@ -21,43 +21,45 @@ const ShiftScreen = (props) => {
   const [currentDate, setCurrentDate] = useState(moment().startOf('week'));
   const [shiftData, setShiftData] = useState(null);
   const [empId, setEmpId] = useState("");
+  const [empShift, setEmpShift] = useState("");
   const [isErrorVisible, setIsErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [todayShift, setTodayShift] = useState(null);
+  const scrollViewRef = useRef();
   const navigation = useNavigation();
-    const router = useRouter();
+  const router = useRouter();
 
   // Shift color mapping for better visibility
   const shiftColors = {
-    1: { bg: '#E3F2FD', text: '#0D47A1', icon: 'brightness-7' }, // Day shift (blue)
-    2: { bg: '#FFF8E1', text: '#FF6F00', icon: 'brightness-3' }, // Evening shift (orange)
-    3: { bg: '#F3E5F5', text: '#4A148C', icon: 'nights-stay' },   // Night shift (purple)
-    COMPANY_OFF: { bg: '#E8F5E9', text: '#1B5E20', icon: 'beach-access' }, // Company holiday (green)
-    WEEKLY_OFF: { bg: '#FFEBEE', text: '#B71C1C', icon: 'weekend' }       // Weekly off (red)
+    1: { bg: '#E3F2FD', text: '#0D47A1', icon: 'brightness-7', name: 'Day Shift' },
+    2: { bg: '#FFF8E1', text: '#FF6F00', icon: 'brightness-3', name: 'Evening Shift' },
+    3: { bg: '#F3E5F5', text: '#4A148C', icon: 'nights-stay', name: 'Night Shift' },
+    COMPANY_OFF: { bg: '#E8F5E9', text: '#1B5E20', icon: 'beach-access', name: 'Company Holiday' },
+    WEEKLY_OFF: { bg: '#FFEBEE', text: '#B71C1C', icon: 'weekend', name: 'Weekly Off' }
   };
 
   useEffect(() => {
     if (props?.data?.empId) {
-      setEmpId(props.data.empId);
+      setEmpId(props?.data.empId);
     }
-  }, [props?.data?.empId]);
+    if (props?.data?.empShift) {
+      setEmpShift(props?.data.empShift);
+    }
+  }, [props?.data?.empId, props?.data?.empShift]);
 
   useEffect(() => {
     const fetchShiftData = async () => {
       if (!empId) return;
 
-      const mondayDate = currentDate.format('YYYYMMDD');
-      const data = {
-        eId: empId,
-        w_data: mondayDate
-      };
-
       try {
-        const response = await getEmpShift(data);
-        if (response.data && response.data.w_shift_list && response.data.w_shift_list.length > 0) {
+        const response = await getEmpShift({
+          eId: empId,
+          w_data: currentDate.format('YYYYMMDD')
+        });
+
+        if (response.data?.w_shift_list?.[0]) {
           setShiftData(response.data.w_shift_list[0]);
         } else {
-          setErrorMessage("No shift data available for this week");
+          setErrorMessage("No shift data available");
           setIsErrorVisible(true);
         }
       } catch (error) {
@@ -71,22 +73,73 @@ const ShiftScreen = (props) => {
   }, [currentDate, empId]);
 
   const changeWeek = (direction) => {
-    setCurrentDate(prevDate => {
-      const newDate = moment(prevDate).add(direction * 7, 'days');
-      return newDate.startOf('week');
-    });
+    const newDate = moment(currentDate).add(direction * 7, 'days').startOf('week');
+    setCurrentDate(newDate);
+  };
+
+  const scrollToCurrentWeek = () => {
+    setCurrentDate(moment().startOf('week'));
+    // Scroll to top after a small delay to ensure the state has updated
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, 100);
   };
 
   const handleChangeShiftRequest = () => {
-    // Implement change shift request functionality
     router.push({
       pathname: 'AddHelp',
-      params: {
-        empId,
-        call_type: 'R',
-        shift_request: true
-      },
+      params: { empId, call_type: 'R', shift_request: true },
     });
+  };
+
+  const renderCurrentShiftCard = () => {
+    if (!empShift) return null;
+
+    const shiftInfo = shiftColors[empShift] || shiftColors[1];
+    const today = shiftData?.shift_list?.find(shift => 
+      moment(shift.date, 'DD-MMM-YYYY').isSame(moment(), 'day')
+    );
+
+    return (
+      <TouchableOpacity 
+        style={[styles.currentShiftCard, { backgroundColor: shiftInfo.bg }]}
+        onPress={scrollToCurrentWeek}
+        activeOpacity={0.8}
+      >
+        <View style={styles.currentShiftHeader}>
+          <Icon name="schedule" size={24} color={shiftInfo.text} />
+          <Text style={[styles.currentShiftTitle, { color: shiftInfo.text }]}>
+            Your Current Shift
+          </Text>
+          <Icon name="chevron-right" size={24} color={shiftInfo.text} />
+        </View>
+        
+        <View style={styles.currentShiftContent}>
+          <View style={styles.currentShiftIconContainer}>
+            <Icon 
+              name={shiftInfo.icon} 
+              size={36} 
+              color={shiftInfo.text} 
+            />
+          </View>
+          <View style={styles.currentShiftTextContainer}>
+            <Text style={[styles.currentShiftName, { color: shiftInfo.text }]}>
+              {shiftInfo.name}
+            </Text>
+            <Text style={[styles.currentShiftDate, { color: shiftInfo.text }]}>
+              {moment().format('dddd, MMMM Do')}
+            </Text>
+            {today && (
+              <Text style={[styles.currentShiftStatus, { color: shiftInfo.text }]}>
+                {today?.holiday_type !== 'NA' ? 
+                  (today?.holiday_type === 'COMPANY_OFF' ? 'Company Holiday' : 'Weekly Off') : 
+                  'Working Day'}
+              </Text>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   const renderShiftDays = () => {
@@ -94,18 +147,23 @@ const ShiftScreen = (props) => {
 
     return shiftData.shift_list.map((shift, index) => {
       const date = moment(shift.date, 'DD-MMM-YYYY');
-      const isHoliday = shift.holiday_type !== 'NA';
-      const shiftType = isHoliday ? shift.holiday_type : shift.shift_no;
+      const isToday = date.isSame(moment(), 'day');
+      const isHoliday = shift?.holiday_type !== 'NA';
+      const shiftType = isHoliday ? shift?.holiday_type : shift.shift_no;
       const colors = shiftColors[shiftType] || { bg: '#FAFAFA', text: '#000', icon: 'schedule' };
       
       return (
         <View key={index} style={[
           styles.shiftItem, 
-          { backgroundColor: colors.bg }
+          { 
+            backgroundColor: colors.bg,
+            borderWidth: isToday ? 2 : 0,
+            borderColor: isToday ? colors.text : 'transparent'
+          }
         ]}>
           <View style={styles.dateContainer}>
-            <Text style={styles.dateText}>{date.format('DD MMM')}</Text>
-            <Text style={styles.dayText}>{date.format('dddd')}</Text>
+            <Text style={[styles.dateText, { color: colors.text }]}>{date.format('DD MMM')}</Text>
+            <Text style={[styles.dayText, { color: colors.text }]}>{date.format('ddd')}</Text>
           </View>
           
           <View style={styles.shiftContainer}>
@@ -115,22 +173,23 @@ const ShiftScreen = (props) => {
               color={colors.text} 
               style={styles.shiftIcon}
             />
-            {!isHoliday && (
-              <Text style={[styles.shiftText, { color: colors.text }]}>
-                Shift {shift.shift_no}
-              </Text>
-            )}
+            <Text style={[styles.shiftText, { color: colors.text }]}>
+              {isHoliday ? 
+                (shift?.holiday_type === 'COMPANY_OFF' ? 'Holiday' : 'Weekly Off') : 
+                `Shift ${shift.shift_no}`}
+            </Text>
           </View>
           
           <View style={styles.statusContainer}>
             <View style={[
               styles.statusBadge, 
-              { backgroundColor: isHoliday ? colors.bg : 'transparent' }
+              { backgroundColor: isToday ? colors.text : 'transparent' }
             ]}>
-              <Text style={[styles.statusText, { color: colors.text }]}>
-                {isHoliday ? 
-                  (shift.holiday_type === 'COMPANY_OFF' ? 'Holiday' : 'Weekly Off') : 
-                  'Working Day'}
+              <Text style={[
+                styles.statusText, 
+                { color: isToday ? '#fff' : colors.text }
+              ]}>
+                {isToday ? 'Today' : isHoliday ? 'Day Off' : 'Working'}
               </Text>
             </View>
           </View>
@@ -145,6 +204,8 @@ const ShiftScreen = (props) => {
     return `${startOfWeek} - ${endOfWeek}`;
   };
 
+  console.log("Shift data---",shiftData)
+
   return (
     <View style={styles.mainContainer}>
       <HeaderComponent 
@@ -153,19 +214,24 @@ const ShiftScreen = (props) => {
       />
       
       <ScrollView 
+        ref={scrollViewRef}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {shiftData && (
           <View style={styles.employeeCard}>
-            <Text style={styles.employeeName}>{shiftData.emp_name}</Text>
-            <Text style={styles.employeeDetail}>Employee ID: {shiftData.emp_id}</Text>
-            {/* <Text style={styles.employeeDetail}>
-              {shiftData.is_shift_applicable ? 
-                "Shift Applicable" : "Shift Not Applicable"} • {shiftData.emp_type === 'P' ? 'Permanent' : 'Contract'}
-            </Text> */}
+            <View style={styles.employeeAvatar}>
+              <Icon name="person" size={32} color="#fff" />
+            </View>
+            <View style={styles.employeeInfo}>
+              <Text style={styles.employeeName}>{shiftData.emp_name}</Text>
+              <Text style={styles.employeeDetail}>ID: {shiftData.emp_id}</Text>
+              <Text style={styles.employeeDetail}>Department: {shiftData.dept_name || 'N/A'}</Text>
+            </View>
           </View>
         )}
+        
+        {renderCurrentShiftCard()}
 
         <View style={styles.card}>
           <View style={styles.weekNavigation}>
@@ -193,7 +259,6 @@ const ShiftScreen = (props) => {
           {renderShiftDays()}
         </View>
 
-        {/* Replaced the old button with the new ApplyButton component */}
         <ApplyButton 
           onPress={handleChangeShiftRequest}
           buttonText="Request Shift Change"
@@ -202,36 +267,14 @@ const ShiftScreen = (props) => {
 
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Shift Color Guide</Text>
-          <View style={styles.colorGuideItem}>
-            <View style={[styles.colorBox, { backgroundColor: shiftColors[1].bg }]}>
-              <Icon name={shiftColors[1].icon} size={16} color={shiftColors[1].text} />
+          {Object.entries(shiftColors).map(([key, value]) => (
+            <View key={key} style={styles.colorGuideItem}>
+              <View style={[styles.colorBox, { backgroundColor: value.bg }]}>
+                <Icon name={value.icon} size={16} color={value.text} />
+              </View>
+              <Text style={styles.infoText}>{value.name}</Text>
             </View>
-            <Text style={styles.infoText}>Blue - Day Shift</Text>
-          </View>
-          <View style={styles.colorGuideItem}>
-            <View style={[styles.colorBox, { backgroundColor: shiftColors[2].bg }]}>
-              <Icon name={shiftColors[2].icon} size={16} color={shiftColors[2].text} />
-            </View>
-            <Text style={styles.infoText}>Orange - Evening Shift</Text>
-          </View>
-          <View style={styles.colorGuideItem}>
-            <View style={[styles.colorBox, { backgroundColor: shiftColors[3].bg }]}>
-              <Icon name={shiftColors[3].icon} size={16} color={shiftColors[3].text} />
-            </View>
-            <Text style={styles.infoText}>Purple - Night Shift</Text>
-          </View>
-          <View style={styles.colorGuideItem}>
-            <View style={[styles.colorBox, { backgroundColor: shiftColors.COMPANY_OFF.bg }]}>
-              <Icon name={shiftColors.COMPANY_OFF.icon} size={16} color={shiftColors.COMPANY_OFF.text} />
-            </View>
-            <Text style={styles.infoText}>Green - Company Holiday</Text>
-          </View>
-          <View style={styles.colorGuideItem}>
-            <View style={[styles.colorBox, { backgroundColor: shiftColors.WEEKLY_OFF.bg }]}>
-              <Icon name={shiftColors.WEEKLY_OFF.icon} size={16} color={shiftColors.WEEKLY_OFF.text} />
-            </View>
-            <Text style={styles.infoText}>Red - Weekly Off</Text>
-          </View>
+          ))}
         </View>
       </ScrollView>
 
@@ -255,7 +298,7 @@ const styles = StyleSheet.create({
   },
   employeeCard: {
     backgroundColor: '#3f87f9',
-    padding: 20,
+    padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 3,
@@ -263,6 +306,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  employeeAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16
+  },
+  employeeInfo: {
+    flex: 1
   },
   employeeName: {
     fontSize: width < 400 ? 18 : 20,
@@ -272,7 +329,8 @@ const styles = StyleSheet.create({
   },
   employeeDetail: {
     fontSize: width < 400 ? 12 : 14,
-    color: 'rgba(255,255,255,0.9)'
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 2
   },
   card: {
     backgroundColor: '#fff',
@@ -328,16 +386,16 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   dateContainer: {
-    flex: 1
+    flex: 1,
+    alignItems: 'center'
   },
   dateText: {
-    fontSize: width < 400 ? 13 : 15,
-    fontWeight: '500',
-    color: '#334155'
+    fontSize: width < 400 ? 14 : 16,
+    fontWeight: '600',
   },
   dayText: {
-    fontSize: width < 400 ? 11 : 13,
-    color: '#64748b'
+    fontSize: width < 400 ? 12 : 14,
+    fontWeight: '500'
   },
   shiftContainer: {
     flex: 1,
@@ -357,14 +415,15 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   statusBadge: {
-    padding: 4,
-    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     minWidth: 80,
     alignItems: 'center'
   },
   statusText: {
     fontSize: width < 400 ? 11 : 12,
-    fontWeight: '500'
+    fontWeight: '600'
   },
   infoCard: {
     backgroundColor: '#f8fafc',
@@ -395,6 +454,59 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: width < 400 ? 12 : 14,
     color: '#64748b'
+  },
+  currentShiftCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  currentShiftHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    justifyContent: 'space-between'
+  },
+  currentShiftTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    flex: 1
+  },
+  currentShiftContent: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  currentShiftIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16
+  },
+  currentShiftTextContainer: {
+    flex: 1
+  },
+  currentShiftName: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 4
+  },
+  currentShiftDate: {
+    fontSize: 14,
+    opacity: 0.9,
+    marginBottom: 4
+  },
+  currentShiftStatus: {
+    fontSize: 14,
+    fontWeight: '500',
+    opacity: 0.9
   }
 });
 
