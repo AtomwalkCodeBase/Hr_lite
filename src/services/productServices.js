@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
@@ -95,6 +95,8 @@ export async function postEmpLeave(leave_type) {
       data['attendance_data'] = checkin_data;
     }
     const url = await empCheckData();
+
+    console.log("Check-in data pass===",data)
     return authAxiosPost(url, data);
   }
 
@@ -182,3 +184,14 @@ export async function forgetUserPinView(data) {
     const url = await forgetEmpPinURL();
     return publicAxiosRequest.post(url, data);
 }
+
+export async function getEmpShift(res) {
+    let data = {
+      'emp_id': res.eId || res.emp_id,
+      'w_start':res.w_data,
+      // 'year': res.year
+    };
+    console.log("At data to be pass--",data)
+    const url = await getEmpShiftData();
+    return authAxiosPost(url, data);
+  }

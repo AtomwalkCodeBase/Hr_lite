@@ -23,6 +23,7 @@ import Loader from '../components/old_components/Loader';
 import SuccessModal from '../components/SuccessModal';
 import HeaderComponent from '../components/HeaderComponent';
 import { LinearGradient } from 'expo-linear-gradient';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const { width } = Dimensions.get('window');
 
@@ -42,9 +43,14 @@ const AddAttendance = () => {
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false); // New state to track if all data is loaded
+  const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
 
   const navigation = useNavigation();
   const router = useRouter();
+
+  console.log("Att profile data---",employeeData)
+  console.log("Att attendance data---",attData)
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -146,31 +152,34 @@ const AddAttendance = () => {
     }
 
     const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item => item.a_date === yesterday);
+    const yesterdayAttendance = attendanceData.find(item => 
+      item.a_date === yesterday && 
+      item.attendance_type !== "L" && 
+      item.end_time === null
+    );
 
-    if (yesterdayAttendance && !yesterdayAttendance.end_time) {
-      setPreviousDayUnchecked(true);
-    } else {
-      setPreviousDayUnchecked(false);
-    }
+    setPreviousDayUnchecked(!!yesterdayAttendance);
   };
 
-  const processAttendanceData = (data) => {
-  // Filter out leave records (attendance_type: "L")
-  const todayAttendance = data.find((item) => 
-    item.a_date === currentDate && item.attendance_type !== "L"
-  );
 
-  if (todayAttendance) {
-    setCheckedIn(todayAttendance.end_time === null);
-    setStartTime(todayAttendance.start_time);
-    setAttendance(todayAttendance);
-  } else {
-    setCheckedIn(false);
-    setStartTime(null);
-    setAttendance(null);
-  }
-};
+
+  const processAttendanceData = (data) => {
+    const today = currentDate;
+    const todayAttendance = data.find(item => 
+      item.a_date === today && 
+      item.attendance_type !== "L"
+    );
+
+    if (todayAttendance) {
+      setCheckedIn(todayAttendance.end_time === null);
+      setStartTime(todayAttendance.start_time);
+      setAttendance(todayAttendance);
+    } else {
+      setCheckedIn(false);
+      setStartTime(null);
+      setAttendance(null);
+    }
+  };
 
   const handleError = (error, input) => {
     setErrors(prevState => ({...prevState, [input]: error}));
@@ -238,31 +247,132 @@ const AddAttendance = () => {
   };
   
   const handleRemarkSubmit = () => {
-    if (!remark.trim()) {
-      handleError('Remark cannot be empty', 'remarks');
-    } else {
-      setIsRemarkModalVisible(false);
-      handleCheck('UPDATE');
+  if (!remark.trim()) {
+    handleError('Remark cannot be empty', 'remarks');
+    return;
+  }
+
+  setIsRemarkModalVisible(false);
+  
+  if (isYesterdayCheckout) {
+    // Handle yesterday's checkout
+    const yesterdayRecord = attData.find(item => 
+      item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
+      item.end_time === null
+    );
+    
+    if (!yesterdayRecord) {
+      Alert.alert('Error', 'No pending checkout found for yesterday');
+      return;
     }
-  };
+    
+    const payload = {
+      emp_id: employeeData.id,
+      call_mode: 'UPDATE',
+      time: currentTime,
+      geo_type: 'O',
+      e_date: currentDate,
+      id: yesterdayRecord.id,
+      remarks: remark || 'Check-out from Mobile (completed next day)'
+    };
+    
+    submitCheckout(payload);
+  } else {
+    // Handle today's checkout
+    handleCheck('UPDATE');
+  }
+};
+
+
+const submitCheckout = async (payload) => {
+  try {
+    setIsLoading(true);
+    const { status } = await Location.requestForegroundPermissionsAsync();
+  
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Location permission is required to check out.');
+      setIsLoading(false);
+      return;
+    }
+
+    const location = await Location.getCurrentPositionAsync({});
+    if (!location) {
+      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Add location data to payload
+    payload.latitude_id = `${location.coords.latitude}`;
+    payload.longitude_id = `${location.coords.longitude}`;
+
+    await postCheckIn(payload);
+    setRefreshKey(prev => prev + 1);
+    setIsSuccessModalVisible(true);
+    setRemark('');
+    setIsYesterdayCheckout(false);
+  } catch (error) {
+    console.error('Checkout error:', error);
+    Alert.alert('Error', 'Failed to complete checkout');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const closeSuccessModal = () => {
     setIsSuccessModalVisible(false);
   };
 
+//   const handleYesterdayCheckout = async (payload) => {
+//   try {
+//     setIsLoading(true);
+//     const { status } = await Location.requestForegroundPermissionsAsync();
+  
+//     if (status !== 'granted') {
+//       Alert.alert('Permission denied', 'Location permission is required to check out.');
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     const location = await Location.getCurrentPositionAsync({});
+//     if (!location) {
+//       Alert.alert('Error', 'Unable to fetch location. Please try again.');
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     // Add location data to payload
+//     payload.latitude_id = `${location.coords.latitude}`;
+//     payload.longitude_id = `${location.coords.longitude}`;
+
+//     await postCheckIn(payload);
+//     setRefreshKey(prev => prev + 1);
+//     setIsSuccessModalVisible(true);
+//     setRemark('');
+//   } catch (error) {
+//     console.error('Checkout error:', error);
+//     Alert.alert('Error', 'Failed to complete yesterday\'s checkout');
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
+
   // Determine button states - now with additional checks for data availability
+
+  const handleYesterdayCheckout = async () => {
+  setIsYesterdayCheckout(true);
+  setIsRemarkModalVisible(true);
+};
+
   const isCheckInDisabled = !dataLoaded || 
-                          !employeeData ||
-                          checkedIn || 
-                          attendance?.geo_status === 'O' || 
-                          !!attendance?.start_time || 
-                          (employeeData?.is_shift_applicable && previousDayUnchecked);
+                        !employeeData ||
+                        (attendance && attendance.start_time && !attendance.end_time) || 
+                        (attendance && attendance.geo_status === 'O');
                           
-  const isCheckOutDisabled = !dataLoaded || 
-                           !employeeData || 
-                           !checkedIn || 
-                           attendance?.geo_status !== 'I' || 
-                           !!attendance?.end_time;
+ const isCheckOutDisabled = !dataLoaded || 
+                         !employeeData || 
+                         (!previousDayUnchecked && (!attendance || attendance.end_time));
+
 
   if (!dataLoaded && isLoading) {
     return <Loader visible={true} />;
@@ -315,6 +425,15 @@ const AddAttendance = () => {
                 {employeeData?.grade_name || '--'}
               </Text>
             </View>
+            {employeeData?.is_shift_applicable &&
+              <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Current Shift</Text>
+              <Text style={styles.detailValue} numberOfLines={2}>
+                {employeeData?.current_shift || '--'}
+              </Text>
+            </View>
+            }
+            
           </View>
         </View>
 
@@ -329,7 +448,7 @@ const AddAttendance = () => {
           ) : (
             <View style={[
               styles.actionButtons,
-              !attendance?.start_time && styles.singleButtonContainer
+              (!attendance?.start_time && !previousDayUnchecked) && styles.singleButtonContainer
             ]}>
               {/* Check In Button */}
               <TouchableOpacity
@@ -339,7 +458,7 @@ const AddAttendance = () => {
                   styles.attendanceButton,
                   styles.checkInButton,
                   isCheckInDisabled && styles.disabledButton,
-                  !attendance?.start_time && styles.singleButton
+                  (!attendance?.start_time && !previousDayUnchecked) && { width: '70%' } // Narrower when alone
                 ]}
               >
                 <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
@@ -347,20 +466,25 @@ const AddAttendance = () => {
                   styles.buttonText,
                   isCheckInDisabled && styles.disabledButtonText
                 ]}>
-                  {employeeData?.is_shift_applicable && previousDayUnchecked 
-                    ? "Complete yesterday's checkout first"
-                    : isCheckInDisabled 
-                      ? attendance?.start_time 
-                        ? `Checked In • ${attendance.start_time}`
-                        : 'Check In'
-                      : 'Check In'}
+                  {attendance?.start_time 
+                    ? `Checked In • ${attendance.start_time}`
+                    : 'Check In'}
                 </Text>
               </TouchableOpacity>
 
               {/* Check Out Button - only show if start_time exists */}
-              {attendance?.start_time && (
+              {(previousDayUnchecked || (attendance && attendance.end_time === null)) && (
                 <TouchableOpacity
-                  onPress={() => setIsRemarkModalVisible(true)}
+                  onPress={() => {
+                    if (previousDayUnchecked) {
+                      // Show confirmation for yesterday's checkout
+                      setIsConfirmModalVisible(true);
+                    } else {
+                      // Handle today's checkout
+                      setIsYesterdayCheckout(false);
+                      setIsRemarkModalVisible(true);
+                    }
+                  }}
                   disabled={isCheckOutDisabled}
                   style={[
                     styles.attendanceButton,
@@ -373,14 +497,12 @@ const AddAttendance = () => {
                     styles.buttonText,
                     isCheckOutDisabled && styles.disabledButtonText
                   ]}>
-                    {isCheckOutDisabled
-                      ? attendance?.end_time 
-                        ? `Checked Out • ${attendance.end_time}`
-                        : 'Check Out'
-                      : 'Check Out'}
+                    {previousDayUnchecked ? 'Complete Yesterday' : 'Check Out'}
                   </Text>
                 </TouchableOpacity>
               )}
+
+
             </View>
           )}
         </View>
@@ -403,7 +525,9 @@ const AddAttendance = () => {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Check Out Remarks</Text>
+              <Text style={styles.modalTitle}>
+                {isYesterdayCheckout ? 'Yesterday\'s Check Out Remarks' : 'Check Out Remarks'}
+              </Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setIsRemarkModalVisible(false)}
@@ -435,6 +559,17 @@ const AddAttendance = () => {
         onClose={closeSuccessModal}
         message="Attendance recorded successfully"
       />
+      <ConfirmationModal
+  visible={isConfirmModalVisible}
+  message="You have an unfinished checkout from yesterday. Do you want to complete it?"
+  onConfirm={() => {
+    setIsConfirmModalVisible(false);
+    handleYesterdayCheckout();
+  }}
+  onCancel={() => setIsConfirmModalVisible(false)}
+  confirmText="Check Out"
+  cancelText="Cancel"
+/>
 
       {/* Loader */}
       <Loader visible={isLoading} />
@@ -579,27 +714,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   actionButtons: {
-    flexDirection: width > 400 ? 'row' : 'column',
-    justifyContent: 'space-between',
-  },
-  singleButtonContainer: {
-    justifyContent: 'center', // Center when only one button
-  },
+  flexDirection: width > 400 ? 'row' : 'column',
+  justifyContent: 'space-between',
+  gap: 12, // Add gap between buttons
+},
+singleButtonContainer: {
+  justifyContent: 'center',
+  alignItems: 'center', // Center the single button
+},
   singleButton: {
     width: '70%', // Make single button slightly narrower
     alignSelf: 'center', // Center the button
   },
   attendanceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: width > 400 ? 0 : 12,
-    width: width > 400 ? '48%' : '100%',
-    borderWidth: 1,
-  },
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  width: width > 400 ? '48%' : '100%', // Adjust width for single button case
+  borderWidth: 1,
+},
   checkInButton: {
     borderColor: '#c8e6c9',
     backgroundColor: '#f1f8e9',

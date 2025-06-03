@@ -130,3 +130,8 @@ export const forgetEmpPinURL =  async () => {
   return `${newendpoint}/emp_forget_pin/${db_name}/`;
 }
 
+export const getEmpShiftData = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_emp_shift_data/${db_name}/`;
+};
+

@@ -29,6 +29,7 @@ export default function RootLayout() {
       <Stack.Screen name="EventScr/index" options={{headerShown:false}}/>
       <Stack.Screen name="EventDetails/index" options={{headerShown:false}}/>
       <Stack.Screen name="ForgetPin/index" options={{headerShown:false}}/>
+      <Stack.Screen name="ShiftScr/index" options={{headerShown:false}}/>
     </Stack>
     
     </AppProvider>

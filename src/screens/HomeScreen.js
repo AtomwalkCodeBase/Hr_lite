@@ -40,6 +40,7 @@ import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,12 +60,12 @@ const HomePage = ({ navigation }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   // Attendance related states
-  const [employeeData, setEmployeeData] = useState({});
+  const [employeeData, setEmployeeData] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment().format('DD-MM-YYYY'));
   const [currentTimeStr, setCurrentTimeStr] = useState('');
   const [checkedIn, setCheckedIn] = useState(false);
   const [startTime, setStartTime] = useState(null);
-  const [attendance, setAttendance] = useState({});
+  const [attendance, setAttendance] = useState(null);
   const [attData, setAttData] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [remark, setRemark] = useState('');
@@ -72,12 +73,14 @@ const HomePage = ({ navigation }) => {
   const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
+  const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   
   // Active events
   const [activeEvents, setActiveEvents] = useState([]);
   const [eventData, setEventData] = useState([]);
-const [filteredEvents, setFilteredEvents] = useState([]);
-const [eventLoading, setEventLoading] = useState(true);
+  const [filteredEvents, setFilteredEvents] = useState([]);
+  const [eventLoading, setEventLoading] = useState(true);
   
   const fadeAnim = useState(new Animated.Value(0))[0];
 
@@ -91,7 +94,7 @@ const [eventLoading, setEventLoading] = useState(true);
 
   useEffect(() => {
     fetchEvents();
-  }, [empId]); // Add empId as dependency
+  }, [empId]);
 
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
@@ -106,107 +109,73 @@ const [eventLoading, setEventLoading] = useState(true);
       setPreviousDayUnchecked(false);
       return;
     }
-  
+
     const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item => item.a_date === yesterday);
-  
-    if (yesterdayAttendance && !yesterdayAttendance.end_time) {
-      setPreviousDayUnchecked(true);
-    } else {
-      setPreviousDayUnchecked(false);
-    }
+    const yesterdayAttendance = attendanceData.find(item => 
+      item.a_date === yesterday && 
+      item.attendance_type !== "L" && 
+      item.end_time === null
+    );
+
+    setPreviousDayUnchecked(!!yesterdayAttendance);
   };
-
-
 
   const fetchData = async () => {
-    setIsLoading(true);
+  setIsLoading(true);
+  try {
+    const profileRes = await getEmployeeInfo();
+    const profileData = profileRes.data?.[0];
+    
+    if (!profileData) throw new Error("Employee profile data not found.");
+    
+    setProfile(profileData);
+    setEmployeeData(profileData);
+    setEmpId(profileData.emp_id);
+    setEmpNId(profileData.id);
+    setIsManager(profileData?.is_manager || false);
 
-    try {
-      // Fetch employee profile
-      const profileRes = await getEmployeeInfo();
-      const profileData = profileRes.data?.[0];
+    // Set current date and time
+    const now = moment();
+    setCurrentDate(now.format('DD-MM-YYYY'));
+    setCurrentTimeStr(await setdatatime());
 
-      console.log("Profile data===", profileData);
-      if (!profileData) throw new Error("Employee profile data not found.");
+    // Fetch attendance data only after profile is set
+    const data = {
+      eId: profileData.id,
+      month: now.format('MM'),
+      year: now.format('YYYY'),
+    };
+    await fetchAttendanceDetails(data);
 
-      if (profileData) {
-        // Store the entire profile data
-        await AsyncStorage.setItem('profile', JSON.stringify(profileData));
-        // Also store just the name if you need it separately
-        if (profileData?.name) {
-          await AsyncStorage.setItem('profilename', profileData.name);
-        }
-      }
-  
-      setProfile(profileData);
-      setEmployeeData(profileData);
-      setEmpId(profileData.emp_id);
-      setEmpNId(profileData.id);
-      setIsManager(profileData?.is_manager || false);
-  
-      // Fetch company info
-      const companyRes = await getCompanyInfo();
-      if (companyRes.status !== 200) {
-        console.error("Company info fetch failed with status:", companyRes.status);
-        throw new Error("Failed to fetch company information");
-      }
-      setCompany(companyRes.data);
-  
-      // Set current date and time
-      const now = moment();
-      let time = now.format('hh:mm A');
-      const isNoonEdgeCase = now.isBetween(
-        moment().startOf('day').add(12, 'hours').add(1, 'minute'),
-        moment().startOf('day').add(13, 'hours')
-      );
-      if (isNoonEdgeCase) {
-        time = time.replace(/^12/, '00');
-      }
-  
-      setCurrentDate(now.format('DD-MM-YYYY'));
-      setCurrentTimeStr(time);
-  
-      // Fetch attendance
-      const data = {
-        eId: profileData.id,
-        month: now.format('MM'),
-        year: now.format('YYYY'),
-      };
-      fetchAttendanceDetails(data);
-  
-    } catch (error) {
-      console.error("Error fetching data:", error.message || error);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  };
+    // Fetch company info in parallel
+    const companyRes = await getCompanyInfo();
+    setCompany(companyRes.data);
 
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  } finally {
+    setIsLoading(false);
+    setRefreshing(false);
+  }
+};
 
-  
-  
 
   const fetchEvents = async () => {
     try {
       setEventLoading(true);
       
-      // First fetch: Get all events without emp_id filter (company-wide and other public events)
       const paramsAllEvents = {
-        date_range: 'D0', // Today's events
-        event_type: '', // All types
-        // No emp_id parameter
+        date_range: 'D0',
+        event_type: '',
       };
       const resAllEvents = await getEvents(paramsAllEvents);
       
-      // Filter events to only include specific types AND status A/P
-      const filteredEventTypes = ['C', 'B', 'A', 'M', 'O']; // Company, Birthday, Announcement, Meeting, Other
+      const filteredEventTypes = ['C', 'B', 'A', 'M', 'O'];
       const filteredEvents = resAllEvents.data.filter(event => 
         filteredEventTypes.includes(event.event_type) && 
         (event.event_status === 'A' || event.event_status === 'P')
       );
   
-      // Second fetch: Try with empId if available (personalized events)
       let personalEvents = [];
       if (empId) {
         const paramsWithEmpId = {
@@ -215,13 +184,11 @@ const [eventLoading, setEventLoading] = useState(true);
           emp_id: empId
         };
         const resWithEmpId = await getEvents(paramsWithEmpId);
-        // Filter personal events to only include status A/P
         personalEvents = resWithEmpId.data.filter(event => 
           event.event_status === 'A' || event.event_status === 'P'
         );
       }
   
-      // Combine both results, removing duplicates
       const combinedEvents = [...filteredEvents, ...personalEvents].reduce((acc, current) => {
         const x = acc.find(item => item.id === current.id);
         if (!x) {
@@ -235,7 +202,6 @@ const [eventLoading, setEventLoading] = useState(true);
       setFilteredEvents(combinedEvents);
     } catch (error) {
       console.error("Fetch Event Error:", error?.response?.data);
-      // Fallback: Try to at least show company events with status A/P
       try {
         const paramsCompanyEvents = {
           date_range: 'D0',
@@ -257,71 +223,53 @@ const [eventLoading, setEventLoading] = useState(true);
     }
   };
 
-
   const handlePressApproveLeave = () => {  
     router.push({
       pathname: 'ApproveLeaves',
       params: { empNId },
     });
   };
-
   
   const fetchAttendanceDetails = async (data) => {
-    setIsLoading(true);
-    try {
-      const res = await getEmpAttendance(data);
-      setAttData(res.data);
-      processAttendanceData(res.data);
-      checkPreviousDayAttendance(res.data); // Add this line
-    } catch (error) {
-      console.error("Error fetching attendance details:", error);
-      setAttData([]);
-      setCheckedIn(false);
-      setStartTime(null);
-      setAttendance({});
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  try {
+    const res = await getEmpAttendance(data);
+    setAttData(res.data);
+    processAttendanceData(res.data);
+    checkPreviousDayAttendance(res.data);
+  } catch (error) {
+    console.error("Error fetching attendance:", error);
+    setAttData([]);
+    setCheckedIn(false);
+    setStartTime(null);
+    setAttendance(null);
+  }
+};
 
   const processAttendanceData = (data) => {
-    const today = moment().format('DD-MM-YYYY');
-    const todayAttendance = data.find((item) => 
-    item.a_date === currentDate && item.attendance_type !== "L"
-  );
-  
+    const today = currentDate;
+    const todayAttendance = data.find(item => 
+      item.a_date === today && 
+      item.attendance_type !== "L"
+    );
+
     if (todayAttendance) {
-      const hasCheckedIn = todayAttendance.start_time !== null;
-      const hasCheckedOut = todayAttendance.end_time !== null;
-      
-      setCheckedIn(hasCheckedIn && !hasCheckedOut);
+      setCheckedIn(todayAttendance.end_time === null);
       setStartTime(todayAttendance.start_time);
       setAttendance(todayAttendance);
     } else {
-      // No attendance record for today - enable check-in
       setCheckedIn(false);
       setStartTime(null);
-      setAttendance({});
-    }
-  
-    // Check previous day's attendance for shift employees
-    if (employeeData?.is_shift_applicable) {
-      checkPreviousDayAttendance(data);
+      setAttendance(null);
     }
   };
-  
 
-  // Function to check if today is the employee's birthday
   const checkIfBirthday = (dobString) => {
     try {
-      // Parse the DOB string in "24-Apr-2001" format
       const dobParts = dobString.split('-');
       if (dobParts.length !== 3) return;
 
       const today = new Date();
       
-      // Convert month abbreviation to month number (0-11)
       const months = {
         'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
         'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
@@ -330,10 +278,8 @@ const [eventLoading, setEventLoading] = useState(true);
       const dobDay = parseInt(dobParts[0], 10);
       const dobMonth = months[dobParts[1]];
       
-      // Check if today's date and month match the DOB
       if (today.getDate() === dobDay && today.getMonth() === dobMonth) {
         setIsBirthday(true);
-        // Start animation for birthday message
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 1000,
@@ -351,7 +297,6 @@ const [eventLoading, setEventLoading] = useState(true);
   useEffect(() => {
     fetchData();
     
-    // Set greeting based on time of day
     const updateGreeting = () => {
       const currentHour = new Date().getHours();
       if (currentHour < 12) {
@@ -365,7 +310,6 @@ const [eventLoading, setEventLoading] = useState(true);
     
     updateGreeting();
     
-    // Update time every minute
     const interval = setInterval(() => {
       setCurrentTime(new Date());
       updateGreeting();
@@ -386,7 +330,7 @@ const [eventLoading, setEventLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      if (employeeData?.id) { // Use employeeData.id instead of empId
+      if (employeeData?.id) {
         const data = {
           eId: employeeData.id,
           month: moment().format('MM'),
@@ -394,7 +338,7 @@ const [eventLoading, setEventLoading] = useState(true);
         };
         fetchAttendanceDetails(data);
       }
-    }, [employeeData, refreshKey]) // Add employeeData to dependencies
+    }, [employeeData, refreshKey])
   );
 
   const onRefresh = async () => {
@@ -410,81 +354,141 @@ const [eventLoading, setEventLoading] = useState(true);
   };
 
   const handleCheck = async (data) => {
+    if (!employeeData) return;
+    
     setIsLoading(true);
+    const { status } = await Location.requestForegroundPermissionsAsync();
+  
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Location permission is required to check.');
+      setIsLoading(false);
+      return;
+    }
+  
+    let location = null;
+    let retries = 0;
+  
+    while (!location && retries < 5) {
+      try {
+        location = await Location.getCurrentPositionAsync({});
+      } catch (error) {
+        retries += 1;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  
+    if (!location) {
+      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+  
+    const todayAttendance = attData.find((item) => item.a_date === currentDate);
+    const attendanceId = todayAttendance ? todayAttendance.id : null;
+    const time = await setdatatime();
+    
+    const checkPayload = {
+      emp_id: employeeData?.id,
+      call_mode: data,
+      time: time,
+      geo_type: data === 'ADD' ? 'I' : 'O',
+      a_date: currentDate,
+      latitude_id: `${location?.coords?.latitude}`,
+      longitude_id: `${location?.coords?.longitude}`,
+      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+      id: attendanceId,
+    };
+  
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to check.');
-        return;
-      }
-  
-      let location = null;
-      let retries = 0;
-      while (!location && retries < 5) {
-        try {
-          location = await Location.getCurrentPositionAsync({});
-        } catch (error) {
-          retries += 1;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }
-      }
-  
-      if (!location) {
-        Alert.alert('Error', 'Unable to fetch location. Please try again.');
-        return;
-      }
-  
-      const time = await setdatatime();
-      const todayAttendance = attData
-        .filter(item => item.a_date === currentDate)
-        .sort((a, b) => a.id - b.id)[0];
-      
-        const checkPayload = {
-          emp_id: employeeData?.id, // Use employeeData.id
-          call_mode: data,
-          time: time,
-          geo_type: data === 'ADD' ? 'I' : 'O',
-          a_date: currentDate,
-          latitude_id: `${location?.coords?.latitude}`,
-          longitude_id: `${location?.coords?.longitude}`,
-          remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-          id: attendance?.id || null,
-        };
-  
-      
-      const response = await postCheckIn(checkPayload);
-      if (response.status===200) {
-        setCheckedIn(data === 'ADD');
-        setStartTime(data === 'ADD' ? time : null);
-        setRefreshKey(prev => prev + 1);
-        setIsSuccessModalVisible(true);
-        if (data === 'UPDATE') setRemark('');
-      } else {
-        Alert.alert('Check Failure', response.message || 'Failed to record attendance');
-      }
+      await postCheckIn(checkPayload);
+      setCheckedIn(data === 'ADD');
+      setStartTime(currentTimeStr);
+      setRefreshKey((prevKey) => prevKey + 1);
+      setIsSuccessModalVisible(true);
+      if (data === 'UPDATE') setRemark('');
     } catch (error) {
-      console.error('Check error:', error);
-      Alert.alert('Error', 'An unexpected error occurred');
+      console.error('Check in/out error:', error);
+      Alert.alert('Check Failure', 'Failed to Check.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleCheckIn = () => {
-    handleCheck('ADD');
-  };
-
-  const handleCheckOut = () => {
-    setIsRemarkModalVisible(true);
   };
   
   const handleRemarkSubmit = () => {
     if (!remark.trim()) {
       handleError('Remark cannot be empty', 'remarks');
+      return;
+    }
+
+    setIsRemarkModalVisible(false);
+    
+    if (isYesterdayCheckout) {
+      // Handle yesterday's checkout
+      const yesterdayRecord = attData.find(item => 
+        item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
+        item.end_time === null
+      );
+      
+      if (!yesterdayRecord) {
+        Alert.alert('Error', 'No pending checkout found for yesterday');
+        return;
+      }
+      
+      const payload = {
+        emp_id: employeeData.id,
+        call_mode: 'UPDATE',
+        time: currentTimeStr,
+        geo_type: 'O',
+        e_date: currentDate,
+        id: yesterdayRecord.id,
+        remarks: remark || 'Check-out from Mobile (completed next day)'
+      };
+      
+      submitCheckout(payload);
     } else {
-      setIsRemarkModalVisible(false);
+      // Handle today's checkout
       handleCheck('UPDATE');
     }
+  };
+
+  const submitCheckout = async (payload) => {
+    try {
+      setIsLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+    
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location permission is required to check out.');
+        setIsLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      if (!location) {
+        Alert.alert('Error', 'Unable to fetch location. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Add location data to payload
+      payload.latitude_id = `${location.coords.latitude}`;
+      payload.longitude_id = `${location.coords.longitude}`;
+
+      await postCheckIn(payload);
+      setRefreshKey(prev => prev + 1);
+      setIsSuccessModalVisible(true);
+      setRemark('');
+      setIsYesterdayCheckout(false);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      Alert.alert('Error', 'Failed to complete checkout');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleYesterdayCheckout = async () => {
+    setIsYesterdayCheckout(true);
+    setIsRemarkModalVisible(true);
   };
 
   const closeSuccessModal = () => {
@@ -505,10 +509,15 @@ const [eventLoading, setEventLoading] = useState(true);
   };
 
   // Determine button states for check-in/out
-  // Determine button states for check-in/out
-  const isCheckInDisabled = checkedIn || attendance.geo_status === 'O' || !!attendance.start_time || 
-                          (employeeData?.is_shift_applicable && previousDayUnchecked) || (attendance && attendance.start_time === null);
-  const isCheckOutDisabled = !checkedIn || attendance.geo_status !== 'I' || !!attendance.end_time;
+  const isCheckInDisabled = !employeeData ||
+                          (attendance && attendance.start_time && !attendance.end_time) || 
+                          (attendance && attendance.geo_status === 'O') ||
+                          previousDayUnchecked;
+                          
+  const isCheckOutDisabled = !employeeData || 
+                           (!previousDayUnchecked && (!attendance || attendance.end_time));
+
+                          
 
   const renderEventCard = ({ item }) => (
     <View style={styles.eventCard}>
@@ -585,6 +594,7 @@ const [eventLoading, setEventLoading] = useState(true);
       onPress: () => router.push('MoreScreen')
     }
   ];
+
   const getEventIcon = (eventType) => {
     switch(eventType) {
       case 'B': return 'cake';
@@ -601,123 +611,137 @@ const [eventLoading, setEventLoading] = useState(true);
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       {loading && (
-  <View style={styles.loaderContainer}>
-    <Loader visible={true} />
-  </View>
-)}
+        <View style={styles.loaderContainer}>
+          <Loader visible={true} />
+        </View>
+      )}
       
       {/* Curved Header */}
       <View style={styles.headerContainer}>
-      <LinearGradient 
-    colors={['#a970ff', '#8a5bda']} 
-    start={[0, 0]} 
-    end={[1, 1]}
-    style={styles.headerGradient}
-  >
-    <View style={styles.headerTop}>
-      <View style={styles.headerTopContent}>
-        <View style={styles.companySection}>
-          {company.image ? (
-            <Image 
-              source={{ uri: company.image }} 
-              style={styles.companyLogo} 
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={styles.companyPlaceholder}>
-              <MaterialIcons name="business" size={40} color="#fff" />
+        <LinearGradient 
+          colors={['#a970ff', '#8a5bda']} 
+          start={[0, 0]} 
+          end={[1, 1]}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerTop}>
+            <View style={styles.headerTopContent}>
+              <View style={styles.companySection}>
+                {company.image ? (
+                  <Image 
+                    source={{ uri: company.image }} 
+                    style={styles.companyLogo} 
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <View style={styles.companyPlaceholder}>
+                    <MaterialIcons name="business" size={40} color="#fff" />
+                  </View>
+                )}
+                <Text style={styles.companyName}>
+                  {company.name || 'ATOMWALK'}
+                </Text>
+              </View>
             </View>
-          )}
-          <Text style={styles.companyName}>
-            {company.name || 'ATOMWALK'}
-          </Text>
-        </View>
-      </View>
-      
-      {/* <TouchableOpacity 
-        style={styles.profileButton}
-        onPress={() => router.push('profile')}
-      >
-        {profile?.emp_data?.image ? (
-          <Image source={{ uri: profile?.emp_data?.image }} style={styles.profileImage} />
-        ) : (
-          <FontAwesome5 name="user-circle" size={width * 0.09} color="#a970ff" />
-        )}
-      </TouchableOpacity> */}
-    </View>
-    
-    <View style={styles.welcomeSection}>
-      <Text style={styles.greeting}>{greeting},</Text>
-      <Text style={styles.userName} onPress={() => router.push('profile')}>
-        {profile?.name ? `${profile?.name}` : 'Employee'}
-      </Text>
-    </View>
-  </LinearGradient>
+          </View>
+          
+          <View style={styles.welcomeSection}>
+            <Text style={styles.greeting}>{greeting},</Text>
+            <Text style={styles.userName} onPress={() => router.push('profile')}>
+              {profile?.name ? `${profile?.name}` : 'Employee'}
+            </Text>
+          </View>
+        </LinearGradient>
         
         {/* Time Card */}
         <View style={styles.timeCardContainer}>
-        <LinearGradient
-          colors={['#ffffff', '#f8f5ff']}
-          style={styles.timeCard}
-        >
-          <View style={styles.timeCardContent}>
-            <View style={styles.timeSection}>
-              <Text style={styles.dateText}>
-                {currentTime.toLocaleDateString('en-US', { 
-                  weekday: 'short', 
-                  day: 'numeric', 
-                  month: 'short', 
-                  year: 'numeric' 
-                })}
-              </Text>
-              <Text style={styles.timeText}>
-                {formatTime(currentTime)}
-              </Text>
-            </View>
-            <View style={styles.attendanceButtons}>
-            <TouchableOpacity 
-              style={[
-                styles.attendanceButton, 
-                isCheckInDisabled ? styles.disabledButton : styles.checkInButton
-              ]}
-              onPress={handleCheckIn}
-              disabled={isCheckInDisabled}
-            >
-              <MaterialCommunityIcons name="login" size={20} color={isCheckInDisabled ? "#888" : "#fff"} />
-              <Text style={[styles.attendanceButtonText, isCheckInDisabled ? styles.disabledButtonText : {}]}>
-                {employeeData?.is_shift_applicable && previousDayUnchecked 
-                  ? "Complete yesterday's checkout first"
-                  : checkedIn 
-                    ? `Checked In`
-                    : 'Check In'}
-              </Text>
-            </TouchableOpacity>
-              <TouchableOpacity 
-                style={[
-                  styles.attendanceButton, 
-                  isCheckOutDisabled ? styles.disabledButton : styles.checkOutButton
-                ]}
-                onPress={handleCheckOut}
-                disabled={isCheckOutDisabled}
-              >
-                <MaterialCommunityIcons name="logout" size={20} color={isCheckOutDisabled ? "#888" : "#fff"} />
-                <Text style={[styles.attendanceButtonText, isCheckOutDisabled ? styles.disabledButtonText : {}]}>
-                  {isCheckOutDisabled
-                    ? attendance.end_time 
-                      ? `Checked Out`
-                      : 'Check Out'
-                    : 'Check Out'}
+          <LinearGradient
+            colors={['#ffffff', '#f8f5ff']}
+            style={styles.timeCard}
+          >
+            <View style={styles.timeCardContent}>
+              <View style={styles.timeSection}>
+                <Text style={styles.dateText}>
+                  {currentTime.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                  })}
                 </Text>
-              </TouchableOpacity>
+                <Text style={styles.timeText}>
+                  {formatTime(currentTime)}
+                </Text>
+              </View>
+              <View style={styles.attendanceButtonsContainer}>
+                <View style={styles.attendanceButtons}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.attendanceButton, 
+                      styles.checkInButton,
+                      isCheckInDisabled && styles.disabledButton,
+                      checkedIn && styles.checkedInButton
+                    ]}
+                    onPress={() => handleCheck('ADD')}
+                    disabled={isCheckInDisabled}
+                  >
+                    <MaterialCommunityIcons 
+                      name="login" 
+                      size={20} 
+                      color={isCheckInDisabled ? "#888" : "#fff"} 
+                    />
+                    <Text 
+                      style={[
+                        styles.attendanceButtonText, 
+                        isCheckInDisabled && styles.disabledButtonText
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {checkedIn 
+                        ? `Checked In • ${startTime}`
+                        : 'Check In'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.attendanceButton, 
+                      styles.checkOutButton,
+                      isCheckOutDisabled && styles.disabledButton,
+                      previousDayUnchecked && styles.yesterdayButton
+                    ]}
+                    onPress={() => {
+                      if (previousDayUnchecked) {
+                        setIsConfirmModalVisible(true);
+                      } else {
+                        setIsYesterdayCheckout(false);
+                        setIsRemarkModalVisible(true);
+                      }
+                    }}
+                    disabled={isCheckOutDisabled}
+                  >
+                    <MaterialCommunityIcons 
+                      name="logout" 
+                      size={20} 
+                      color={isCheckOutDisabled ? "#888" : "#fff"} 
+                    />
+                    <Text 
+                      style={[
+                        styles.attendanceButtonText, 
+                        isCheckOutDisabled && styles.disabledButtonText
+                      ]}
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                    >
+                      {previousDayUnchecked ? 'Check-Out Yesterday' : 'Check Out'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-            {checkedIn && startTime && (
-              <Text style={styles.checkinTimeText}>
-                Checked in at {startTime}
-              </Text>
-            )}
-          </View>
-        </LinearGradient>
-      </View>
+          </LinearGradient>
+        </View>
       </View>
 
       {/* Main Content */}
@@ -731,87 +755,87 @@ const [eventLoading, setEventLoading] = useState(true);
       >
         {/* Birthday and Events Cards Slider */}
         {(isBirthday || filteredEvents.length > 0) && (
-  <View style={styles.eventsContainer}>
-    <Text style={styles.sectionTitle}>Today's Events</Text>
-    {eventLoading ? (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#a970ff" />
-      </View>
-    ) : (
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={[
-          ...(isBirthday ? [{ id: 'birthday', type: 'birthday' }] : []),
-          ...filteredEvents.map(event => ({ 
-            ...event, 
-            type: 'event',
-            title: event.event_name,
-            description: event.event_description,
-            time: `${event.event_start_time}${event.event_end_time ? ` - ${event.event_end_time}` : ''}`,
-            icon: getEventIcon(event.event_type)
-          }))
-        ]}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => 
-          item.type === 'birthday' ? (
-            <Animated.View style={[styles.birthdayCard, { opacity: fadeAnim }]}>
-              <LinearGradient
-                colors={['#a970ff', '#8a5bda']}
-                start={[0, 0]}
-                end={[1, 1]}
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  padding: 16
-                }}
-              >
-                <View style={styles.birthdayIconContainer}>
-                  <MaterialCommunityIcons name="cake-variant" size={28} color="#fff" />
-                </View>
-                <View style={styles.birthdayTextContainer}>
-                  <Text style={styles.birthdayText}>Happy Birthday!</Text>
-                  <Text style={styles.birthdaySubtext}>
-                    Wishing you a fantastic day filled with joy and celebration.
-                  </Text>
-                </View>
-              </LinearGradient>
-            </Animated.View>
-          ) : (
-            <TouchableOpacity onPress={() => handleEventPress(item)}>
-              <View style={styles.eventCard}>
-                <LinearGradient
-                  colors={['#a970ff', '#8a5bda']}
-                  start={[0, 0]}
-                  end={[1, 1]}
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: 16
-                  }}
-                >
-                  <View style={styles.eventIconContainer}>
-                    <MaterialIcons name={item.icon} size={28} color="#fff" />
-                  </View>
-                  <View style={styles.eventTextContainer}>
-                    <Text style={styles.eventTitle}>{item.event_text}</Text>
-                    <Text style={styles.eventDescription} numberOfLines={2}>
-                      {item.event_type_display}
-                    </Text>
-                    <Text style={styles.eventTime}>{item.emp_name}</Text>
-                  </View>
-                </LinearGradient>
+          <View style={styles.eventsContainer}>
+            <Text style={styles.sectionTitle}>Today's Events</Text>
+            {eventLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#a970ff" />
               </View>
-            </TouchableOpacity>
-          )
-        }
-        contentContainerStyle={styles.cardsSlider}
-      />
-    )}
-  </View>
-)}
+            ) : (
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={[
+                  ...(isBirthday ? [{ id: 'birthday', type: 'birthday' }] : []),
+                  ...filteredEvents.map(event => ({ 
+                    ...event, 
+                    type: 'event',
+                    title: event.event_name,
+                    description: event.event_description,
+                    time: `${event.event_start_time}${event.event_end_time ? ` - ${event.event_end_time}` : ''}`,
+                    icon: getEventIcon(event.event_type)
+                  }))
+                ]}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => 
+                  item.type === 'birthday' ? (
+                    <Animated.View style={[styles.birthdayCard, { opacity: fadeAnim }]}>
+                      <LinearGradient
+                        colors={['#a970ff', '#8a5bda']}
+                        start={[0, 0]}
+                        end={[1, 1]}
+                        style={{
+                          flex: 1,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: 16
+                        }}
+                      >
+                        <View style={styles.birthdayIconContainer}>
+                          <MaterialCommunityIcons name="cake-variant" size={28} color="#fff" />
+                        </View>
+                        <View style={styles.birthdayTextContainer}>
+                          <Text style={styles.birthdayText}>Happy Birthday!</Text>
+                          <Text style={styles.birthdaySubtext}>
+                            Wishing you a fantastic day filled with joy and celebration.
+                          </Text>
+                        </View>
+                      </LinearGradient>
+                    </Animated.View>
+                  ) : (
+                    <TouchableOpacity onPress={() => handleEventPress(item)}>
+                      <View style={styles.eventCard}>
+                        <LinearGradient
+                          colors={['#a970ff', '#8a5bda']}
+                          start={[0, 0]}
+                          end={[1, 1]}
+                          style={{
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: 16
+                          }}
+                        >
+                          <View style={styles.eventIconContainer}>
+                            <MaterialIcons name={item.icon} size={28} color="#fff" />
+                          </View>
+                          <View style={styles.eventTextContainer}>
+                            <Text style={styles.eventTitle}>{item.event_text}</Text>
+                            <Text style={styles.eventDescription} numberOfLines={2}>
+                              {item.event_type_display}
+                            </Text>
+                            <Text style={styles.eventTime}>{item.emp_name}</Text>
+                          </View>
+                        </LinearGradient>
+                      </View>
+                    </TouchableOpacity>
+                  )
+                }
+                contentContainerStyle={styles.cardsSlider}
+              />
+            )}
+          </View>
+        )}
 
         {/* Quick Actions Section */}
         <View style={styles.sectionContainer}>
@@ -832,8 +856,6 @@ const [eventLoading, setEventLoading] = useState(true);
             ))}
           </View>
         </View>
-
-        
       </ScrollView>
 
       {/* Remark Modal for checkout */}
@@ -841,7 +863,9 @@ const [eventLoading, setEventLoading] = useState(true);
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Check Out Remarks</Text>
+              <Text style={styles.modalTitle}>
+                {isYesterdayCheckout ? 'Yesterday\'s Check Out Remarks' : 'Check Out Remarks'}
+              </Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setIsRemarkModalVisible(false)}
@@ -852,10 +876,10 @@ const [eventLoading, setEventLoading] = useState(true);
             
             <RemarksInput
               remark={remark}
-              label= {false}
+              label={false}
               setRemark={setRemark}
               error={errors.remarks}
-              placeholder="Please enter you check out remark"
+              placeholder="Please enter your check out remark"
             />
 
             <TouchableOpacity 
@@ -872,6 +896,18 @@ const [eventLoading, setEventLoading] = useState(true);
         visible={isSuccessModalVisible}
         onClose={closeSuccessModal}
         message="Attendance recorded successfully"
+      />
+
+      <ConfirmationModal
+        visible={isConfirmModalVisible}
+        message="You have an unfinished checkout from yesterday. Do you want to complete it?"
+        onConfirm={() => {
+          setIsConfirmModalVisible(false);
+          handleYesterdayCheckout();
+        }}
+        onCancel={() => setIsConfirmModalVisible(false)}
+        confirmText="Check Out"
+        cancelText="Cancel"
       />
     </SafeAreaView>
   );
@@ -975,26 +1011,26 @@ companyName: {
     marginTop: 3,
   },
   timeCardContainer: {
-    paddingHorizontal: 20,
-    marginTop: -40, // Pull up to overlap with the header
-  },
-  timeCard: {
-    borderRadius: 15,
-    elevation: 8,
-    shadowColor: '#a970ff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  timeCardContent: {
-    padding: 16,
-  },
+  paddingHorizontal: 20,
+  marginTop: -40,
+},
+timeCard: {
+  borderRadius: 15,
+  elevation: 8,
+  shadowColor: '#a970ff',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+},
+timeCardContent: {
+  padding: 16,
+},
   timeSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 12,
+},
   dateText: {
     fontSize: width * 0.036,
     color: '#555',
@@ -1005,43 +1041,64 @@ companyName: {
     color: '#333',
     fontWeight: 'bold',
   },
+  attendanceButtonsContainer: {
+  width: '100%',
+},
   attendanceButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 5,
-  },
-  attendanceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '48%',
-    paddingVertical: 12,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+  gap: 10,
+},
+attendanceButton: {
+  flex: 1,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 12,
+  paddingHorizontal: 8,
+  borderRadius: 10,
+  elevation: 2,
+  minHeight: 48,
+},
+buttonLoading: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(255,255,255,0.5)',
+  borderRadius: 10,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   checkInButton: {
-    backgroundColor: '#a970ff',
-  },
-  checkOutButton: {
-    backgroundColor: '#a970ff',
-  },
-  disabledButton: {
-    backgroundColor: '#f0f0f0',
-    elevation: 0,
-  },
+  backgroundColor: '#a970ff',
+},
+checkOutButton: {
+  backgroundColor: '#a970ff',
+},
+yesterdayButton: {
+  backgroundColor: '#FF6B6B',
+},
+checkedInButton: {
+  backgroundColor: '#D7DAD7',
+},
+ disabledButton: {
+  backgroundColor: '#f0f0f0',
+  elevation: 0,
+},
   attendanceButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    marginLeft: 8,
-    fontSize: width * 0.035,
-  },
-  disabledButtonText: {
-    color: '#888',
-  },
+  color: '#fff',
+  fontWeight: '600',
+  marginLeft: 8,
+  fontSize: 14,
+  flexShrink: 1,
+  maxWidth: '90%',
+},
+disabledButtonText: {
+  color: '#888',
+},
   checkinTimeText: {
     textAlign: 'center',
     color: '#a970ff',

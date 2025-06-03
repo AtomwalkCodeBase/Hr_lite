@@ -80,6 +80,7 @@ const MorePage = () => {
   const [isManager, setIsManager] = useState(false);
   const [empId, setEmpId] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isShift, setIsShift] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -87,6 +88,7 @@ const MorePage = () => {
       .then((res) => {
         setEmpId(res?.data[0]?.emp_id);
         setIsManager(res?.data[0]?.is_manager);
+        setIsShift(res?.data[0]?.is_shift_applicable);
         setLoading(false);
       })
       .catch((error) => {
@@ -111,6 +113,13 @@ const MorePage = () => {
   const handlePressEvent = () => {  
     router.push({
       pathname: 'EventScr',
+      params: { empId },
+    });
+  };
+
+  const handlePressShift = () => {  
+    router.push({
+      pathname: 'ShiftScr',
       params: { empId },
     });
   };
@@ -178,7 +187,14 @@ const handlePressProfile = () => {
     icon: <MaterialIcons name="tips-and-updates" size={24} color="#7e57c2" />,
     action: handlePressEvent,
     show: true
-  }
+  },
+  {
+    title: "Shift Information",
+    subTitle: "Check your scheduled shifts",
+    icon: <MaterialIcons name="calendar-month" size={24} color="#7e57c2" />,
+    action: handlePressShift,
+    show: isShift
+}
 ].filter(item => item.show); // This filters out any items where show is false
 
   return (

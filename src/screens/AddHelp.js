@@ -38,8 +38,17 @@ const AddHelp = (props) => {
   const navigation = useNavigation();
   const router = useRouter();
   const call_type = props.data.call_type;
-  // Dynamic header title based on call_type
-  const headerTitle = props?.data?.headerTitle?props?.data?.headerTitle:call_type === 'H' ? 'Add Help Request' : 'Add General Request';
+  const is_shift_request = props.data.shift_request;
+  
+  // Dynamic header title - if it's a shift request, use "Change shift request", otherwise use the provided title or default
+  const headerTitle = is_shift_request 
+    ? 'Change Shift Request' 
+    : props?.data?.headerTitle 
+      ? props?.data?.headerTitle 
+      : call_type === 'H' 
+        ? 'Add Help Request' 
+        : 'Add General Request';
+
   useEffect(() => {
     if (props?.data?.empId) {
       setEmpId(props.data.empId);
@@ -63,6 +72,17 @@ const AddHelp = (props) => {
         setRequestCategories(res.data);
         const filtered = res.data.filter(category => category.request_type === call_type);
         setFilteredCategories(filtered);
+        
+        // If it's a shift request, try to auto-select HR Requests or Workforce Management
+        if (is_shift_request) {
+          const shiftCategory = filtered.find(category => 
+            category.name.includes('HR Requests') || 
+            category.name.includes('Workforce Management')
+          );
+          if (shiftCategory) {
+            setSelectedCategory(shiftCategory.id.toString());
+          }
+        }
       })
       .catch((err) => {
         console.error("Error:", err);
@@ -73,13 +93,20 @@ const AddHelp = (props) => {
   };
 
   const handleBackPress = () => {
+  if (is_shift_request) {
+    router.push({
+      pathname: 'ShiftScr',
+      params: { empId },
+    });
+  } else {
     router.push({
       pathname: call_type === 'H' ? 'HelpScr' : 'RequestScr',
       params: {
         empId,
       },
     });
-  };
+  }
+};
 
   const handleError = (error, input) => {
     setErrors(prevState => ({ ...prevState, [input]: error }));
@@ -98,11 +125,6 @@ const AddHelp = (props) => {
       handleError('Please describe your request', 'requestText');
       isValid = false;
     }
-
-    // if (!remark) {
-    //   handleError('Please fill the remark field', 'remarks');
-    //   isValid = false;
-    // }
 
     if (!fileUri) {
       handleError('Please attach supporting document', 'file');
@@ -158,9 +180,9 @@ const AddHelp = (props) => {
       );
     } finally {
       setIsLoading(false);
-
     }
   };
+  
   useEffect(() => {
     if (itemdata.request_sub_type) {
       const matchedCategory = filteredCategories.find(
@@ -197,15 +219,18 @@ const AddHelp = (props) => {
             value={selectedCategory}
             setValue={setSelectedCategory}
             error={errors.category}
+            disabled={is_shift_request} // Disable dropdown if it's a shift request
           />
 
           <RequestTextInput
-            label={call_type === 'H' ? "Help Details" : "Request Details"}
+            label={is_shift_request ? "Shift Change Details" : call_type === 'H' ? "Help Details" : "Request Details"}
             value={requestText}
             onChangeText={setRequestText}
-            placeholder={call_type === 'H' 
-              ? "Describe your help request in detail..." 
-              : "Describe your request in detail..."}
+            placeholder={is_shift_request 
+              ? "Describe your shift change request in detail..."
+              : call_type === 'H' 
+                ? "Describe your help request in detail..." 
+                : "Describe your request in detail..."}
             error={errors.requestText}
           />
 
@@ -226,7 +251,7 @@ const AddHelp = (props) => {
           />
 
           <SubmitButton
-            label={call_type === 'H' ? "Submit Help Request" : "Submit Request"}
+            label={is_shift_request ? "Submit Shift Request" : call_type === 'H' ? "Submit Help Request" : "Submit Request"}
             onPress={validate}
             bgColor={colors.primary}
             textColor="white"
@@ -240,9 +265,11 @@ const AddHelp = (props) => {
           setIsSuccessModalVisible(false);
           handleBackPress();
         }} 
-        message={call_type === 'H' 
-          ? "Help request submitted successfully!" 
-          : "Request submitted successfully!"}
+        message={is_shift_request 
+          ? "Shift request submitted successfully!" 
+          : call_type === 'H' 
+            ? "Help request submitted successfully!" 
+            : "Request submitted successfully!"}
       />
     </SafeAreaView>
   );
