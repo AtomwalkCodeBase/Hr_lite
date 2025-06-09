@@ -128,6 +128,13 @@ const MorePage = () => {
       params: { empId, empShift },
     });
   };
+
+  const handlePressTraining = () => {  
+    router.push({
+      pathname: 'TrainingScr',
+      params: { empId },
+    });
+  };
   
 //   const handlePressResolve = () => {  
 //     router.push({
@@ -200,6 +207,13 @@ const handlePressProfile = () => {
     icon: <MaterialIcons name="calendar-month" size={24} color="#7e57c2" />,
     action: handlePressShift,
     show: isShift
+  },
+  {
+    title: "Training",
+    subTitle: "Check your training details",
+    icon: <MaterialIcons name="book" size={24} color="#7e57c2" />,
+    action: handlePressTraining,
+    show: true
 }
 ].filter(item => item.show); // This filters out any items where show is false
 

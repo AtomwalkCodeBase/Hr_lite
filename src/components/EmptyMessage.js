@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components/native';
-import { Text, View, Image } from 'react-native';
+import { Image } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const EmptyMessageContainer = styled.View`
   flex: 1;
@@ -11,7 +12,7 @@ const EmptyMessageContainer = styled.View`
 `;
 
 const IconContainer = styled.View`
-  margin-bottom: 0px;
+  margin-bottom: 10px;
 `;
 
 const MessageText = styled.Text`
@@ -27,15 +28,24 @@ const SubText = styled.Text`
   text-align: center;
 `;
 
-const EmptyMessage = (res) => {
+const EmptyMessage = ({ iconName, message = 'Nothing to Display', subMessage, data }) => {
+  const hasIcon = !!iconName;
+
   return (
     <EmptyMessageContainer>
       <IconContainer>
-        <Image source={require('../../assets/images/Tasks.png')} style={{ width: 120, height: 120 }} />
+        {hasIcon ? (
+          <MaterialCommunityIcons name={iconName} size={60} color="#6c757d" />
+        ) : (
+          <Image
+            source={require('../../assets/images/Tasks.png')}
+            style={{ width: 120, height: 120 }}
+            resizeMode="contain"
+          />
+        )}
       </IconContainer>
-      <MessageText>Nothing to Display</MessageText>
-      <SubText>There are no {res.data} data found.</SubText>
-      
+      <MessageText>{message}</MessageText>
+      <SubText>{subMessage || `There are no ${data || 'relevant'} data found.`}</SubText>
     </EmptyMessageContainer>
   );
 };

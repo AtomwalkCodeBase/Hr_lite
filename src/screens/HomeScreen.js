@@ -84,6 +84,8 @@ const HomePage = ({ navigation }) => {
   
   const fadeAnim = useState(new Animated.Value(0))[0];
 
+  console.log("Company---",company)
+
   useLayoutEffect(() => {
     if (navigation) {
       navigation.setOptions({
