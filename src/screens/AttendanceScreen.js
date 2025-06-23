@@ -34,8 +34,8 @@ const AddAttendance = () => {
   const [attendance, setAttendance] = useState(null); // Changed from {} to null for better initial state
   const [attData, setAttData] = useState([]);
   const [employeeData, setEmployeeData] = useState(null); // Changed to null initially
-  const [checkedIn, setCheckedIn] = useState(false);
-  const [startTime, setStartTime] = useState(null);
+  // const [checkedIn, setCheckedIn] = useState(false);
+  // const [startTime, setStartTime] = useState(null);
   const [remark, setRemark] = useState('');
   const [errors, setErrors] = useState({});
   const [refreshKey, setRefreshKey] = useState(0);
@@ -50,8 +50,6 @@ const AddAttendance = () => {
   const navigation = useNavigation();
   const router = useRouter();
 
-  console.log("Att profile data---",employeeData)
-  console.log("Att attendance data---",attData)
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -171,12 +169,12 @@ const AddAttendance = () => {
     );
 
     if (todayAttendance) {
-      setCheckedIn(todayAttendance.end_time === null);
-      setStartTime(todayAttendance.start_time);
+      // setCheckedIn(todayAttendance.end_time === null);
+      // setStartTime(todayAttendance.start_time);
       setAttendance(todayAttendance);
     } else {
-      setCheckedIn(false);
-      setStartTime(null);
+      // setCheckedIn(false);
+      // setStartTime(null);
       setAttendance(null);
     }
   };
@@ -198,18 +196,20 @@ const AddAttendance = () => {
     }
   
     let location = null;
-    let retries = 0;
+    // let retries = 0;
   
-    while (!location && retries < 5) {
-      try {
-        location = await Location.getCurrentPositionAsync({});
-      } catch (error) {
-        retries += 1;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
+    // while (!location && retries < 5) {
+    //   try {
+    //     location = await Location.getCurrentPositionAsync({});
+    //   } catch (error) {
+    //     retries += 1;
+    //     await new Promise((resolve) => setTimeout(resolve, 1000));
+    //   }
+    // }
   
-    if (!location) {
+    try {
+      location = await Location.getCurrentPositionAsync({});
+    } catch (error) {
       Alert.alert('Error', 'Unable to fetch location. Please try again.');
       setIsLoading(false);
       return;
@@ -233,8 +233,8 @@ const AddAttendance = () => {
   
     try {
       await postCheckIn(checkPayload);
-      setCheckedIn(data === 'ADD');
-      setStartTime(currentTime);
+      // setCheckedIn(data === 'ADD');
+      // setStartTime(currentTime);
       setRefreshKey((prevKey) => prevKey + 1);
       setIsSuccessModalVisible(true);
       if (data === 'UPDATE') setRemark('');
