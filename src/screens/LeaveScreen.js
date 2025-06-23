@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { FlatList, View, Dimensions, ActivityIndicator } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from "expo-router";
@@ -7,13 +7,13 @@ import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import LeaveActionModal from '../components/LeaveActionModal';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import LeaveCardComponent from '../components/LeaveCardComponent';
 import ApplyButton from '../components/ApplyButton';
 import EmptyMessage from '../components/EmptyMessage';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
 import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
+import { AppContext } from '../../context/AppContext';
 
 const screenHeight = Dimensions.get('window').height;
 const responsiveMarginBottom = screenHeight * 0.125;
@@ -83,6 +83,7 @@ const TabTextActive = styled(TabText)`
 `;
 
 const LeaveScreen = () => {
+  const { profile } = useContext(AppContext);
   const router = useRouter();
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
@@ -90,7 +91,6 @@ const LeaveScreen = () => {
   const [leaveData, setLeaveData] = useState([]);
   const [randomValue, setRandomValue] = useState(0);
   const [selectedTab, setSelectedTab] = useState('My Leave');
-  const [profile, setProfile] = useState({});
   const [empId, setEmpId] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -103,11 +103,8 @@ const LeaveScreen = () => {
 
   useEffect(() => {
     setRandomValue(generateRandomValue());
-    getEmployeeInfo().then((res) => {
-      setProfile(res?.data[0]);
-      setEmpId(res?.data[0]?.id);
-    });
-  }, []);
+      setEmpId(profile?.id);
+    },[]);
 
   const handleCardPress = (leave) => {
     setSelectedLeave(leave);

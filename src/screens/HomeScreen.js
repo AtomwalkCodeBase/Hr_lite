@@ -46,9 +46,9 @@ const { width, height } = Dimensions.get('window');
 
 const HomePage = ({ navigation }) => {
   const router = useRouter();
-  const { logout, userToken } = useContext(AppContext);
+  const { profile,logout, userToken,setReload,pisLoading  } = useContext(AppContext);
   const [loading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState({});
+  // const [profile, setProfile] = useState({});
   const [company, setCompany] = useState({});
   const [empId, setEmpId] = useState('');
   const [empNId, setEmpNId] = useState('');
@@ -84,7 +84,11 @@ const HomePage = ({ navigation }) => {
   
   const fadeAnim = useState(new Animated.Value(0))[0];
 
-  console.log("Company---",company)
+  useEffect(()=>{
+  setReload(true)
+  },[])
+
+
 
   useLayoutEffect(() => {
     if (navigation) {
@@ -97,6 +101,7 @@ const HomePage = ({ navigation }) => {
   useEffect(() => {
     fetchEvents();
   }, [empId]);
+  
 
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
@@ -118,23 +123,27 @@ const HomePage = ({ navigation }) => {
       item.attendance_type !== "L" && 
       item.end_time === null
     );
-
+    
     setPreviousDayUnchecked(!!yesterdayAttendance);
   };
 
+  // console.log(profile,"byhyh")
+  
   const fetchData = async () => {
   setIsLoading(true);
   try {
-    const profileRes = await getEmployeeInfo();
-    const profileData = profileRes.data?.[0];
+    // const profileRes = await getEmployeeInfo();
+    // const profileData = profile;
+
+    console.log("rsrfghjhgcvb", profile)
     
-    if (!profileData) throw new Error("Employee profile data not found.");
+    if (!profile) throw new Error("Employee profile data not found.");
     
-    setProfile(profileData);
-    setEmployeeData(profileData);
-    setEmpId(profileData.emp_id);
-    setEmpNId(profileData.id);
-    setIsManager(profileData?.is_manager || false);
+    // setProfile(profileData);
+    setEmployeeData(profile);
+    setEmpId(profile.emp_id);
+    setEmpNId(profile.id);
+    setIsManager(profile?.is_manager || false);
 
     // Set current date and time
     const now = moment();
@@ -143,7 +152,7 @@ const HomePage = ({ navigation }) => {
 
     // Fetch attendance data only after profile is set
     const data = {
-      eId: profileData.id,
+      eId: profile.id,
       month: now.format('MM'),
       year: now.format('YYYY'),
     };
@@ -154,12 +163,14 @@ const HomePage = ({ navigation }) => {
     setCompany(companyRes.data);
 
   } catch (error) {
-    console.error("Error fetching data:", error);
+    console.error("Error fetching data", error);
   } finally {
     setIsLoading(false);
     setRefreshing(false);
   }
 };
+
+console.log("is manager",isManager)
 
 
   const fetchEvents = async () => {
@@ -239,7 +250,7 @@ const HomePage = ({ navigation }) => {
     processAttendanceData(res.data);
     checkPreviousDayAttendance(res.data);
   } catch (error) {
-    console.error("Error fetching attendance:", error);
+    console.error("Error fetching attendance", error);
     setAttData([]);
     setCheckedIn(false);
     setStartTime(null);
@@ -328,7 +339,7 @@ const HomePage = ({ navigation }) => {
       clearInterval(interval);
       netInfoUnsubscribe();
     };
-  }, [isConnected]);
+  }, [isConnected,profile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -612,7 +623,7 @@ const HomePage = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-      {loading && (
+      {(loading || pisLoading ) && (
         <View style={styles.loaderContainer}>
           <Loader visible={true} />
         </View>
@@ -701,7 +712,7 @@ const HomePage = ({ navigation }) => {
                       ellipsizeMode="tail"
                     >
                       {checkedIn 
-                        ? `Checked In • ${startTime}`
+                        ? `Checked In`
                         : 'Check In'}
                     </Text>
                   </TouchableOpacity>
@@ -902,7 +913,7 @@ const HomePage = ({ navigation }) => {
 
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="You have an unfinished checkout from yesterday. Do you want to complete it?"
+        message="You have an unfinished checkout from yesterday. Do you want to complete it"
         onConfirm={() => {
           setIsConfirmModalVisible(false);
           handleYesterdayCheckout();

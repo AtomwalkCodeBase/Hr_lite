@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import {
   StyleSheet,
   FlatList,
@@ -22,7 +22,7 @@ import ModalComponent from '../components/ModalComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
 import HeaderComponent from '../components/HeaderComponent';
-import { getEmployeeInfo } from '../services/authServices';
+import { AppContext } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 400;
@@ -162,11 +162,11 @@ const styles = StyleSheet.create({
 });
 
 const ApproveClaim = () => {
+  const { profile } = useContext(AppContext);
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [claimData, setClaimData] = useState([]);
-  const [profile, setProfile] = useState([]);
   const [emp, setEmp] = useState('');
   const [filteredData, setFilteredData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -187,9 +187,7 @@ const ApproveClaim = () => {
     const fetchEmployeeInfo = async () => {
       setLoading(true);
       try {
-        const res = await getEmployeeInfo();
-        setProfile(res.data[0]);
-        const employeeId = res?.data[0]?.id;
+        const employeeId = profile?.id;
         setEmp(employeeId);
         
         // Now that we have the employee ID, fetch claim details

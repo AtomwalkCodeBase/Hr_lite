@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useContext } from 'react';
 import { 
   View, 
   Text, 
@@ -16,7 +16,6 @@ import { useNavigation, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import RemarksInput from '../components/RemarkInput';
 import { getEmpAttendance, postCheckIn } from '../services/productServices';
 import Loader from '../components/old_components/Loader';
@@ -24,10 +23,12 @@ import SuccessModal from '../components/SuccessModal';
 import HeaderComponent from '../components/HeaderComponent';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { AppContext } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
 
 const AddAttendance = () => {
+  const { profile } = useContext(AppContext);
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [attendance, setAttendance] = useState(null); // Changed from {} to null for better initial state
@@ -87,13 +88,12 @@ const AddAttendance = () => {
         setDataLoaded(false);
         
         // First load employee data
-        const empRes = await getEmployeeInfo();
-        setEmployeeData(empRes.data[0]);
+        setEmployeeData(profile);
         
         
         // Then load attendance data
         const data = {
-          eId: empRes.data[0].id,
+          eId: profile.id,
           month: moment().format('MM'),
           year: moment().format('YYYY'),
         };
@@ -322,40 +322,6 @@ const submitCheckout = async (payload) => {
   const closeSuccessModal = () => {
     setIsSuccessModalVisible(false);
   };
-
-//   const handleYesterdayCheckout = async (payload) => {
-//   try {
-//     setIsLoading(true);
-//     const { status } = await Location.requestForegroundPermissionsAsync();
-  
-//     if (status !== 'granted') {
-//       Alert.alert('Permission denied', 'Location permission is required to check out.');
-//       setIsLoading(false);
-//       return;
-//     }
-
-//     const location = await Location.getCurrentPositionAsync({});
-//     if (!location) {
-//       Alert.alert('Error', 'Unable to fetch location. Please try again.');
-//       setIsLoading(false);
-//       return;
-//     }
-
-//     // Add location data to payload
-//     payload.latitude_id = `${location.coords.latitude}`;
-//     payload.longitude_id = `${location.coords.longitude}`;
-
-//     await postCheckIn(payload);
-//     setRefreshKey(prev => prev + 1);
-//     setIsSuccessModalVisible(true);
-//     setRemark('');
-//   } catch (error) {
-//     console.error('Checkout error:', error);
-//     Alert.alert('Error', 'Failed to complete yesterday\'s checkout');
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
 
   // Determine button states - now with additional checks for data availability
 

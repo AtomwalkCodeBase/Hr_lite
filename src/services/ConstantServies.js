@@ -135,3 +135,18 @@ export const getEmpShiftData = async () => {
   return `${newendpoint}/get_emp_shift_data/${db_name}/`;
 };
 
+export const getTrainingModuleData = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_training_session_list/${db_name}/`;
+};
+
+export const getEmpTrainingListData = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_emp_training_list/${db_name}/`;
+};
+
+export const processEmpTraining = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/process_emp_training/${db_name}/`;
+};
+

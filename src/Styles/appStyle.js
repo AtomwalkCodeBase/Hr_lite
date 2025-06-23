@@ -2,6 +2,17 @@ import React from 'react';
 import styled from "styled-components/native";
 import Constants from "expo-constants";
 
+export const colors1 = {
+  primary: '#7e57c2',
+  primaryLight: '#f0e7ff',
+  text: '#333',
+  subText: '#888',
+  background: '#f8f9fa',
+  white: '#ffffff',
+  success: '#4caf50',
+  warning: '#ff9800',
+};
+
 // Colors
 export const colors = {
   primary: "#3c9df1",

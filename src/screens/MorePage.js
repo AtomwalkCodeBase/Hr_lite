@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
-import { getEmployeeInfo } from '../services/authServices';
 import Loader from '../components/old_components/Loader';
+import { AppContext } from '../../context/AppContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -76,6 +76,7 @@ const SectionTitle = styled.Text`
 `;
 
 const MorePage = () => {
+  const { profile } = useContext(AppContext);
   const router = useRouter();
   const [isManager, setIsManager] = useState(false);
   const [empId, setEmpId] = useState([]);
@@ -85,18 +86,11 @@ const MorePage = () => {
 
   useEffect(() => {
     setLoading(true);
-    getEmployeeInfo()
-      .then((res) => {
-        setEmpShift(res?.data[0]?.current_shift);
-        setEmpId(res?.data[0]?.emp_id);
-        setIsManager(res?.data[0]?.is_manager);
-        setIsShift(res?.data[0]?.is_shift_applicable);
+        setEmpShift(profile?.current_shift);
+        setEmpId(profile?.emp_id);
+        setIsManager(profile?.is_manager);
+        setIsShift(profile?.is_shift_applicable);
         setLoading(false);
-        // console.log("Emp---",res.data[0])
-      })
-      .catch((error) => {
-        setLoading(false);
-      });
   }, []);
 
   
@@ -132,7 +126,6 @@ const MorePage = () => {
   const handlePressTraining = () => {  
     router.push({
       pathname: 'TrainingScr',
-      params: { empId },
     });
   };
   

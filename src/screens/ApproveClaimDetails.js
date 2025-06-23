@@ -1,7 +1,6 @@
 import { useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Linking, SafeAreaView, ScrollView, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import { getClaimApprover, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import AmountInput from '../components/AmountInput';
@@ -11,9 +10,10 @@ import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { MaterialIcons } from '@expo/vector-icons';
+import { AppContext } from '../../context/AppContext';
 
 const ApproveClaimDetails = (props) => {
-  const [profile, setProfile] = useState({});
+  const { profile } = useContext(AppContext);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
@@ -53,9 +53,6 @@ const ApproveClaimDetails = (props) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const profileRes = await getEmployeeInfo();
-        setProfile(profileRes.data[0]); // Access first element of array
-
         const approversRes = await getClaimApprover();
         setManagers(approversRes.data);
       } catch (error) {

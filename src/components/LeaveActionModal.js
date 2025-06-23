@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Text, Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { postEmpLeave } from '../services/productServices';
 import RemarksInput from '../components/RemarkInput'; // Import your custom RemarksInput component
-import { getEmployeeInfo } from '../services/authServices';
+import { AppContext } from '../../context/AppContext';
 
 // Styled Components
 const ModalContainer = styled.View`
@@ -75,19 +75,14 @@ const ButtonText = styled.Text`
 `;
 
 const LeaveActionModal = ({ isVisible, leave, onClose, actionType, setShowSuccessModal, setSuccessMessage }) => {
+  const { profile } = useContext(AppContext);
   const [remarks, setRemarks] = useState('');
   const [error, setError] = useState(null);
-      const [empId, setEmpId] = useState('');
+  const [empId, setEmpId] = useState('');
 
   useEffect(() => {
-        getEmployeeInfo()
-        .then((res) => {
-            setEmpId(res?.data[0]?.id)
-        })
-        .catch((error) => {
-          console.log("Error==++",error)
-        });
-      }, [empId]);
+    setEmpId(profile?.id)
+  }, [empId]);
 
   const actionMessages = {
     APPROVE: 'Leave approved successfully',

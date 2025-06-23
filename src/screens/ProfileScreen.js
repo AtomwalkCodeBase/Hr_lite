@@ -2,7 +2,6 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Switch } from 'react-native';
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import { useNavigation, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import QRModal from '../components/QRModal';
@@ -16,11 +15,9 @@ import Constants from 'expo-constants';
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = () => {
-  const { logout } = useContext(AppContext);
-  const [profile, setProfile] = useState({});
-  const [fetchData, setFetchData] = useState([]);
+  const { profile, isLoading , logout } = useContext(AppContext);
   const [userPin, setUserPin] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // const [isLoading, setIsLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 const [useFingerprint, setUseFingerprint] = useState(false);  // actual setting
@@ -34,27 +31,11 @@ const [modalVisible, setModalVisible] = useState(false);       // controls confi
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      try {
-        const res = await getEmployeeInfo();
-        setFetchData(res?.data);
-
-        
-        setProfile(res?.data[0]);
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
     const fetchUserPin = async () => {
       const storedPin = await AsyncStorage.getItem('userPin');
       setUserPin(storedPin);
     };
-
-    fetchProfile();
     fetchUserPin();
   }, []);
 

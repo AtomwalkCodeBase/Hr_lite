@@ -75,7 +75,7 @@ const TrainingCard = ({
 
   const statusConfig = getStatusConfig(item.training_status);
 
-  console.log("Item Data===", item);
+  // console.log("Item Data===", item);
 
   return (
     <TouchableOpacity 
@@ -90,10 +90,10 @@ const TrainingCard = ({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title} numberOfLines={2}>
-            {item.t_session.name}
+            {item.name}
           </Text>
           <Text style={styles.module} numberOfLines={1}>
-            {item.t_session.module || 'General Training'}
+            {item.t_module_data.name || 'General Training'}
           </Text>
         </View>
         <View style={[styles.statusPill, { backgroundColor: statusConfig.color }]}>
@@ -110,10 +110,10 @@ const TrainingCard = ({
       </View>
 
       {/* Course Image */}
-      {item.t_session.image && (
+      {item.t_module_data.image && (
         <View style={styles.imageContainer}>
           <Image 
-            source={{ uri: item.t_session.image }} 
+            source={{ uri: item.t_module_data.image }} 
             style={styles.courseImage}
             resizeMode="cover"
           />
@@ -130,7 +130,7 @@ const TrainingCard = ({
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Trainer</Text>
             <Text style={styles.detailText}>
-              {item.t_session.trainer || 'Not specified'}
+              {item.trainer_name || 'Not specified'}
             </Text>
           </View>
         </View>
@@ -142,7 +142,7 @@ const TrainingCard = ({
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Session Date</Text>
             <Text style={styles.detailText}>
-              {item.t_session.session_date || 'Not scheduled'}
+              {item.session_date || 'Not scheduled'}
             </Text>
           </View>
         </View>
@@ -154,17 +154,17 @@ const TrainingCard = ({
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Location</Text>
             <Text style={styles.detailText}>
-              {item.t_session.location || 'Not specified'}
+              {item.location || 'Not specified'}
             </Text>
           </View>
         </View>
       </View>
 
       {/* Description */}
-      {item.t_session.description && (
+      {item.t_module_data.remarks && (
         <View style={styles.descriptionContainer}>
           <Text style={styles.descriptionText} numberOfLines={2}>
-            {item.t_session.description}
+            {item.t_module_data.remarks}
           </Text>
         </View>
       )}

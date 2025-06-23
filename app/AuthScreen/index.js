@@ -336,8 +336,14 @@ useEffect(() => {
         }
         
         // Handle other error messages with brackets
-        const generalMatch = errorMessage.match(/\[(.*?)\]/);
-        setErrorMessage(generalMatch ? generalMatch[1] : errorMessage);
+        // Special handling for "Multiple wrong attempt. Employee login is Inactive now."
+        if (
+          errorMessage.includes('Multiple wrong attempt. Employee login is Inactive now.')
+        ) {
+          setErrorMessage('Multiple wrong attempts. Your account is now inactive. Please contact respective manager.');
+        } else {
+          setErrorMessage(errorMessage);
+        }
       } else {
         setErrorMessage('Invalid credentials. Please try again.');
       }

@@ -31,6 +31,9 @@ export default function RootLayout() {
       <Stack.Screen name="ForgetPin/index" options={{headerShown:false}}/>
       <Stack.Screen name="ShiftScr/index" options={{headerShown:false}}/>
       <Stack.Screen name="TrainingScr/index" options={{headerShown:false}}/>
+      <Stack.Screen name="AvailableTrainings/index" options={{headerShown:false}}/>
+      <Stack.Screen name="TrainerDetails/index" options={{headerShown:false}}/>
+      <Stack.Screen name="ModuleDetails/index" options={{headerShown:false}}/>
     </Stack>
     
     </AppProvider>

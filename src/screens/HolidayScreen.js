@@ -5,7 +5,6 @@ import { getEmpHoliday, postEmpLeave } from '../services/productServices';
 import { useNavigation, useRouter } from 'expo-router';
 import HeaderComponent from '../components/HeaderComponent';
 import HolidayCard from '../components/HolidayCard';
-import { getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader'; // Import the Loader component
 import SuccessModal from '../components/SuccessModal';
@@ -94,7 +93,6 @@ const HolidayScreen = () => {
   const [holidays, setHolidays] = useState({});
   const [holidaydata, setHolidaydata] = useState(null); // Initialize as null
   const [activeTab, setActiveTab] = useState('Company Holiday');
-  const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Start with true
   const [modalVisible, setModalVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -136,8 +134,7 @@ const HolidayScreen = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [profileRes, holidayRes] = await Promise.all([
-          getProfileInfo(),
+        const [holidayRes] = await Promise.all([
           getEmpHoliday({ year: currentYear, eId: String(eId) })
         ]);
 
@@ -145,7 +142,6 @@ const HolidayScreen = () => {
           throw new Error('No holiday data received');
         }
 
-        setProfile(profileRes.data);
         setHolidaydata(holidayRes.data);
         processHolidayData(holidayRes.data);
       } catch (error) {

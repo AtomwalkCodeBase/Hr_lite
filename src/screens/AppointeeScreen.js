@@ -7,7 +7,6 @@ import ModalComponent from '../components/ModalComponent';
 import { getAppointee, getEmpLeave } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import LeaveActionModal from '../components/LeaveActionModal';
-import { getProfileInfo } from '../services/authServices';
 import LeaveCardComponent from '../components/LeaveCardComponent';
 import ApplyButton from '../components/ApplyButton';
 import EmptyMessage from '../components/EmptyMessage';
@@ -119,8 +118,6 @@ const AppointeeScreen = () => {
   const [isCancelModalVisible, setCancelModalVisible] = useState(false);
   const [appointees, setAppointees] = useState([]);
   const [randomValue, setRandomValue] = useState(0);
-  const [selectedTab, setSelectedTab] = useState('My Leave');
-  const [profile, setProfile] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false); // Loader state
@@ -131,9 +128,6 @@ const AppointeeScreen = () => {
 
   useEffect(() => {
     setRandomValue(generateRandomValue());
-    getProfileInfo().then((res) => {
-      setProfile(res.data);
-    });
   }, []);
 
   const handleCardPress = (leave) => {
