@@ -112,10 +112,11 @@ const HomePage = ({ navigation }) => {
   };
 
   const checkPreviousDayAttendance = (attendanceData) => {
+    if(employeeData){
     if (!employeeData?.is_shift_applicable) {
       setPreviousDayUnchecked(false);
       return;
-    }
+    }}
 
     const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
     const yesterdayAttendance = attendanceData.find(item => 
@@ -170,7 +171,7 @@ const HomePage = ({ navigation }) => {
   }
 };
 
-console.log("is manager",isManager)
+// console.log("is manager",isManager)
 
 
   const fetchEvents = async () => {
@@ -276,36 +277,36 @@ console.log("is manager",isManager)
     }
   };
 
-  const checkIfBirthday = (dobString) => {
-    try {
-      const dobParts = dobString.split('-');
-      if (dobParts.length !== 3) return;
+  // const checkIfBirthday = (dobString) => {
+  //   try {
+  //     const dobParts = dobString.split('-');
+  //     if (dobParts.length !== 3) return;
 
-      const today = new Date();
+  //     const today = new Date();
       
-      const months = {
-        'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-        'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-      };
+  //     const months = {
+  //       'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+  //       'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+  //     };
       
-      const dobDay = parseInt(dobParts[0], 10);
-      const dobMonth = months[dobParts[1]];
+  //     const dobDay = parseInt(dobParts[0], 10);
+  //     const dobMonth = months[dobParts[1]];
       
-      if (today.getDate() === dobDay && today.getMonth() === dobMonth) {
-        setIsBirthday(true);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true
-        }).start();
-      } else {
-        setIsBirthday(false);
-      }
-    } catch (error) {
-      console.error("Error checking birthday:", error);
-      setIsBirthday(false);
-    }
-  };
+  //     if (today.getDate() === dobDay && today.getMonth() === dobMonth) {
+  //       setIsBirthday(true);
+  //       Animated.timing(fadeAnim, {
+  //         toValue: 1,
+  //         duration: 1000,
+  //         useNativeDriver: true
+  //       }).start();
+  //     } else {
+  //       setIsBirthday(false);
+  //     }
+  //   } catch (error) {
+  //     console.error("Error checking birthday:", error);
+  //     setIsBirthday(false);
+  //   }
+  // };
 
   useEffect(() => {
     fetchData();
