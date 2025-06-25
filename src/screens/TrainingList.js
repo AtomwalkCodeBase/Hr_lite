@@ -76,29 +76,39 @@ const handleEnrollPress = (item) => {
 
 const confirmButton = async (item) => {
   setShowModal(false);
+  setIsErrorVisiable(false); // Reset error state before API call
+  setErrorMessage(""); // Clear previous error message
   setLoading(true);
-  const EmpId = await AsyncStorage.getItem('empId');
-
-  const formData = new FormData();
-  formData.append('emp_id', EmpId);
-  formData.append('call_mode', 'ENROLL');
-  formData.append('t_session_id', item.id.toString());
-  formData.append('training_id', '');
-  formData.append('remarks', '');
-
-  console.log("data to be sent", formData)
 
   try {
+    const EmpId = await AsyncStorage.getItem("empId");
+    if (!EmpId) {
+      throw new Error("Employee ID not found");
+    }
+
+    const formData = new FormData();
+    formData.append("emp_id", EmpId);
+    formData.append("call_mode", "ENROLL");
+    formData.append("t_session_id", item.id.toString());
+    formData.append("training_id", "");
+    formData.append("remarks", "");
+
+    console.log("Data to be sent:", formData);
+
     const res = await EnrollEmpTraining(formData);
-    console.log("response",res)
+    console.log("API Response:", res);
+
     if (res.status === 200) {
       setIsSuccessModalVisible(true);
-      setSuccessModalMessage("Enroll Success");
+      setSuccessModalMessage("Enrollment Successful");
+    } else {
+      // Handle non-200 status codes
+      throw new Error(res?.data?.message || "Enrollment failed");
     }
   } catch (error) {
-    setErrorMessage(error?.response?.data?.message)
+    console.error("Enrollment Error:", error);
+    setErrorMessage(error.message || "An error occurred during enrollment");
     setIsErrorVisiable(true);
-    // Alert.alert('Enrollment Failed', `Error: ${error.response?.data?.detail || error.message}`);
   } finally {
     setLoading(false);
   }

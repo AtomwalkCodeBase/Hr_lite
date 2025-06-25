@@ -150,3 +150,25 @@ export const processEmpTraining = async () => {
   return `${newendpoint}/process_emp_training/${db_name}/`;
 };
 
+
+export const getactivityList = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_activity_list/${db_name}/`;
+}
+
+export const getProjectLists = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_project_code_list/${db_name}/`;
+}
+
+export const getTimeSheetList = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_time_sheet_list/${db_name}/`;
+};
+
+export const addTimesheet = async () => {
+  const db_name = await getDbName();
+  return`${newendpoint}/process_time_sheet/${db_name}/`;
+};
+
+

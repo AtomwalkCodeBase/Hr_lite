@@ -484,6 +484,18 @@ const submitCheckout = async (payload) => {
           <Text style={styles.historyButtonText}>View Attendance History</Text>
           <Feather name="chevron-right" size={20} color="#fff" />
         </TouchableOpacity>
+
+        
+        <TouchableOpacity 
+          style={[styles.historyButton, {marginTop: 20}]}
+          onPress={() => router.push({ 
+            pathname: 'TimeSheet', 
+            params: employeeData
+          })}
+        >
+          <Text style={styles.historyButtonText}>Track Timesheet</Text>
+          <Feather name="chevron-right" size={20} color="#fff" />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Remark Modal */}

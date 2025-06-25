@@ -42,7 +42,7 @@ const ApplyButton = ({ onPress, buttonText, icon }) => {
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    backgroundColor: '#4d88ff',
+    backgroundColor: '#a970ff',
     borderRadius: 25,
     alignSelf: 'center',
     flexDirection: 'row',

@@ -10,8 +10,9 @@ const FieldContainer = styled.View`
 `;
 
 const Label = styled.Text`
-  font-size: 16px;
+  font-size: 15px;
   margin-bottom: 5px;
+  fontWeight: 600,
 `;
 
 const PickerContainer = styled.View`

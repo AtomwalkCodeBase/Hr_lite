@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
@@ -220,3 +220,35 @@ export async function EnrollEmpTraining(res) {
     const url = await processEmpTraining();
     return authAxiosFilePost(url, data);
   }
+
+export async function getTimesheetData(empid,start_date, end_date) {
+  let data = {
+    'emp_id': empid,
+    'start_date':start_date,
+    'end_date': end_date,
+  };
+    console.log('Data to be sent:', data);
+  const url = await getTimeSheetList();
+  return authAxios(url, data)
+}
+
+export async function postTimeList(timedata) {
+  let data = {};
+  if (timedata) {
+    data['ts_data'] = timedata;
+  }
+  console.log('Data to be sent:', data);
+  const url = await addTimesheet()
+  return authAxiosPost(url, data)
+}
+
+
+export async function getActivitylist() {
+  const url = await getactivityList();
+  return authAxios(url);
+}
+
+export async function getProjectlist() {
+  const url = await getProjectLists();
+  return authAxios(url);
+}

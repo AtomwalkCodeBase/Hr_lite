@@ -25,7 +25,7 @@ const HeaderComponent = ({ headerTitle, onBackPress }) => {
             style={styles.backButton}
             activeOpacity={0.6}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           
           <Text style={styles.headerText} numberOfLines={1}>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   safeArea: {
-    backgroundColor: '#fff',
+    backgroundColor: '#a970ff',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#A6A7A6',
-    backgroundColor: '#fff',
+    backgroundColor: '#a970ff',
   },
   backButton: {
     padding: 8,
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#fff',
     flex: 1,
     textAlign: 'center',
     marginHorizontal: 8,

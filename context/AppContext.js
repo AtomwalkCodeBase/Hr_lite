@@ -89,8 +89,9 @@ const AppProvider = ({ children }) => {
               await AsyncStorage.setItem('mobileNumber', username);
               await AsyncStorage.setItem('userPin', password);
                 }
+                setReload(true);
 
-                router.replace({ pathname: 'home' });
+                // router.replace({ pathname: 'home' });
         } catch (err) {
             console.log('Login error:', err);
           }
@@ -110,6 +111,37 @@ const AppProvider = ({ children }) => {
         // setError('')
         router.replace('AuthScreen');
     };
+
+//     const logout = async () => {
+//   setIsLoading(true);
+
+//   try {
+//     // const empId = await AsyncStorage.getItem('empId'); // Save for reuse
+
+//     await AsyncStorage.multiRemove([
+//       'userToken',
+//       'eId',
+//       'mobileNumber',
+//       'userPin',
+//     //   'empId'
+//     ]);
+
+//     // Restore empId for pre-fill
+//     // if (empId) {
+//     //   await AsyncStorage.setItem('empId', empId);
+//     // }
+
+//     // Clear in-memory context
+//     setUserToken(null);
+//     setProfile({});
+//     setReload(false);
+//   } catch (err) {
+//     console.log("Logout error:", err);
+//   } finally {
+//     setIsLoading(false);
+//     router.replace('AuthScreen');
+//   }
+// };
 
     const isLoggedIn = async () => {
             const networkStatus = await checkNetwork();
@@ -163,6 +195,7 @@ const AppProvider = ({ children }) => {
     try {
       const res = await getEmployeeInfo();
       setProfile(res?.data[0]);
+      router.replace({ pathname: 'home' });
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
