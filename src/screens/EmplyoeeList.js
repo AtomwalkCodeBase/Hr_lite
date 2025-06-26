@@ -17,6 +17,7 @@ import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import { router, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -84,7 +85,12 @@ const handleTimesheetPress = (employee) => {
 		setLoading(true)
 		try {
 		  const res = await getEmplyoeeList();
-		  setEmployees(res.data)
+		const EmpId = await AsyncStorage.getItem('empId');
+		let filteredData = res.data;
+		if (EmpId) {
+			filteredData = res.data.filter(emp => emp.emp_id !== EmpId);
+		}
+		setEmployees(filteredData)
 		} catch (err) {
 		  console.error("Error fetching activities:", err);
 		  Alert.alert('Error', 'Failed to fetch activities');

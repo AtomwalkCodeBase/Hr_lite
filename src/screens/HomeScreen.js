@@ -136,8 +136,6 @@ const HomePage = ({ navigation }) => {
   try {
     // const profileRes = await getEmployeeInfo();
     // const profileData = profile;
-
-    console.log("rsrfghjhgcvb", profile)
     
     if (!profile) throw new Error("Employee profile data not found.");
     
