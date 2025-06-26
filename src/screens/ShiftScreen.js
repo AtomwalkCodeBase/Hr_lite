@@ -15,6 +15,7 @@ import ErrorModal from '../components/ErrorModal';
 import moment from 'moment';
 import { colors } from '../Styles/appStyle';
 import ApplyButton from '../components/ApplyButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -207,8 +208,8 @@ const ShiftScreen = (props) => {
 
   console.log("Shift data---",shiftData)
 
-  return (
-    <View style={styles.mainContainer}>
+return (
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <HeaderComponent 
         headerTitle="My Shift Schedule" 
         onBackPress={() => router.push('MoreScreen')} 
@@ -216,7 +217,7 @@ const ShiftScreen = (props) => {
       
       <ScrollView 
         ref={scrollViewRef}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {shiftData && (
@@ -284,11 +285,21 @@ const ShiftScreen = (props) => {
         message={errorMessage}
         onClose={() => setIsErrorVisible(false)}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fa'
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 30
+  },
+
   mainContainer: {
     flex: 1,
     backgroundColor: '#f8f9fa'

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, ScrollView, Alert } from 'react-native';
 import { useForm } from 'react-hook-form';
 import styled from 'styled-components/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import DropdownPicker from '../components/DropdownPicker';
 import Loader from '../components/old_components/Loader';
 import SuccessModal from '../components/SuccessModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Label = styled.Text`
   font-size: 16px;

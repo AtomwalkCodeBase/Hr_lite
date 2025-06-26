@@ -5,7 +5,6 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl
 } from 'react-native';
@@ -17,6 +16,7 @@ import { getEmployeeRequest, getRequestCategory } from '../services/productServi
 import ApplyButton from '../components/ApplyButton';
 import RequestCard from '../components/RequestCard';
 import ModalComponent from '../components/ModalComponent';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 

@@ -1,6 +1,6 @@
 import { useNavigation, useRouter } from 'expo-router';
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
-import { Alert, Linking, SafeAreaView, ScrollView, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Alert, Linking, ScrollView, View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { getClaimApprover, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import AmountInput from '../components/AmountInput';
@@ -11,6 +11,7 @@ import Loader from '../components/old_components/Loader';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ApproveClaimDetails = (props) => {
   const { profile } = useContext(AppContext);
@@ -218,8 +219,9 @@ const ApproveClaimDetails = (props) => {
 
   return (
     <>
-      <HeaderComponent headerTitle={`Approve (${formattedClaimId})`} onBackPress={handleBackPress} />
+      
       <SafeAreaView style={styles.container}>
+        <HeaderComponent headerTitle={`Approve (${formattedClaimId})`} onBackPress={handleBackPress} />
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View style={styles.claimDetailContainer}>
             {claim.submitted_file_1 && (

@@ -15,6 +15,7 @@ import Loader from '../components/old_components/Loader';
 import { colors } from '../Styles/appStyle';
 import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
 import { AppContext } from '../../context/AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const screenHeight = Dimensions.get('window').height;
 const responsiveMarginBottom = screenHeight * 0.125;
@@ -206,6 +207,7 @@ const LeaveScreen = () => {
 
   return (
     <>
+    <SafeAreaView>
       <HeaderComponent headerTitle="My Leaves" onBackPress={handleBackPress} />
       <Container>
       <CardRow>
@@ -295,6 +297,7 @@ const LeaveScreen = () => {
           onClose={() => setShowSuccessModal(false)}
         />
       </Container>
+      </SafeAreaView>
     </>
   );
 };

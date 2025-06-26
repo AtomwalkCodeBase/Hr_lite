@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { colors1 } from '../Styles/appStyle';
 import { router, useLocalSearchParams } from 'expo-router';
 import HeaderComponent from '../components/HeaderComponent';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TrainerDetailsScreen = () => {
   const { name, program, module, location, experience, rating, bio, Organization } = useLocalSearchParams();
@@ -15,6 +16,7 @@ const TrainerDetailsScreen = () => {
 
   return (
 	<>
+  <SafeAreaView>
  			<HeaderComponent 
      	  	headerTitle="More Options" 
          	onBackPress={handleBackPress} 
@@ -84,6 +86,7 @@ const TrainerDetailsScreen = () => {
            </View>
          </View>
        </ScrollView>
+       </SafeAreaView>
 	</>
   );
 };

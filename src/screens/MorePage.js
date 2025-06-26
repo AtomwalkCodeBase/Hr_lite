@@ -6,22 +6,29 @@ import { MaterialIcons, Ionicons, Feather, FontAwesome6 } from '@expo/vector-ico
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import { AppContext } from '../../context/AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 // Styled Components
-const Container = styled.View`
+const MainContainer = styled(SafeAreaView)`
+  flex: 1;
   background-color: #f8f9fa;
+`;
+
+const ContentContainer = styled.View`
   flex: 1;
 `;
+
+
 
 const MenuContainer = styled.ScrollView.attrs({
   showsVerticalScrollIndicator: false,
   contentContainerStyle: {
-    paddingBottom: 20
+    paddingBottom: 20,
+    flexGrow: 1
   }
 })`
-  flex: 1;
   padding: 15px;
 `;
 
@@ -215,54 +222,56 @@ const handlePressProfile = () => {
 ].filter(item => item.show); // This filters out any items where show is false
 
   return (
-    <Container>
-      <Loader visible={loading} />
-      <HeaderComponent 
-        headerTitle="More Options" 
-        onBackPress={handleBackPress} 
-        headerStyle={{ backgroundColor: '#7e57c2' }}
-      />
-      
-      <MenuContainer>
-        <SectionTitle>ACCOUNT</SectionTitle>
+    <MainContainer edges={['top']}>
+      <ContentContainer>
+        <Loader visible={loading} />
+        <HeaderComponent 
+          headerTitle="More Options" 
+          onBackPress={handleBackPress} 
+          headerStyle={{ backgroundColor: '#7e57c2' }}
+        />
         
-        {menuItems.slice(0, isManager ? 2 : 1).map((item, index) => (
-          <MenuItem 
-            key={`account-${index}`}
-            onPress={item.action}
-            activeOpacity={0.7}
-          >
-            <MenuIconContainer>
-              {item.icon}
-            </MenuIconContainer>
-            <MenuTextContainer>
-              <MenuText>{item.title}</MenuText>
-              <MenuSubText>{item.subTitle}</MenuSubText>
-            </MenuTextContainer>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-          </MenuItem>
-        ))}
-        
-        <SectionTitle>APP</SectionTitle>
-        
-        {menuItems.slice(isManager ? 2 : 1).map((item, index) => (
-          <MenuItem 
-            key={`app-${index}`}
-            onPress={item.action}
-            activeOpacity={0.7}
-          >
-            <MenuIconContainer>
-              {item.icon}
-            </MenuIconContainer>
-            <MenuTextContainer>
-              <MenuText>{item.title}</MenuText>
-              <MenuSubText>{item.subTitle}</MenuSubText>
-            </MenuTextContainer>
-            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-          </MenuItem>
-        ))}
-      </MenuContainer>
-    </Container>
+        <MenuContainer>
+          <SectionTitle>ACCOUNT</SectionTitle>
+          
+          {menuItems.slice(0, isManager ? 3 : 1).map((item, index) => (
+            <MenuItem 
+              key={`account-${index}`}
+              onPress={item.action}
+              activeOpacity={0.7}
+            >
+              <MenuIconContainer>
+                {item.icon}
+              </MenuIconContainer>
+              <MenuTextContainer>
+                <MenuText>{item.title}</MenuText>
+                <MenuSubText>{item.subTitle}</MenuSubText>
+              </MenuTextContainer>
+              <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            </MenuItem>
+          ))}
+          
+          <SectionTitle>APP</SectionTitle>
+          
+          {menuItems.slice(isManager ? 3 : 1).map((item, index) => (
+            <MenuItem 
+              key={`app-${index}`}
+              onPress={item.action}
+              activeOpacity={0.7}
+            >
+              <MenuIconContainer>
+                {item.icon}
+              </MenuIconContainer>
+              <MenuTextContainer>
+                <MenuText>{item.title}</MenuText>
+                <MenuSubText>{item.subTitle}</MenuSubText>
+              </MenuTextContainer>
+              <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+            </MenuItem>
+          ))}
+        </MenuContainer>
+      </ContentContainer>
+    </MainContainer>
   );
 };
 

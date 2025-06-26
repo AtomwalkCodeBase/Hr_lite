@@ -131,50 +131,50 @@ const showModuleDetailsAndCertificate = (item) => {
 
 
   return (
-	<>
-		<HeaderComponent 
-    	  	headerTitle="Training List" 
-        	onBackPress={handleBackPress} 
-         	headerStyle={{ backgroundColor: '#7e57c2' }}
-       />
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <HeaderComponent 
+        headerTitle="Training List" 
+        onBackPress={handleBackPress} 
+        headerStyle={{ backgroundColor: '#7e57c2' }}
+      />
       {programs.length > 0 ? (
-	      <FlatList
-         data={programs}
-         renderItem={({item}) => (
-          <ProgramCard
-            program={item}
-            cardType="session"
-            onPress={() => showModuleDetailsAndCertificate(item)}
-            onTrainerPress={() => showTrainerDetails(item)}
-            showEnrollButton={true}
-            onEnrollPress={() => handleEnrollPress(item)}
-         />
-         )}
-         keyExtractor={(item) => item.id.toString()}
-         contentContainerStyle={styles.listContainer}
-         showsVerticalScrollIndicator={false}
-       />
-       ) : (
-        <EmptyMessage 
-                message="No training sessions found"
-                subMessage="Wait for the training sessions to be added"
-                iconName="school"
-                data="training"
+          <FlatList
+            data={programs}
+            renderItem={({item}) => (
+              <ProgramCard
+                program={item}
+                cardType="session"
+                onPress={() => showModuleDetailsAndCertificate(item)}
+                onTrainerPress={() => showTrainerDetails(item)}
+                showEnrollButton={true}
+                onEnrollPress={() => handleEnrollPress(item)}
+              />
+            )}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <EmptyMessage 
+            message="No training sessions found"
+            subMessage="Wait for the training sessions to be added"
+            iconName="school"
+            data="training"
 
-                />
+          />
        ) }
 
 
-       <ConfirmationModal
-      visible={showModal}
-      message="Do you want to Enroll this certificate?"
-      onConfirm={() => confirmButton(enrollingItem)} 
-      onCancel={cancelButton}
-      confirmText="Yes"
-      cancelText="Cancel"
-    />
+      <ConfirmationModal
+        visible={showModal}
+        message="Do you want to Enroll this certificate?"
+        onConfirm={() => confirmButton(enrollingItem)} 
+        onCancel={cancelButton}
+        confirmText="Yes"
+        cancelText="Cancel"
+      />
 
-   <SuccessModal
+      <SuccessModal
         visible={isSuccessModalVisible}
         onClose={() => {
           setIsSuccessModalVisible(false);
@@ -186,21 +186,26 @@ const showModuleDetailsAndCertificate = (item) => {
       <Loader visible={loading} />
 
       <ErrorModal
-         visible={isErrorVisiable}
-         message={errorMessage}
-         onClose={() => {setIsErrorVisiable(false)}}
+        visible={isErrorVisiable}
+        message={errorMessage}
+        onClose={() => {setIsErrorVisiable(false)}}
       />
-
-
-
-	</>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors1.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors1.background,
+  },
+  listContainer: {
+    padding: 20,
+    flexGrow: 1,
   },
   header: {
     padding: 20,

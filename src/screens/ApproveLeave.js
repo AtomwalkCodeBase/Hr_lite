@@ -13,6 +13,7 @@ import EmptyMessage from '../components/EmptyMessage';
 import { colors } from '../Styles/appStyle';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Get screen dimensions for responsive design
 const { width, height } = Dimensions.get('window');
@@ -222,6 +223,7 @@ const LeaveScreen = (props) => {
 
   return (
     <>
+    <SafeAreaView>
       <HeaderComponent headerTitle="Leave Approvals" onBackPress={handleBackPress}/>
       <Container>
         <TabContainer>
@@ -303,6 +305,7 @@ const LeaveScreen = (props) => {
           </>
         )}
       </Container>
+      </SafeAreaView>
 
       <SuccessModal
         visible={showSuccessModal}

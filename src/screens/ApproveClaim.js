@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
-  SafeAreaView,
   Dimensions,
   Platform,
   ScrollView
@@ -23,6 +22,7 @@ import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
 import HeaderComponent from '../components/HeaderComponent';
 import { AppContext } from '../../context/AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 400;

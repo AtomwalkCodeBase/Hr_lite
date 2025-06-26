@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Alert,
-  SafeAreaView,
   ScrollView,
   View,
   StyleSheet,
@@ -25,6 +24,7 @@ import moment from 'moment';
 import CommentInputInline from '../components/CommentInputInline';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SuccessModal from '../components/SuccessModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -393,11 +393,12 @@ const EventDetailsScreen = (props) => {
       behavior={Platform.OS === 'ios' ? 'padding' : null}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
-      <HeaderComponent 
+      
+      <SafeAreaView style={styles.container}>
+        <HeaderComponent 
         headerTitle={`Event Details`} 
         onBackPress={handleBackPress} 
       />
-      <SafeAreaView style={styles.container}>
         <ScrollView 
           ref={scrollViewRef}
           contentContainerStyle={{ flexGrow: 1 }}

@@ -10,6 +10,7 @@ import Loader from '../components/old_components/Loader';
 import moment from 'moment';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Constants from 'expo-constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
@@ -94,6 +95,7 @@ const handleCancel = () => {
   
   return (
     <>
+    <SafeAreaView>
       <HeaderComponent headerTitle="Employee Profile" onBackPress={handleBackPress} />
       {isLoading ? (
         <Loader visible={isLoading} />
@@ -261,6 +263,7 @@ const handleCancel = () => {
 
         </ScrollView>
       )}
+      </SafeAreaView>
     </>
   );
 };

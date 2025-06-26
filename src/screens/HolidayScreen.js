@@ -1,16 +1,17 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { View, ScrollView, TouchableOpacity, Alert, Text } from 'react-native';
+import { ScrollView, View, TouchableOpacity, Alert, Text } from 'react-native';
 import styled from 'styled-components/native';
 import { getEmpHoliday, postEmpLeave } from '../services/productServices';
 import { useNavigation, useRouter } from 'expo-router';
 import HeaderComponent from '../components/HeaderComponent';
 import HolidayCard from '../components/HolidayCard';
 import EmptyMessage from '../components/EmptyMessage';
-import Loader from '../components/old_components/Loader'; // Import the Loader component
+import Loader from '../components/old_components/Loader';
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
 import { colors } from '../Styles/appStyle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
 
 const monthNameMap = {
@@ -25,6 +26,11 @@ const monthFullNameMap = {
   'November': 10, 'December': 11,
 };
 
+const MainContainer = styled(SafeAreaView)`
+  flex: 1;
+  background-color: #fff;
+`;
+
 const Container = styled.View`
   flex: 1;
   padding: 16px;
@@ -33,7 +39,10 @@ const Container = styled.View`
 
 const HolidayList = styled.ScrollView.attrs({
   showsVerticalScrollIndicator: false,
-  showsHorizontalScrollIndicator: false,
+  contentContainerStyle: {
+    paddingBottom: 20,
+    flexGrow: 1
+  }
 })``;
 
 const CardRow = styled.View`
@@ -335,7 +344,7 @@ const HolidayScreen = () => {
   };
 
   return (
-    <>
+    <MainContainer edges={['top']}>
       <HeaderComponent headerTitle="Holiday List" onBackPress={handleBackPress} />
       <Container>
         {holidaydata && (
@@ -368,6 +377,7 @@ const HolidayScreen = () => {
         {renderHolidayList()}
       </Container>
 
+      {/* Modals */}
       <ConfirmationModal
         visible={confirmationModalVisible}
         message={`Are you sure you want to ${selectedAction === 'opt' ? 'apply for' : 'cancel'} this optional holiday?`}
@@ -377,19 +387,17 @@ const HolidayScreen = () => {
       <SuccessModal 
         visible={modalVisible} 
         message={successMessage} 
-        
         onClose={() => {
           setModalVisible(false);
-          router.push({ pathname: 'HolidayList' }); // Navigate back after modal closes
+          router.push({ pathname: 'HolidayList' });
         }} 
       />
-      {/* Error Modal */}
       <ErrorModal 
         visible={errorModalVisible} 
         message={errorMessage} 
         onClose={() => setErrorModalVisible(false)} 
       />
-    </>
+    </MainContainer>
   );
 };
 

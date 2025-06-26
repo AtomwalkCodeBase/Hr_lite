@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Keyboard, SafeAreaView, Alert } from 'react-native';
+import { Keyboard, Alert } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { getRequestCategory, postEmpRequest } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -12,6 +12,7 @@ import Loader from '../components/old_components/Loader';
 import styled from 'styled-components/native';
 import { colors } from '../Styles/appStyle';
 import RequestTextInput from '../components/RequestTextInput';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Container = styled.ScrollView`
   flex: 1;

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   Modal,
-  SafeAreaView,
   Alert,
   Dimensions,
   Platform
@@ -17,6 +16,7 @@ import StatusBadge from '../components/StatusBadge';
 import CustomButton from '../components/CustomButton';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 

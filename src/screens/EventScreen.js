@@ -5,7 +5,6 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   RefreshControl
@@ -19,6 +18,7 @@ import { getEvents } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
 import ModalComponent from '../components/ModalComponent';
 import EventCard from '../components/EventCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 

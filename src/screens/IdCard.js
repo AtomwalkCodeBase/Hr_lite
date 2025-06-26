@@ -7,7 +7,6 @@ import {
   StyleSheet, 
   Dimensions, 
   ScrollView,
-  SafeAreaView,
   Platform,
   StatusBar
 } from 'react-native';
@@ -22,42 +21,21 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Get screen dimensions for responsive design
 const { width, height } = Dimensions.get('window');
 
-// Custom Header Component
-const Header = ({ title, onBackPress }) => {
-  return (
-    <View style={styles.header}>
-      <TouchableOpacity onPress={onBackPress} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>{title}</Text>
-      <View style={styles.headerRight} />
-    </View>
-  );
-};
-
-
-
 const IdCard = () => {
   const { profile } = useContext(AppContext);
   const navigation = useNavigation();
-  const { logout } = useContext(AppContext);
-  // const [profile, setProfile] = useState({});
-  const [company, setCompany] = useState({});
-  const [userPin, setUserPin] = useState(null);
   const cardRef = useRef();
   const [hideButtons, setHideButtons] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [company, setCompany] = useState({});
+  const [userPin, setUserPin] = useState(null);
 
   useEffect(() => {
-    const fetchUserPin = async () => {
-      const storedPin = await AsyncStorage.getItem('userPin');
-      setUserPin(storedPin);
-    };
-
     const fetchData = async () => {
       try {
         const [companyResponse] = await Promise.all([
@@ -71,8 +49,13 @@ const IdCard = () => {
       }
     };
 
-    fetchUserPin();
+    const fetchUserPin = async () => {
+      const storedPin = await AsyncStorage.getItem('userPin');
+      setUserPin(storedPin);
+    };
+
     fetchData();
+    fetchUserPin();
   }, []);
 
   const handleBackPress = () => {
@@ -103,34 +86,30 @@ const IdCard = () => {
     }
   };
 
-  // Format date to display nicely
   const formatDate = (dateString) => {
     if (!dateString) return "";
     
-    // Parse the "dd-mmm-yyyy" format manually
     const parts = dateString.split('-');
-    if (parts.length !== 3) return dateString; // fallback if format is unexpected
+    if (parts.length !== 3) return dateString;
     
     const day = parseInt(parts[0], 10);
     const month = parts[1];
     const year = parseInt(parts[2], 10);
     
-    // Create a more reliable date object
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-                        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthIndex = monthNames.indexOf(month);
     const date = new Date(year, monthIndex, day);
     
-    // Format the date
     return date.toLocaleDateString('en-US', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     });
-};
+  };
 
   return (
-    <>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <HeaderComponent headerTitle="Digital ID Card" onBackPress={handleBackPress} />
       
       <Loader visible={isLoading} onTimeout={() => setIsLoading(false)} />
@@ -245,7 +224,7 @@ const IdCard = () => {
           </View>
         </ScrollView>
       )}
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -253,31 +232,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#1a237e',
-    height: 56,
-    paddingHorizontal: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerRight: {
-    width: 40,
   },
   scrollView: {
     flex: 1,

@@ -6,11 +6,16 @@ import { useNavigation } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Styled Components
 const Container = styled.View`
   flex: 1;
   padding: 20px;
+  background-color: #fff;
+`;
+const MainContainer = styled(SafeAreaView)`
+  flex: 1;
   background-color: #fff;
 `;
 
@@ -264,8 +269,8 @@ const AttendanceStatus = ({ id: empId }) => {
     return days;
   };
 
-  return (
-    <>
+ return (
+    <MainContainer>
       <HeaderComponent 
         headerTitle="Attendance Status" 
         onBackPress={() => navigation.goBack()} 
@@ -290,7 +295,7 @@ const AttendanceStatus = ({ id: empId }) => {
           ))}
         </WeekDays>
 
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <Calendar>
             {renderCalendarDays()}
           </Calendar>
@@ -305,18 +310,18 @@ const AttendanceStatus = ({ id: empId }) => {
           </StatusGuideContainer>
         </ScrollView>
 
-         <ErrorModal
-                visible={isErrorVisiable}
-                message="Your Holiday Calender did not setup for 2026"
-                onClose={() => {
-                      setIsErrorVisiable(false);
-                      if (lastValidDate) {
-                        setDate(lastValidDate);
-                      }
-                    }}
-            />
+        <ErrorModal
+          visible={isErrorVisiable}
+          message="Your Holiday Calender did not setup for 2026"
+          onClose={() => {
+            setIsErrorVisiable(false);
+            if (lastValidDate) {
+              setDate(lastValidDate);
+            }
+          }}
+        />
       </Container>
-    </>
+    </MainContainer>
   );
 };
 

@@ -24,6 +24,7 @@ import HeaderComponent from '../components/HeaderComponent';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { colors } from '../Styles/appStyle';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
@@ -358,6 +359,7 @@ const submitCheckout = async (payload) => {
 
   return (
     <>
+    <SafeAreaView>
       <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
       
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -498,6 +500,7 @@ const submitCheckout = async (payload) => {
           <Feather name="chevron-right" size={20} color="#fff" />
         </TouchableOpacity>
       </ScrollView>
+      </SafeAreaView>
 
       {/* Remark Modal */}
       <Modal transparent visible={isRemarkModalVisible} animationType="fade">

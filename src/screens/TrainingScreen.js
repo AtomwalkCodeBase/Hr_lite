@@ -4,7 +4,6 @@ import {
   FlatList,
   Dimensions,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   Linking,
@@ -29,6 +28,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { getEmpTrainingList, getTrainingData } from '../services/productServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ProgramCard from '../components/ProgramCard';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
