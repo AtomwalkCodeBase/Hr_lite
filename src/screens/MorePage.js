@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, Feather, FontAwesome6 } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import { AppContext } from '../../context/AppContext';
@@ -129,14 +129,11 @@ const MorePage = () => {
     });
   };
   
-//   const handlePressResolve = () => {  
-//     router.push({
-//       pathname: 'ResolveHelp&Request',
-//       // params: {
-//       //   empId,
-//       // },
-//     });
-// };
+  const handlePressEmployee = () => {  
+    router.push({
+      pathname: 'EmployeeList',
+    });
+  };
 
 const handlePressProfile = () => {
   router.push('profile');
@@ -164,6 +161,13 @@ const handlePressProfile = () => {
       subTitle: "Scan your appointee resume",
       icon: <MaterialIcons name="person-add" size={24} color="#7e57c2" />,
       action: handleAppointee,
+      show: isManager
+    },
+    {
+      title: "Employee List",
+      subTitle: "See All the Employee List",
+      icon: <FontAwesome6 name="users" size={24} color="#a970ff" />,
+      action: handlePressEmployee,
       show: isManager
     },
     {

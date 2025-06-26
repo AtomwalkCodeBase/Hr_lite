@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet, profileDtlURL } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
@@ -250,5 +250,10 @@ export async function getActivitylist() {
 
 export async function getProjectlist() {
   const url = await getProjectLists();
+  return authAxios(url);
+}
+
+export async function getEmplyoeeList() {
+  const url = await profileDtlURL();
   return authAxios(url);
 }

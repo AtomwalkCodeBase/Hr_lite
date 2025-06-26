@@ -33,7 +33,8 @@ import {
   Ionicons, 
   Feather, 
   MaterialCommunityIcons,
-  AntDesign
+  AntDesign,
+  FontAwesome6
 } from '@expo/vector-icons';
 import { getEmpAttendance, getEvents, postCheckIn } from '../services/productServices';
 import Modal from 'react-native-modal';
@@ -243,7 +244,7 @@ const HomePage = ({ navigation }) => {
       params: { empNId },
     });
   };
-  
+
   const fetchAttendanceDetails = async (data) => {
   try {
     const res = await getEmpAttendance(data);
@@ -567,9 +568,9 @@ const HomePage = ({ navigation }) => {
     },
     {
       id: 2,
-      title: 'ID Card',
-      icon: <MaterialIcons name="contact-page" size={24} color="#a970ff" />,
-      onPress: () => router.push('IdCard')
+      title: 'Timesheet',
+      icon: <MaterialCommunityIcons name="timetable" size={24} color="#a970ff" />,
+      onPress: () => router.push('TimeSheet')
     },
     {
       id: 3,

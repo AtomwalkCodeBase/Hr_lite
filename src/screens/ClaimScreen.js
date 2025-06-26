@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { FlatList, SafeAreaView, View, Alert, Linking } from 'react-native';
+import { FlatList, View, Alert, Linking } from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -11,6 +11,7 @@ import Loader from '../components/old_components/Loader';
 import styled from 'styled-components/native';
 import EmptyMessage from '../components/EmptyMessage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Container = styled.View`
   flex: 1;

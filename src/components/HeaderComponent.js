@@ -1,24 +1,8 @@
 import React from 'react';
-import { 
-  Text,
-  Dimensions,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  SafeAreaView
-} from 'react-native';
+import {  Text, Dimensions, Platform, StatusBar, StyleSheet, View, TouchableOpacity, SafeAreaView} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const HeaderComponent = ({ 
-  headerTitle, 
-  onBackPress,
-  icon1Name,
-  icon1OnPress,
-  icon2Name,
-  icon2OnPress
-}) => {
+const HeaderComponent = ({ headerTitle,  onBackPress, icon1Name, icon1OnPress, icon2Name, icon2OnPress }) => {
   return (
     <>
       {/* Handle status bar separately for Android */}
@@ -71,7 +55,6 @@ const HeaderComponent = ({
 
 const styles = StyleSheet.create({
   statusBar: {
-    height: StatusBar.currentHeight,
     backgroundColor: '#fff',
   },
   safeArea: {
