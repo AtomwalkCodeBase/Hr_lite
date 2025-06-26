@@ -9,57 +9,59 @@ import {
   TouchableOpacity,
   SafeAreaView
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Direct import for back button
+import { Ionicons } from '@expo/vector-icons';
 
-const HeaderComponent = ({ headerTitle, onBackPress, headerStyle, icon1, icon2 }) => {
+const HeaderComponent = ({ 
+  headerTitle, 
+  onBackPress,
+  icon1Name,
+  icon1OnPress,
+  icon2Name,
+  icon2OnPress
+}) => {
   return (
     <>
       {/* Handle status bar separately for Android */}
-      {Platform.OS === 'android' && <View style={[styles.statusBar, headerStyle]} />}
+      {Platform.OS === 'android' && <View style={styles.statusBar} />}
       
       {/* SafeAreaView handles iOS notches automatically */}
-      <SafeAreaView style={[styles.safeArea, headerStyle]}>
-        <View style={[styles.headerContainer, headerStyle]}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.headerContainer}>
           <TouchableOpacity 
             onPress={onBackPress}
             style={styles.backButton}
             activeOpacity={0.6}
           >
-            <Ionicons name="arrow-back" size={24} color="#fff" /> {/* Direct usage of Ionicons */}
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
           
           <Text style={styles.headerText} numberOfLines={1}>
             {headerTitle}
           </Text>
           
-          <View style={styles.iconContainer}>
-            {icon1 && icon1.component && (
+          <View style={styles.rightIconsContainer}>
+            {icon1Name && (
               <TouchableOpacity 
+                onPress={icon1OnPress}
                 style={styles.iconButton}
-                onPress={icon1.onPress || (() => {})}
                 activeOpacity={0.6}
               >
-                {React.createElement(icon1.component, { 
-                  name: icon1.name, 
-                  size: icon1.size || 24, 
-                  color: icon1.color || '#fff' 
-                })}
+                <Ionicons name={icon1Name} size={24} color="#fff" />
               </TouchableOpacity>
             )}
-            {icon2 && icon2.component && (
+            
+            {icon2Name && (
               <TouchableOpacity 
+                onPress={icon2OnPress}
                 style={styles.iconButton}
-                onPress={icon2.onPress || (() => {})}
                 activeOpacity={0.6}
               >
-                {React.createElement(icon2.component, { 
-                  name: icon2.name, 
-                  size: icon2.size || 24, 
-                  color: icon2.color || '#fff' 
-                })}
+                <Ionicons name={icon2Name} size={24} color="#fff" />
               </TouchableOpacity>
             )}
-            {!icon1 && !icon2 && <View style={styles.spacer} />}
+            
+            {/* This spacer ensures proper alignment when no icons are present */}
+            {!icon1Name && !icon2Name && <View style={styles.spacer} />}
           </View>
         </View>
       </SafeAreaView>
@@ -97,7 +99,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: 8,
   },
-  iconContainer: {
+  rightIconsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
