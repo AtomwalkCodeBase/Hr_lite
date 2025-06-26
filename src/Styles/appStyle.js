@@ -15,7 +15,7 @@ export const colors1 = {
 
 // Colors
 export const colors = {
-  primary: "#3c9df1",
+  primary: "#a970ff",
   secondary: "#ffa500",
   tertiary: "#E6E6E6",
   alternative: "#999999",

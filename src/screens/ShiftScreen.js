@@ -13,6 +13,7 @@ import { getEmpShift } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
 import moment from 'moment';
+import { colors } from '../Styles/appStyle';
 import ApplyButton from '../components/ApplyButton';
 
 const { width } = Dimensions.get('window');
@@ -31,7 +32,7 @@ const ShiftScreen = (props) => {
   // Shift color mapping for better visibility
   const shiftColors = {
     1: { bg: '#E3F2FD', text: '#0D47A1', icon: 'brightness-7', name: 'Day Shift' },
-    2: { bg: '#FFF8E1', text: '#FF6F00', icon: 'brightness-3', name: 'Evening Shift' },
+    2: { bg: '#FFFCF0', text: '#A74900', icon: 'brightness-3', name: 'Evening Shift' },
     3: { bg: '#F3E5F5', text: '#4A148C', icon: 'nights-stay', name: 'Night Shift' },
     COMPANY_OFF: { bg: '#E8F5E9', text: '#1B5E20', icon: 'beach-access', name: 'Company Holiday' },
     WEEKLY_OFF: { bg: '#FFEBEE', text: '#B71C1C', icon: 'weekend', name: 'Weekly Off' }
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30
   },
   employeeCard: {
-    backgroundColor: '#3f87f9',
+    backgroundColor: colors.primary,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,

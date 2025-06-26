@@ -23,6 +23,7 @@ import SuccessModal from '../components/SuccessModal';
 import HeaderComponent from '../components/HeaderComponent';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { colors } from '../Styles/appStyle';
 import { AppContext } from '../../context/AppContext';
 
 const { width } = Dimensions.get('window');
@@ -735,7 +736,7 @@ singleButtonContainer: {
     color: '#757575',
   },
   historyButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

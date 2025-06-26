@@ -9,6 +9,7 @@ import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader'; // Import the Loader component
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
+import { colors } from '../Styles/appStyle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfirmationModal from '../components/ConfirmationModal';
 
@@ -50,7 +51,7 @@ const TabContainer = styled.View`
 const Tab = styled.TouchableOpacity`
   padding: 10px 20px;
   border-radius: 15px;
-  background-color: ${({ active }) => (active ? '#007AFF' : '#E0E0E0')};
+  background-color: ${({ active }) => (active ? colors.primary : '#E0E0E0')};
   margin: 0 5px;
 `;
 
@@ -61,10 +62,10 @@ const TabText = styled.Text`
 
 const LeaveCard = styled.View`
   width: 95%;
-  background-color: ${props => props.bgColor || '#fff'};
+  background-color: #F5EFFE;
   border-radius: 16px;
   border-width: 1px;
-  border-color: ${props => props.borderColor || '#ddd'};
+  border: 1px solid ${colors.primary};
   margin-bottom: 12px;
   align-items: center;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
@@ -73,7 +74,7 @@ const LeaveCard = styled.View`
 const LeaveNumber = styled.Text`
   font-size: 22px;
   font-weight: bold;
-  color: ${props => props.color || '#000'};
+  color: ${colors.primary};
   margin-top: 5px;
   margin-bottom: 5px;
 `;
@@ -340,7 +341,7 @@ const HolidayScreen = () => {
         {holidaydata && (
           <CardRow>
             <LeaveCard bgColor="#e6ecff" borderColor="#4d88ff">
-              <LeaveNumber color="#4d88ff">
+              <LeaveNumber>
                 Max Optional Holiday: {holidaydata.no_optional_holidays || 0}
               </LeaveNumber>
             </LeaveCard>

@@ -11,7 +11,6 @@ import moment from 'moment';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Constants from 'expo-constants';
 
-
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = () => {
@@ -91,6 +90,7 @@ const handleCancel = () => {
     return require('../../assets/images/default-profile.jpg'); // Make sure you have this asset
   };
 
+  console.log("Profile Data---",profile)
   
   return (
     <>
@@ -102,8 +102,8 @@ const handleCancel = () => {
           {/* Profile Header */}
           <View style={styles.profileHeader}>
             <TouchableOpacity 
-            style={styles.avatarContainer}
-                onPress={handleQRPress}>
+              style={styles.avatarContainer}
+              onPress={handleQRPress}>
               <Image
                 source={profile?.image ? { uri: profile.image } : require('../../assets/images/default-profile.jpg')}
                 style={styles.profileImage}
@@ -118,10 +118,28 @@ const handleCancel = () => {
             </View>
           </View>
 
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.qrButton} onPress={() => setIsLogoutModalVisible(true)}>
-            <MaterialIcons name="logout" size={24} color="#FF0031" />
-          </TouchableOpacity>
+          {/* Action Buttons in Top Right */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButtonSmall, styles.qrButton]}
+              onPress={() => router.push('IdCard')}>
+              {/* < size={24} color="#a970ff" /> */}
+              <MaterialIcons name="contact-page" size={20} color="#a970ff" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButtonSmall, styles.editButton]}
+              onPress={handlePressPassword}>
+              <MaterialIcons name="lock" size={20} color="#3498db" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButtonSmall, styles.logoutButton]}
+              onPress={() => setIsLogoutModalVisible(true)}>
+              <MaterialIcons name="logout" size={20} color="#FF0031" />
+            </TouchableOpacity>
+          </View>
+
 
           {/* Employee Details Section */}
           <View style={styles.section}>
@@ -137,11 +155,12 @@ const handleCancel = () => {
               label="Department" 
               value={profile?.department_name || 'BLR OFFICE'} 
             />
+            {profile?.date_of_join && 
             <InfoRow 
               icon="date-range" 
               label="Date of Joining" 
               value={formatDate(profile?.date_of_join)} 
-            />
+            />}
 
           </View>
 
@@ -182,7 +201,7 @@ const handleCancel = () => {
               <Switch
                 value={useFingerprint}
                 onValueChange={handleSwitchToggle}
-                trackColor={{ false: "#dcdcdc", true: "#2A73FC" }}
+                trackColor={{ false: "#dcdcdc", true: "#a970ff" }}
                 thumbColor={useFingerprint ? "#fff" : "#f4f3f4"}
               />
 
@@ -315,6 +334,33 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  actionButtonsContainer: {
+    position: 'absolute',
+    top: 30,
+    right: 20,
+  },
+  actionButtonSmall: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  qrButton: {
+    backgroundColor: '#F5EEFF',
+  },
+  editButton: {
+    backgroundColor: '#E8F5FD',
+  },
+  logoutButton: {
+    backgroundColor: '#FBE6EA',
+  },
   section: {
     backgroundColor: '#fff',
     borderRadius: 0,
@@ -410,6 +456,7 @@ switchLabelContainer: {
     fontSize: 12,
     color: '#95a5a6',
   },
+  
 });
 
 export default ProfileScreen;

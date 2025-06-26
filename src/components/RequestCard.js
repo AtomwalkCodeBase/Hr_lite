@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { colors } from '../Styles/appStyle';
 
 const { width } = Dimensions.get('window');
 
@@ -80,7 +81,7 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
             colors={['#26A69A', '#00897B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={styles.buttonGradient}
+            style={styles.button}
           >
             <Text style={styles.buttonText}>Update Details</Text>
             <Ionicons name="create" size={18} color="white" />
@@ -93,15 +94,12 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
           onPress={onPress}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={['#5C6BC0', '#3949AB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.buttonGradient}
+          <View
+            style={styles.button}
           >
             <Text style={styles.buttonText}>View Details</Text>
             <Ionicons name="arrow-forward" size={18} color="white" />
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -192,7 +190,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#ECEFF1',
   },
-  buttonGradient: {
+  button: {
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

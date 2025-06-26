@@ -12,6 +12,7 @@ import ApplyButton from '../components/ApplyButton';
 import EmptyMessage from '../components/EmptyMessage';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
+import { colors } from '../Styles/appStyle';
 import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
 import { AppContext } from '../../context/AppContext';
 
@@ -39,7 +40,7 @@ const TabButton = styled.TouchableOpacity`
 
 const TabButtonActive = styled(TabButton)`
   border-bottom-width: 2px;
-  border-color: blue;
+  border-color: ${colors.primary};
   color: black;
 `;
 
@@ -76,7 +77,7 @@ const TabText = styled.Text`
 `;
 
 const TabTextActive = styled(TabText)`
-  color: blue;
+  color: ${colors.primary};
   font-size: 15px;
   font-weight: bold;
   margin-bottom: 0px;
@@ -262,7 +263,8 @@ const LeaveScreen = () => {
             showsHorizontalScrollIndicator={false}
           />
         )}
-        <ApplyButton onPress={() => handlePress(leaveData && leaveData[0]?.emp_data)} buttonText="Apply Leave" />
+        <ApplyButton onPress={() => handlePress(leaveData && leaveData[0]?.emp_data)} buttonText="Apply Leave" 
+          icon='send'/>
 
         {selectedLeave && (
           <ModalComponent

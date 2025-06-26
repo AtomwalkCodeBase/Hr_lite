@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import styled from 'styled-components/native';
 import { FontAwesome5 } from '@expo/vector-icons'; // For calendar icon
+import { colors } from '../Styles/appStyle';
 
 const HolidayBox = styled.View`
   flex-direction: row;
@@ -21,7 +22,7 @@ const HolidayBox = styled.View`
 const SideBar = styled.View`
   width: 15px;
   height: 100%;
-  background-color: #007bff;
+  background-color: ${colors.primary};
   border-radius:  9px 0px 00px 9px;
 `;
 

@@ -13,7 +13,7 @@ const { width } = Dimensions.get('window');
 const ApplyButton = ({ onPress, buttonText, icon }) => {
   // Responsive style calculations
   const buttonPadding = Platform.OS === 'ios' ? 12 : 10;
-  const buttonMarginBottom = width > 400 ? 24 : 10;
+  const buttonMarginBottom = width > 400 ? 20 : 10;
   const buttonWidth = width > 412 ? '90%' : '100%';
   
   const iconSize = width > 400 ? 26 : 24;

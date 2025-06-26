@@ -88,7 +88,16 @@ const DetailValue = styled.Text`
 `;
 
 const AmountContainer = styled.View`
-  background-color: #FFF8E1;
+  background-color: ${props => {
+    switch(props.status) {
+      case 'A': return '#E8F5E9'; // Approved
+      case 'S': return '#E3F2FD'; // Submitted
+      case 'F': return '#F3E5F5'; // Forwarded
+      case 'R': return '#FFEBEE'; // Rejected
+      case 'B': return '#FFF3E0'; // Back to claimant
+      default: return '#F5F5F5'; // Default
+    }
+  }};
   padding: 6px 12px;
   border-radius: 16px;
   align-self: flex-start;
@@ -98,7 +107,16 @@ const AmountContainer = styled.View`
 const AmountText = styled.Text`
   font-size: 16px;
   font-weight: bold;
-  color: #FF8F00;
+  color: ${props => {
+    switch(props.status) {
+      case 'A': return '#2E7D32'; // Approved
+      case 'S': return '#1565C0'; // Submitted
+      case 'F': return '#7B1FA2'; // Forwarded
+      case 'R': return '#C62828'; // Rejected
+      case 'B': return '#EF6C00'; // Back to claimant
+      default: return '#424242'; // Default
+    }
+  }};
 `;
 
 const ViewFileButton = styled(TouchableOpacity)`
@@ -170,8 +188,8 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText }) => {
         <DetailValue>{claim.submitted_date}</DetailValue>
       </DetailRow>
 
-      <AmountContainer>
-        <AmountText>₹ {claim.expense_amt}</AmountText>
+      <AmountContainer status={status}>
+        <AmountText status={status}>₹ {claim.expense_amt}</AmountText>
       </AmountContainer>
 
       {claim.submitted_file_1 && (

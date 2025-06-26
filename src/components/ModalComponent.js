@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { colors } from '../Styles/appStyle';
 
 const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCancelLeave, showCancelButton  }) => {
   return (
@@ -234,7 +235,7 @@ const ModalFooter = styled.View`
 `;
 
 const ActionButton = styled.TouchableOpacity`
-  background-color: #3B82F6;
+  background-color: ${colors.primary};
   padding: 10px 20px;
   border-radius: 6px;
 `;

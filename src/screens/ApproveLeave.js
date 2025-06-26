@@ -10,6 +10,7 @@ import HeaderComponent from '../components/HeaderComponent';
 import LeaveActionModal from '../components/LeaveActionModal';
 import LeaveCard from '../components/ApproveLeaveCard';
 import EmptyMessage from '../components/EmptyMessage';
+import { colors } from '../Styles/appStyle';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
 
@@ -51,7 +52,7 @@ const TabButton = styled.TouchableOpacity`
   flex: 1;
   padding: ${height * 0.015}px;
   align-items: center;
-  background-color: ${props => props.active ? '#007bff' : 'transparent'};
+  background-color: ${props => props.active ? colors.primary : 'transparent'};
 `;
 
 const TabText = styled.Text`
