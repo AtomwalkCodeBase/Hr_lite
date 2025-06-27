@@ -490,7 +490,7 @@ const submitCheckout = async (payload) => {
 
         
         <TouchableOpacity 
-          style={[styles.historyButton, {marginTop: 20}]}
+          style={[styles.historyButton, {marginTop: 20, marginBottom: 70}]}
           onPress={() => router.push({ 
             pathname: 'TimeSheet', 
             params: employeeData

@@ -28,7 +28,7 @@ const [modalVisible, setModalVisible] = useState(false);       // controls confi
 
 
   const router = useRouter();
-  const navigation = useNavigation();
+  const navigate = useNavigation();
 
   useEffect(() => {
 
@@ -91,12 +91,12 @@ const handleCancel = () => {
     return require('../../assets/images/default-profile.jpg'); // Make sure you have this asset
   };
 
-  console.log("Profile Data---",profile)
+  // console.log("Profile Data---",profile)
   
   return (
     <>
     <SafeAreaView>
-      <HeaderComponent headerTitle="Employee Profile" onBackPress={handleBackPress} />
+      <HeaderComponent headerTitle="Employee Profile" onBackPress={()=> navigate.goBack()} />
       {isLoading ? (
         <Loader visible={isLoading} />
       ) : (

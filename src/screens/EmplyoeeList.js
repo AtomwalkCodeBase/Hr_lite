@@ -15,14 +15,14 @@ import { AntDesign, Feather, FontAwesome, MaterialCommunityIcons, MaterialIcons 
 import { getEmplyoeeList } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
-import { router, useRouter } from 'expo-router';
+import { useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const EmployeeListScreen = () => {
-	const route = useRouter();
+	const navigate = useNavigation();
   const [employees, setEmployees] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -53,13 +53,6 @@ const EmployeeListScreen = () => {
       return matchesSearch && matchesGrade && matchesDepartment;
     });
   }, [employees, searchQuery, selectedGrade, selectedDepartment]);
-
-    const handleBackPress = () => {
-    router.navigate({
-      pathname: 'home',
-      params: { screen: 'HomePage' }
-    });
-  };
 
 const handleTimesheetPress = (employee) => {
   route.push({
@@ -140,14 +133,6 @@ const handleTimesheetPress = (employee) => {
             </View>
           </View>
         </View>
-
-        {/* <TouchableOpacity
-          style={styles.timesheetButton}
-          onPress={() => handleTimesheetPress(employee)}
-        >
-		  <AntDesign name="clockcircleo" size={20} color="#fff" />
-          <Text style={styles.timesheetButtonText}>Timesheet</Text>
-        </TouchableOpacity> */}
       </View>
 
       <View style={styles.cardBody}>
@@ -161,20 +146,22 @@ const handleTimesheetPress = (employee) => {
           <Text style={styles.infoText}>{employee.email_id}</Text>
         </View>
         
+       {employee.mobile_number &&
         <View style={styles.infoRow}>
-		  <Feather name="phone" size={16} color="#666" />
+		      <Feather name="phone" size={16} color="#666" />
           <Text style={styles.infoText}>{employee.mobile_number}</Text>
-        </View>
+        </View>}
         
         <View style={styles.infoRow}>
-		  <AntDesign name="calendar" size={16} color="#666" />
-          <Text style={styles.infoText}>Joined: {employee.date_of_join}</Text>
-
+          {employee.date_of_join && <>
+		        <AntDesign name="calendar" size={16} color="#666" />
+            <Text style={styles.infoText}>Joined: {employee.date_of_join}</Text>
+          </>}
 		  <TouchableOpacity
           style={styles.timesheetButton}
           onPress={() => handleTimesheetPress(employee)}
         >
-		  <MaterialCommunityIcons name="timetable" size={16} color="#fff" />
+		      <MaterialCommunityIcons name="timetable" size={16} color="#fff" />
           {/* <Text style={styles.timesheetButtonText}>Timesheet</Text> */}
         </TouchableOpacity>
         </View>
@@ -188,7 +175,7 @@ const handleTimesheetPress = (employee) => {
       <SafeAreaView style={styles.container}>
       <HeaderComponent
         headerTitle="Employee List"
-        onBackPress={handleBackPress}
+        onBackPress={()=> navigate.goBack()}
         headerStyle={{ backgroundColor: "#a970ff" }}
       />
         <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
@@ -415,9 +402,13 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   clearFiltersButton: {
+     backgroundColor: 'rgba(169, 112, 255, 0.1)',
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#a970ff',
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     marginTop: 8,
   },
   clearFiltersText: {
@@ -519,6 +510,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   timesheetButton: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
     backgroundColor: '#a970ff',
     flexDirection: 'row',
     alignItems: 'center',

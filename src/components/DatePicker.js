@@ -25,6 +25,7 @@ const DateText = styled.Text`
 `;
 const Label = styled.Text`
   font-size: 16px;
+  font-weight: 600;
   margin-bottom: 5px;
 `;
 

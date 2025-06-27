@@ -96,7 +96,7 @@ const confirmButton = async (item) => {
     console.log("Data to be sent:", formData);
 
     const res = await EnrollEmpTraining(formData);
-    console.log("API Response:", res);
+    // console.log("API Response:", res);
 
     if (res.status === 200) {
       setIsSuccessModalVisible(true);

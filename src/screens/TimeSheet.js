@@ -7,144 +7,22 @@ import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from 
 import DatePicker from "../components/DatePicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Loader from "../components/old_components/Loader";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import HeaderComponent from "../components/HeaderComponent";
+import TimeSheetCard from "../components/TimeSheetCard";
+import TimeSheetWeekNavigation from "../components/TimeSheetWeekNavigation";
+import AddEditTaskModal from '../components/TimeSheetAddEditTaskModal';
+import FilterModal from '../components/TimeSheetFilterModal';
+import RemarkModal from '../components/RemarkModal';
+import SuccessModal from "../components/SuccessModal";
+import ErrorModal from "../components/ErrorModal";
 
 const { width, height } = Dimensions.get("window");
-
-const TaskCard = ({ task, onEdit, formatDisplayDate, isSelfView, onApprove, onReject }) => {
-    const statusConfig = {
-    s: { 
-      color: '#008000', // Green
-      icon: 'check-circle-outline',
-      label: 'SUBMITTED',
-      bgColor: '#4CD96415'
-    },
-    a: { 
-      color: '#2196F3', // Blue
-      icon: 'schedule',
-      label: 'APPROVED',
-      bgColor: '#5AC8FA15'
-    },
-    r: { 
-      color: '#FF6B6B', // Red
-      icon: 'delete-outline',
-      label: 'Rejected',
-      bgColor: '#FF6B6B15'
-    },
-    n: { 
-      color: '#888888', // Gray
-      icon: 'schedule',
-      label: 'Not Submitted',
-      bgColor: '#88888815'
-    },
-    default: {
-      color: '#888888', // Gray
-      icon: 'help-outline',
-      label: 'Unknown',
-      bgColor: '#88888815'
-    }
-  };
-  const statusKey = (task.status || 'default').toLowerCase();
-  const status = statusConfig[statusKey] || statusConfig.default;
-  
-  // Show action buttons if not self view and statusKey is in the allowed list
-  const showActionButtons = !isSelfView && ['s',].includes(statusKey);
-  
-  return(
-  <View style={styles.taskCard}>
-    <View style={styles.taskHeader}>
-      <Text style={styles.taskProject}>{task.project_code}</Text>
-      <View style={styles.taskHeaderRight}>
-
-        { isSelfView && 
-        <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
-          <Ionicons name="create-outline" size={20} color="#a970ff" />
-        </TouchableOpacity>
-        }
-        <View
-          style={[
-            styles.statusBadge,
-            { backgroundColor: status.bgColor }
-          ]}
-        >
-          {/* <MaterialIcons name={status.icon} size={16} color={status.color} /> */}
-          <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
-        </View>
-      </View>
-    </View>
-
-    <Text style={styles.taskActivity}>{task.activity_name}</Text>
-
-    <View style={styles.taskDetails}>
-      <View style={styles.taskDetailItem}>
-        <Ionicons name="calendar-outline" size={16} color="#666" />
-        <Text style={styles.taskDetailText}>
-          {formatDisplayDate(task.a_date)}
-        </Text>
-      </View>
-
-      <View style={styles.taskDetailItem}>
-        <Ionicons name="time-outline" size={16} color="#666" />
-        <Text style={styles.taskDetailText}>{task.effort}h</Text>
-      </View>
-    </View>
-
-    {task.remarks && <Text style={styles.taskRemarks}>{task.remarks}</Text>}
-
-    {/* Action Buttons */}
-    {showActionButtons && (
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.rejectButton]} 
-            onPress={() => onReject(task, 'REJECT')}
-          >
-            <MaterialIcons name="close" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Reject</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.approveButton]} 
-            onPress={() => onApprove(task, 'APPROVE')}
-          >
-            <MaterialIcons name="check" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Approve</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-  </View>
-)};
-
-const WeekNavigation = ({ currentWeekStart, onNavigate, formatDisplayDate, getCurrentWeekDates }) => {
-  const { start: weekStart, end: weekEnd } = getCurrentWeekDates(currentWeekStart);
-  return (
-    <View style={styles.weekNavigation}>
-      <TouchableOpacity
-        style={styles.weekNavButton}
-        onPress={() => onNavigate(-1)}
-      >
-        <Ionicons name="chevron-back" size={24} color="#a970ff" />
-      </TouchableOpacity>
-
-      <View style={styles.weekInfo}>
-        <Text style={styles.weekText}>
-          {formatDisplayDate(weekStart)} - {formatDisplayDate(weekEnd)}
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.weekNavButton}
-        onPress={() => onNavigate(1)}
-      >
-        <Ionicons name="chevron-forward" size={24} color="#a970ff" />
-      </TouchableOpacity>
-    </View>
-  );
-};
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
   const employee = employeeParam ? JSON.parse(employeeParam) : null;
-  const [empId, setEmpId] = useState(null);
+  const [EmpId, setEmpId] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [activities, setActivities] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -159,6 +37,11 @@ const TimeSheet = () => {
   const [remark, setRemark] = useState('');
   const [selectedAction, setSelectedAction] = useState(null); // 'APPROVE' or 'REJECT'
   const [selectedTask, setSelectedTask] = useState(null);
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isErrorModalVisible, setIsErrorModalVisible] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const navigate = useNavigation();
 
   useEffect(() => {
     (async () => {
@@ -190,7 +73,7 @@ const TimeSheet = () => {
     activity: "",
   });
 
-  const statuses = ["PENDING", "SUBMITTED", "APPROVED", "REJECTED"];
+  const statuses = ["NOT SUBMITTED", "SUBMITTED", "APPROVED", "REJECTED"];
 
   const formatDateForAPI = (date) => {
     const day = date.getDate().toString().padStart(2, "0");
@@ -266,10 +149,10 @@ const TimeSheet = () => {
     const { start, end } = getCurrentWeekDates(currentWeekStart);
     const formattedStartDate = formatDateForAPI(start);
     const formattedEndDate = formatDateForAPI(end);
-    if (!empId) return; 
+    if (!EmpId) return; 
     setIsLoading(true);
     try {
-      const res = await getTimesheetData( empId, formattedStartDate, formattedEndDate);
+      const res = await getTimesheetData( EmpId, formattedStartDate, formattedEndDate);
       setTasks(res.data.reverse() || []);
        setIsLoading(false);
     } catch (err) {
@@ -279,21 +162,21 @@ const TimeSheet = () => {
   };
 
   useEffect(() => {
-    if (empId) {
+    if (EmpId) {
       getTimeSheetList();
     }
-  }, [empId, currentWeekStart]);
+  }, [EmpId, currentWeekStart]);
 
 const handleSubmit = async (callMode) => {
   if (callMode !== 'APPROVE' && callMode !== 'REJECT') {
     if (!formData.project || !formData.activity || !formData.hours) {
-      Alert.alert("Error", "Please fill in all required fields");
+      setIsErrorModalVisible(true);
+      setErrorMessage("Please fill in all required fields")
       return;
     }
   }
 
   setIsLoading(true);
-  
   
   const empId = await AsyncStorage.getItem("empId");
   let submittedData;
@@ -302,7 +185,7 @@ const handleSubmit = async (callMode) => {
     const formattedDate = formatDateForAPI(formData.date);
     submittedData = {
       emp_id: empId,
-      a_emp_id: empId,
+      a_emp_id: EmpId,
       ts_id: selectedTask.id,
       a_remarks: remark,
       a_date: formattedDate,
@@ -329,7 +212,8 @@ const handleSubmit = async (callMode) => {
   try {
     const res = await postTimeList(submittedData);
     if (res.status === 200) {
-      Alert.alert("Success", `Timesheet ${callMode.toLowerCase()}d successfully!`);
+      setIsSuccessModalVisible(true)
+      setSuccessMessage(`Timesheet ${callMode ==="SUBMIT" ? "submitted" : "saved"} successfully!`)
       if (callMode === 'APPROVE' || callMode === 'REJECT') {
         setShowRemarkModal(false);
         setSelectedTask(null);
@@ -348,14 +232,13 @@ const handleSubmit = async (callMode) => {
       }
       getTimeSheetList(); // Refresh the list
     } else {
-      Alert.alert("Error", `Failed to ${callMode.toLowerCase()} timesheet. Please try again.`);
+      setIsErrorModalVisible(true);
+      setErrorMessage(`Failed to ${callMode.toLowerCase()} timesheet. Please try again.`)
     }
   } catch (error) {
     console.error(`Error ${callMode.toLowerCase()}ing timesheet:`, error);
-    Alert.alert(
-      "Error",
-      `Failed to ${callMode.toLowerCase()}: ${error.response?.data?.detail || error.message}`
-    );
+    setIsErrorModalVisible(true);
+    setErrorMessage( `Failed to ${callMode.toLowerCase()}: ${error.response?.data?.detail || error.message}`)
   } finally {
     setIsLoading(false);
   }
@@ -388,7 +271,6 @@ const handleSubmit = async (callMode) => {
     setCurrentWeekStart(newDate);
   };
 
-  // Add this function in the TimeSheet component
 const handleApproveReject = async (task, action) => {
   setSelectedTask(task);
   setSelectedAction(action);
@@ -403,30 +285,29 @@ const handleApproveReject = async (task, action) => {
 
     setIsLoading(true);
 
-    const EmpId = await AsyncStorage.getItem("empId");
+    const empId = await AsyncStorage.getItem("empId");
 
     let submittedData = {
-      a_emp_id: empId,
-      emp_id: EmpId,
+      a_emp_id: EmpId,
+      emp_id: empId,
       start_date: formattedStartDate,
       end_date: formattedEndDate,
       call_mode: callMode,
     };
-    console.log("data", submittedData);
-    // try {
-    //   const res = await postTimeList(submittedData);
-    //   if (res.status === 200) {
-    //     Alert.alert(
-    //       "Success",
-    //       `Weekly Timesheet submitted successfully for: ${formattedStartDate} to ${formattedEndDate}`
-    //     );
-    //   }
-    // } catch (err) {
-    //   console.error("Error Weekly Timesheet not Submitted:", err);
-    //   Alert.alert("Error", "Failed to submit weekly Timesheet ");
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    console.log("data for weekly Submit", submittedData);
+    try {
+      const res = await postTimeList(submittedData);
+      if (res.status === 200) {
+      setIsSuccessModalVisible(true)
+      setSuccessMessage(`Weekly Timesheet submitted successfully for: ${formattedStartDate} to ${formattedEndDate}`)
+      }
+    } catch (err) {
+      console.error("Error Weekly Timesheet not Submitted:", err);
+      setIsErrorModalVisible(true);
+      setErrorMessage("Failed to submit weekly Timesheet ")
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const closeAddModal = () => {
@@ -449,21 +330,14 @@ const handleApproveReject = async (task, action) => {
       status: "",
       activity: "",
     });
+    setShowFilterModal(false)
   };
-
-    const handleBackPress = () => {
-      router.navigate({
-        pathname: 'home',
-        params: { screen: 'HomePage' }
-      });
-    };
 
   useEffect(() => {
     getTimeSheetList();
   }, [currentWeekStart]);
 
-  // Add this in the TimeSheet component, before the return statement
-const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task => task.status.toLowerCase() === 's');
+  const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task => task.status.toLowerCase() === 's');
 
   // Filter tasks based on current filters
   useEffect(() => {
@@ -487,14 +361,14 @@ const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task =
       );
     }
 
-    if (filters.startDate && filters.endDate) {
-      filtered = filtered.filter((task) => {
-        const taskDate = new Date(task.a_date);
-        const startDate = new Date(filters.startDate);
-        const endDate = new Date(filters.endDate);
-        return taskDate >= startDate && taskDate <= endDate;
-      });
-    }
+    // if (filters.startDate && filters.endDate) {
+    //   filtered = filtered.filter((task) => {
+    //     const taskDate = new Date(task.a_date);
+    //     const startDate = new Date(filters.startDate);
+    //     const endDate = new Date(filters.endDate);
+    //     return taskDate >= startDate && taskDate <= endDate;
+    //   });
+    // }
 
     setFilteredTasks(filtered);
   }, [tasks, filters]);
@@ -506,16 +380,16 @@ const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task =
       {/* Header */}
         <HeaderComponent 
         headerTitle="Timesheet" 
-        onBackPress={handleBackPress}
+        onBackPress={()=> navigate.goBack()}
         icon1Name="filter"
         icon1OnPress={() => setShowFilterModal(true)}
-         icon2Name={isSelfView ? "add" : undefined}
+        icon2Name={isSelfView ? "add" : undefined}
         icon2OnPress={isSelfView ? () => setShowAddModal(true) : undefined}
       />
 
 
       {/* Week Navigation */}
-      <WeekNavigation
+      <TimeSheetWeekNavigation
         currentWeekStart={currentWeekStart}
         onNavigate={navigateWeek}
         formatDisplayDate={formatDisplayDate}
@@ -553,12 +427,12 @@ const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task =
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={64} color="#ccc" />
               <Text style={styles.emptyText}>
-                {employee ? "No timesheet found for this period" : "No Timesheet found for this employee"}
+                {employee ? "No Timesheet found for this employee" : "No timesheet found for this period"  }
               </Text>
             </View>
           ) : (
             filteredTasks.map((task) => (
-              <TaskCard
+              <TimeSheetCard
                 key={task.id}
                 task={task}
                 onEdit={editTask}
@@ -580,7 +454,7 @@ const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task =
               <Text style={styles.weeklySubmitText}>Approve Weekly TimeSheet</Text>
             </TouchableOpacity>
           )}
-          {isSelfView && (
+          {isSelfView && !allTasksSubmitted && (
             <TouchableOpacity
               style={styles.weeklySubmitButton}
               onPress={() => handleWeeklySubmit("WEEKLY_SUBMIT")}
@@ -591,269 +465,55 @@ const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task =
       </>
 
       {/* Add/Edit Task Modal */}
-      <Modal visible={showAddModal} transparent animationType="slide">
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.modalOverlay}
-          onPress={closeAddModal}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.modalContent}
-            onPress={() => {}}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editingTask ? "Edit Task" : "Add New Task"}
-              </Text>
-              <TouchableOpacity onPress={closeAddModal}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.formGroup}>
-                <DropdownPicker
-                  label="Project *"
-                  data={projects.map((project) => ({
-                    label: project[0],
-                    value: project[0],
-                  }))}
-                  value={formData.project}
-                  setValue={(value) =>
-                    setFormData((prev) => ({ ...prev, project: value }))
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <DropdownPicker
-                  label="Activity *"
-                  data={activities.map((activity) => ({
-                    label: activity.name,
-                    value: activity.activity_id,
-                  }))}
-                  value={formData.activity}
-                  setValue={(value) =>
-                    setFormData((prev) => ({ ...prev, activity: value }))
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <DatePicker
-                  cDate={formData.date}
-                  label="Date *"
-                  setCDate={(date) =>
-                    setFormData((prev) => ({ ...prev, date }))
-                  }
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Working Hours *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.hours}
-                  onChangeText={(value) =>
-                    setFormData((prev) => ({ ...prev, hours: value }))
-                  }
-                  placeholder="Enter hours"
-                  keyboardType="numeric"
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Remarks</Text>
-                <TextInput
-                  style={[styles.input, styles.textArea]}
-                  value={formData.remarks}
-                  onChangeText={(value) =>
-                    setFormData((prev) => ({ ...prev, remarks: value }))
-                  }
-                  placeholder="Add remarks..."
-                  multiline
-                  numberOfLines={3}
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              {editingTask ? (
-                <TouchableOpacity
-                  style={[styles.addButton, styles.addOnlyButton]}
-                  onPress={() => handleSubmit("UPDATE")}
-                  disabled={isLoading}
-                >
-                  <Text style={styles.addButtonText}>
-                    {isLoading ? "UPDATING..." : "UPDATE"}
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.addButtonsContainer}>
-                  <TouchableOpacity
-                    style={[styles.addButton, styles.addOnlyButton]}
-                    onPress={() => handleSubmit("ADD_AND_SAVE")}
-                    disabled={isLoading}
-                  >
-                    <Text style={styles.addButtonText}>
-                      {isLoading ? "SAVING..." : "SAVE"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.addButton, styles.addAndSaveButton]}
-                    onPress={() => handleSubmit("SUBMIT")}
-                    disabled={isLoading}
-                  >
-                    <Text style={styles.addButtonText}>
-                      {isLoading ? "SUBMITTING..." : "SUBMIT"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-        <Loader visible={isLoading} />
-      </Modal>
+      <AddEditTaskModal
+        visible={showAddModal}
+        onClose={closeAddModal}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+        formData={formData}
+        setFormData={setFormData}
+        editingTask={editingTask}
+        projects={projects}
+        activities={activities}
+      />
 
       {/* Filter Modal */}
-      <Modal visible={showFilterModal} transparent animationType="slide">
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.modalOverlay}
-          onPress={() => setShowFilterModal(false)}
-        >
-          <TouchableOpacity
-            activeOpacity={1}
-            style={styles.modalContent}
-            onPress={() => {}}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Tasks</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
+      <FilterModal
+        visible={showFilterModal}
+        onClose={() => setShowFilterModal(false)}
+        filters={filters}
+        setFilters={setFilters}
+        projects={projects}
+        activities={activities}
+        statuses={statuses}
+        clearFilters={clearFilters}
+      />
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.formGroup}>
-                <DropdownPicker
-                  label="Project"
-                  data={projects.map((project) => ({
-                    label: project[0],
-                    value: project[0],
-                  }))}
-                  value={filters.project}
-                  setValue={(value) =>
-                    setFilters((prev) => ({ ...prev, project: value }))
-                  }
-                />
-              </View>
+      {/* Remark Modal */}
+      <RemarkModal
+        visible={showRemarkModal}
+        onClose={() => setShowRemarkModal(false)}
+        remark={remark}
+        setRemark={setRemark}
+        isLoading={isLoading}
+        selectedAction={selectedAction}
+        onSubmit={handleSubmit}
+      />
 
-              <View style={styles.formGroup}>
-                <DropdownPicker
-                  label="Activity"
-                  data={activities.map((activity) => ({
-                    label: activity.name,
-                    value: activity.id,
-                  }))}
-                  value={filters.activity}
-                  setValue={(value) =>
-                    setFilters((prev) => ({ ...prev, activity: value }))
-                  }
-                />
-              </View>
+      <SuccessModal
+        visible={isSuccessModalVisible}
+        onClose={() => {
+          setIsSuccessModalVisible(false);
+          router.back(); 
+        }}
+        message={successMessage}
+      />
 
-              <View style={styles.formGroup}>
-                <DropdownPicker
-                  label="Status"
-                  data={statuses.map((status) => ({
-                    label: status,
-                    value: status,
-                  }))}
-                  value={filters.status}
-                  setValue={(value) =>
-                    setFilters((prev) => ({ ...prev, status: value }))
-                  }
-                />
-              </View>
-
-              <View style={styles.filterButtons}>
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={clearFilters}
-                >
-                  <Text style={styles.clearButtonText}>Clear Filters</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.applyButton}
-                  onPress={() => setShowFilterModal(false)}
-                >
-                  <Text style={styles.applyButtonText}>Apply Filters</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-{/* modal for remark */}
-<Modal visible={showRemarkModal} transparent animationType="slide">
-  <TouchableOpacity
-    activeOpacity={1}
-    style={styles.modalOverlay}
-    onPress={() => setShowRemarkModal(false)}
-  >
-    <TouchableOpacity
-      activeOpacity={1}
-      style={styles.modalContent}
-      onPress={() => {}}
-    >
-      <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>
-          {selectedAction === 'APPROVE' ? 'Approve Task' : 'Reject Task'}
-        </Text>
-        <TouchableOpacity onPress={() => setShowRemarkModal(false)}>
-          <Ionicons name="close" size={24} color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Remarks</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={remark}
-          onChangeText={setRemark}
-          placeholder="Add remarks..."
-          multiline
-          numberOfLines={3}
-          placeholderTextColor="#999"
+        <ErrorModal
+          visible={isErrorModalVisible}
+          message={errorMessage}
+          onClose={() => setIsErrorModalVisible(false)}
         />
-      </View>
-
-      <View style={styles.addButtonsContainer}>
-        <TouchableOpacity
-          style={[styles.addButton, styles.addOnlyButton]}
-          onPress={() => setShowRemarkModal(false)}
-        >
-          <Text style={styles.addButtonText}>No, Keep It</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.addButton, selectedAction === 'APPROVE' ? styles.approveButton : styles.rejectButton]}
-          onPress={() => handleSubmit(selectedAction)}
-          disabled={isLoading}
-        >
-          <Text style={styles.addButtonText}>
-            {isLoading ? 'PROCESSING...' : `Yes,${selectedAction} `}
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  </TouchableOpacity>
-  <Loader visible={isLoading} />
-</Modal>
     </SafeAreaView>
   );
 };
@@ -865,91 +525,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  weekNavigation: {
-    backgroundColor: "white",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  weekNavButton: {
-    padding: 5,
-  },
-  weekInfo: {
-    flex: 1,
-    alignItems: "center",
-  },
-  weekText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#333",
-  },
   taskList: {
     flex: 1,
     padding: 16,
-  },
-  taskCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  taskHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  taskProject: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "white",
-  },
-  taskActivity: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
-  },
-  taskDetails: {
-    flexDirection: "row",
-    gap: 20,
-    marginBottom: 8,
-  },
-  taskDetailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  taskDetailText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  taskRemarks: {
-    fontSize: 14,
-    color: "#888",
-    fontStyle: "italic",
-    marginTop: 4,
   },
   emptyState: {
     alignItems: "center",
@@ -960,76 +538,6 @@ const styles = StyleSheet.create({
     color: "#888",
     marginTop: 16,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: height * 0.9,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-  },
-  formGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "white",
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: "top",
-  },
-  addButton: {
-    backgroundColor: "#a970ff",
-    borderRadius: 8,
-    paddingVertical: 15,
-    alignItems: "center",
-    flex: 1,
-  },
-  addButtonsContainer: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-  addOnlyButton: {
-    backgroundColor: "#8B5CF6",
-  },
-  addAndSaveButton: {
-    backgroundColor: "#a970ff",
-  },
-  addButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
   weeklySubmitButton: {
     marginHorizontal: 10,
     backgroundColor: "#a970ff",
@@ -1039,8 +547,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 20,
-    marginBottom: 20,
+    marginVertical: 10,
     gap: 8,
     elevation: 3,
     shadowColor: "#000",
@@ -1052,108 +559,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  confirmModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  confirmModalContent: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 320,
-    alignItems: "center",
-  },
-  confirmModalHeader: {
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  confirmModalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 8,
-  },
-  confirmModalMessage: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  confirmModalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  confirmCancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  confirmCancelText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  confirmYesButton: {
-    flex: 1,
-    backgroundColor: "#a970ff",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  confirmYesText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  filterButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-  clearButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#a970ff",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  clearButtonText: {
-    color: "#a970ff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  applyButton: {
-    flex: 1,
-    backgroundColor: "#a970ff",
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  applyButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  taskHeaderRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  editButton: {
-    padding: 4,
-    borderRadius: 6,
-    backgroundColor: "#f8f4ff",
   },
   employeeContainer: {
     flexDirection: "row",
@@ -1220,30 +625,4 @@ const styles = StyleSheet.create({
     color: "#a970ff",
     fontWeight: "600",
   },
-  actionButtonsContainer: {
-  flexDirection: 'row',
-  marginTop: 16,
-  gap: 12,
-},
-actionButton: {
-  flex: 1,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: 10,
-  paddingHorizontal: 16,
-  borderRadius: 8,
-  gap: 6,
-},
-approveButton: {
-  backgroundColor: '#4CAF50',
-},
-rejectButton: {
-  backgroundColor: '#f44336',
-},
-actionButtonText: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: '600',
-},
 });

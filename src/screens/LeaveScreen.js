@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { FlatList, View, Dimensions, ActivityIndicator } from 'react-native';
+import { FlatList,Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
@@ -7,7 +7,6 @@ import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import LeaveActionModal from '../components/LeaveActionModal';
-import LeaveCardComponent from '../components/LeaveCardComponent';
 import ApplyButton from '../components/ApplyButton';
 import EmptyMessage from '../components/EmptyMessage';
 import SuccessModal from '../components/SuccessModal';
@@ -35,7 +34,7 @@ const TabContainer = styled.View`
 `;
 
 const TabButton = styled.TouchableOpacity`
-  flex: 2;
+  flex: 1;
   align-items: center;
 `;
 

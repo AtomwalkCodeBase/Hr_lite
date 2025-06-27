@@ -173,7 +173,7 @@ const handlePressProfile = () => {
     {
       title: "Employee List",
       subTitle: "See All the Employee List",
-      icon: <FontAwesome6 name="users" size={24} color="#a970ff" />,
+      icon: <FontAwesome6 name="users" size={20} color="#7e57c2" />,
       action: handlePressEmployee,
       show: isManager
     },

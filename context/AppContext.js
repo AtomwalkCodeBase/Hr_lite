@@ -91,7 +91,7 @@ const AppProvider = ({ children }) => {
                 }
                 setReload(true);
 
-                // router.replace({ pathname: 'home' });
+                router.replace({ pathname: 'home' });
         } catch (err) {
             console.log('Login error:', err);
           }
@@ -99,49 +99,49 @@ const AppProvider = ({ children }) => {
         setIsLoading(false);
     };
 
-    const logout = () => {
-        setIsLoading(true);
-        AsyncStorage.removeItem('userToken');
-        AsyncStorage.removeItem('companyInfo');        
-        // AsyncStorage.removeItem('dbName');
-            setUserToken(null);
-        setCompanyInfo([]);
-        // setDbName(null);
-            setIsLoading(false);
-        // setError('')
-        router.replace('AuthScreen');
-    };
+    // const logout = () => {
+    //     setIsLoading(true);
+    //     AsyncStorage.removeItem('userToken');
+    //     AsyncStorage.removeItem('companyInfo');        
+    //     // AsyncStorage.removeItem('dbName');
+    //         setUserToken(null);
+    //     setCompanyInfo([]);
+    //     // setDbName(null);
+    //         setIsLoading(false);
+    //     // setError('')
+    //     router.replace('AuthScreen');
+    // };
 
-//     const logout = async () => {
-//   setIsLoading(true);
+    const logout = async () => {
+  setIsLoading(true);
 
-//   try {
-//     // const empId = await AsyncStorage.getItem('empId'); // Save for reuse
+  try {
+    // const empId = await AsyncStorage.getItem('empId'); // Save for reuse
 
-//     await AsyncStorage.multiRemove([
-//       'userToken',
-//       'eId',
-//       'mobileNumber',
-//       'userPin',
-//     //   'empId'
-//     ]);
+    await AsyncStorage.multiRemove([
+      'userToken',
+    //   'eId',
+    //   'mobileNumber',
+    //   'userPin',
+    //   'empId'
+    ]);
 
-//     // Restore empId for pre-fill
-//     // if (empId) {
-//     //   await AsyncStorage.setItem('empId', empId);
-//     // }
+    // Restore empId for pre-fill
+    // if (empId) {
+    //   await AsyncStorage.setItem('empId', empId);
+    // }
 
-//     // Clear in-memory context
-//     setUserToken(null);
-//     setProfile({});
-//     setReload(false);
-//   } catch (err) {
-//     console.log("Logout error:", err);
-//   } finally {
-//     setIsLoading(false);
-//     router.replace('AuthScreen');
-//   }
-// };
+    // Clear in-memory context
+    setUserToken(null);
+    setProfile({});
+    setReload(false);
+  } catch (err) {
+    console.log("Logout error:", err);
+  } finally {
+    setIsLoading(false);
+    router.replace('AuthScreen');
+  }
+};
 
     const isLoggedIn = async () => {
             const networkStatus = await checkNetwork();
