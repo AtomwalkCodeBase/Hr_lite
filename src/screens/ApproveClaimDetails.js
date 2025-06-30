@@ -72,6 +72,7 @@ const ApproveClaimDetails = (props) => {
     });
   }, [navigation]);
 
+  console.log("Profile Data---",profile)
 
   // Parse and calculate dates for claim submission
   const parseDate = (dateString) => {
@@ -219,9 +220,8 @@ const ApproveClaimDetails = (props) => {
 
   return (
     <>
-      
+      <HeaderComponent headerTitle={`Approve (${formattedClaimId})`} onBackPress={handleBackPress} />
       <SafeAreaView style={styles.container}>
-        <HeaderComponent headerTitle={`Approve (${formattedClaimId})`} onBackPress={handleBackPress} />
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View style={styles.claimDetailContainer}>
             {claim.submitted_file_1 && (

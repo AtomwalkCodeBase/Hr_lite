@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components/native';
-import { MaterialIcons, Feather } from '@expo/vector-icons';
-import { View, TouchableOpacity } from 'react-native';
+import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
+import { View, TouchableOpacity, Alert } from 'react-native';
+
 
 const ClaimCardContainer = styled.TouchableOpacity`
   background-color: #FFFFFF;
@@ -20,6 +21,7 @@ const ClaimCardContainer = styled.TouchableOpacity`
       case 'F': return '#9C27B0'; // Forwarded - Purple
       case 'R': return '#F44336'; // Rejected - Red
       case 'B': return '#FF9800'; // Back to claimant - Orange
+      case 'N': return '#FFA000'; // Draft - Yellow
       default: return '#9E9E9E'; // Default - Gray
     }
   }};
@@ -45,6 +47,7 @@ const StatusBadge = styled.View`
       case 'F': return '#F3E5F5'; // Forwarded
       case 'R': return '#FFEBEE'; // Rejected
       case 'B': return '#FFF3E0'; // Back to claimant
+      case 'N': return '#FFF8E1'; // Draft - Light yellow
       default: return '#F5F5F5'; // Default
     }
   }};
@@ -145,9 +148,45 @@ const ApprovalText = styled.Text`
   font-style: italic;
 `;
 
-const ClaimCard = ({ claim, onPress, onViewFile, getStatusText }) => {
+const DeleteButton = styled(TouchableOpacity)`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 12px;
+  background-color:rgb(239, 17, 51);
+  padding: 6px 12px;
+  border-radius: 6px;
+  align-self: flex-start;
+`;
+
+const DeleteButtonText = styled.Text`
+  color:rgb(255, 255, 255);
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 6px;
+`;
+
+const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () => {} }) => {
   const status = claim.expense_status;
   const statusText = getStatusText(status);
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete Claim',
+      'Are you sure you want to delete this draft claim?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDelete(claim.id),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
   return (
     <ClaimCardContainer onPress={() => onPress(claim)} status={status}>
@@ -173,20 +212,34 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText }) => {
         </StatusBadge>
       </HeaderRow>
 
-      <DetailRow>
-        <DetailLabel>Item Name:</DetailLabel>
-        <DetailValue>{claim.item_name}</DetailValue>
-      </DetailRow>
+      <View style={{ flexDirection: 'row' }}>
+        <View style={{ flex: 1 }}>
+          <DetailRow>
+            <DetailLabel>Item Name:</DetailLabel>
+            <DetailValue>{claim.item_name}</DetailValue>
+          </DetailRow>
 
-      <DetailRow>
-        <DetailLabel>Expense Date:</DetailLabel>
-        <DetailValue>{claim.expense_date}</DetailValue>
-      </DetailRow>
+          <DetailRow>
+            <DetailLabel>Expense Date:</DetailLabel>
+            <DetailValue>{claim.expense_date}</DetailValue>
+          </DetailRow>
 
-      <DetailRow>
-        <DetailLabel>Submitted:</DetailLabel>
-        <DetailValue>{claim.submitted_date}</DetailValue>
-      </DetailRow>
+          <DetailRow>
+            <DetailLabel>Submitted:</DetailLabel>
+            <DetailValue>{claim.submitted_date}</DetailValue>
+          </DetailRow>
+        </View>
+
+        {/* Delete button aligned to right of detail rows */}
+        {status === 'N' && onDelete && (
+          <View style={{ justifyContent: 'center', marginLeft: 10 }}>
+            <DeleteButton onPress={handleDelete}>
+              <Ionicons name="trash-outline" size={18} color="#fff" />
+              <DeleteButtonText>Delete</DeleteButtonText>
+            </DeleteButton>
+          </View>
+        )}
+      </View>
 
       <AmountContainer status={status}>
         <AmountText status={status}>₹ {claim.expense_amt}</AmountText>

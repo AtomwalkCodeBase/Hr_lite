@@ -365,7 +365,7 @@ const submitCheckout = async (payload) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Date and Time Card */}
         <LinearGradient
-          colors={['#6a11cb', '#2575fc']}
+          colors={['#2575fc', '#6a11cb']}
           start={[0, 0]}
           end={[1, 1]}
           style={styles.datetimeCard}

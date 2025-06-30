@@ -7,43 +7,43 @@ const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject, onProfilePress 
     switch (status_display) {
       case 'Submitted':
         return { 
-          bgColor: '#fff', 
-          textColor: '#FF8F00', 
-          borderColor: '#FFE0B2',
-          icon: 'pending',
-          statusBg: '#FFF3E0'
+          bgColor: '#FFF', 
+          textColor: '#0D47A1', 
+          borderColor: '#E3F2FD',
+          icon: 'schedule',
+          statusBg: '#E3F2FD'
         };
       case 'Rejected':
         return { 
-          bgColor: '#FFEBEE', 
-          textColor: '#D32F2F', 
-          borderColor: '#FFCDD2',
-          icon: 'cancel',
-          statusBg: '#FFE0E0'
+          bgColor: '#FFF', 
+          textColor: '#C62828', 
+          borderColor: '#FFEBEE',
+          icon: 'block',
+          statusBg: '#FFEBEE'
         };
       case 'Cancelled':
         return { 
-          bgColor: '#F5F5F5', 
+          bgColor: '#FFF', 
           textColor: '#616161', 
-          borderColor: '#E0E0E0',
-          icon: 'cancel',
-          statusBg: '#EEEEEE'
+          borderColor: '#F5F5F5',
+          icon: 'cancel-presentation',
+          statusBg: '#F5F5F5'
         };
       case 'Approved':
         return { 
-          bgColor: '#E8F5E9', 
-          textColor: '#388E3C', 
-          borderColor: '#C8E6C9',
-          icon: 'check-circle',
-          statusBg: '#E0F2E1'
+          bgColor: '#FFF', 
+          textColor: '#2E7D32', 
+          borderColor: '#E8F5E9',
+          icon: 'check-circle-outline',
+          statusBg: '#E8F5E9'
         };
       default:
         return { 
-          bgColor: '#E3F2FD', 
-          textColor: '#1976D2', 
-          borderColor: '#BBDEFB',
-          icon: 'info',
-          statusBg: '#E1F0FF'
+          bgColor: '#FFF', 
+          textColor: '#E65100', 
+          borderColor: '#FFF3E0',
+          icon: 'hourglass-empty',
+          statusBg: '#FFF3E0'
         };
     }
   };
@@ -84,12 +84,11 @@ const ApproveLeaveCard = ({ leave, onPress, onApprove, onReject, onProfilePress 
           </View>
         </View>
         
-        <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+         <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
           <MaterialIcons 
             name={icon} 
             size={16} 
             color={textColor} 
-            style={styles.statusIcon}
           />
           <Text style={[styles.statusText, { color: textColor }]}>
             {leave.status_display}
@@ -222,15 +221,18 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    alignSelf: 'flex-start',
+    padding: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    justifyContent: 'center',
+    minWidth: 100,
+    maxWidth: 120,
+    marginLeft: 'auto',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   leaveDetailsContainer: {
     marginBottom: 12,

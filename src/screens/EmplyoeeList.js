@@ -126,11 +126,13 @@ const handleTimesheetPress = (employee) => {
           <View style={styles.employeeDetails}>
             <Text style={styles.employeeName}>{employee.name}</Text>
             <Text style={styles.employeeId}>{employee.emp_id}</Text>
+            {employee.job_title && 
             <View style={styles.badgeContainer}>
               <View style={styles.gradeBadge}>
-                <Text style={styles.badgeText}>{employee.grade_name}</Text>
+                <Text style={styles.badgeText}>{employee.job_title}</Text>
               </View>
             </View>
+}
           </View>
         </View>
       </View>

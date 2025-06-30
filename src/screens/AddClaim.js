@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Keyboard, SafeAreaView, Alert } from 'react-native';
+import { Keyboard, Alert } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { getExpenseItem, getExpenseProjectList, postClaim } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -9,8 +9,9 @@ import DatePicker from '../components/DatePicker';
 import FilePicker from '../components/FilePicker';
 import RemarksTextArea from '../components/RemarkInput';
 import SubmitButton from '../components/SubmitButton';
-import SuccessModal from '../components/SuccessModal'; // Import SuccessModal component
-import Loader from '../components/old_components/Loader'; // Import Loader component
+import SuccessModal from '../components/SuccessModal';
+import Loader from '../components/old_components/Loader';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { colors } from '../Styles/appStyle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -22,7 +23,7 @@ const Container = styled.ScrollView`
   height: 100%;
 `;
 
-const AddClaim = () => {
+const AddClaim = (props) => {
   const [claimAmount, setClaimAmount] = useState('');
   const [remark, setRemark] = useState('');
   const [fileName, setFileName] = useState('');
@@ -36,9 +37,13 @@ const AddClaim = () => {
   const [expenseDate, setExpenseDate] = useState(new Date());
   const [errors, setErrors] = useState({});
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // State for Loader visibility
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
+
+  // Determine the mode (default to 'APPLY' if not provided)
+  const mode = props?.data?.mode || 'APPLY';
+  const isAddMode = mode === 'ADD';
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -52,36 +57,35 @@ const AddClaim = () => {
     fetchEmpId();
   }, []);
 
-
   const fetchClaimItemList = async () => {
-    setIsLoading(true); // Show loader while fetching data
+    setIsLoading(true);
     try {
       const response = await getExpenseItem();
       const formattedData = response.data.map(item => ({
-        label: item.name, // use `name` as the label
-        value: item.id    // use `id` as the value
+        label: item.name,
+        value: item.id
       }));
       setClaimItem(formattedData);
     } catch (error) {
       console.error("Error fetching expense items:", error);
     } finally {
-      setIsLoading(false); // Hide loader when data is fetched
+      setIsLoading(false);
     }
   };
 
   const fetchProjectList = async () => {
-    setIsLoading(true); // Show loader while fetching data
+    setIsLoading(true);
     try {
       const response = await getExpenseProjectList();
       const formattedData = response.data.map(project => ({
-        label: project.title, // use `title` as the label
-        value: project.id     // use `id` as the value
+        label: project.title,
+        value: project.id
       }));
       setProjectList(formattedData);
     } catch (error) {
       console.error("Error fetching project list:", error);
     } finally {
-      setIsLoading(false); // Hide loader when data is fetched
+      setIsLoading(false);
     }
   };
 
@@ -93,8 +97,6 @@ const AddClaim = () => {
       console.error("Error fetching employee ID:", error);
     }
   };
-
-
 
   const handleBackPress = () => {
     router.push('ClaimScreen');
@@ -139,7 +141,7 @@ const AddClaim = () => {
   };
 
   const handleSubmit = async () => {
-    setIsLoading(true); // Show loader during submission
+    setIsLoading(true);
     const expense_date = `${expenseDate.getDate().toString().padStart(2, '0')}-${(expenseDate.getMonth() + 1).toString().padStart(2, '0')}-${expenseDate.getFullYear()}`;
 
     const formData = new FormData();
@@ -154,7 +156,11 @@ const AddClaim = () => {
     formData.append('expense_amt', claimAmount);
     formData.append('expense_date', expense_date);
     formData.append('emp_id', empId);
+    // formData.append('call_mode', isAddMode ? 'GROUP_SUBMIT' : 'SUBMIT');
 
+    if (isAddMode) {
+      formData.append('call_mode', 'CLAIM_SAVE');
+    }
     if (project) {
       formData.append('project', project);
     }
@@ -162,27 +168,30 @@ const AddClaim = () => {
     try {
       const res = await postClaim(formData);
       if (res.status === 200) {
-        setIsSuccessModalVisible(true); // Show success modal on successful submission
+        setIsSuccessModalVisible(true);
       } else {
         console.error('Unexpected response:', res);
         Alert.alert('Claim Submission Error', 'Failed to claim. Unexpected response.');
       }
     } catch (error) {
-      Alert.alert('Claim Submission Failed', `Failed to claim: ${error.response?.data?.detail || error.message}`);
+      Alert.alert('Claim Submission Failed', `Failed to claim: ${error.response?.data?.message || error.response?.data?.detail}`);
+      console.log("Error Message==",error.response?.data?.message)
     } finally {
-      setIsLoading(false); // Hide loader after submission
+      setIsLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <HeaderComponent headerTitle="Add Claim" onBackPress={handleBackPress} />
+      <HeaderComponent 
+        headerTitle={isAddMode ? "Add Draft Claim" : "Apply Claim"} 
+        onBackPress={handleBackPress}
+      />
       {isLoading ? (
-        // <Loader visible={isLoading}/> // Show Loader while loading
         <Loader
           visible={isLoading}
           onTimeout={() => {
-            setIsLoading(false); // Hide loader
+            setIsLoading(false);
             Alert.alert('Timeout', 'Not able to add the Claim.');
           }}
         />
@@ -229,7 +238,7 @@ const AddClaim = () => {
             error={errors.remarks}
           />
           <SubmitButton
-            label="Submit Claim"
+            label={isAddMode ? "Save Draft" : "Submit Claim"}
             onPress={validate}
             bgColor={colors.primary}
             textColor="white"
@@ -237,12 +246,11 @@ const AddClaim = () => {
         </Container>
       )}
       
-      {/* Success Modal */}
       <SuccessModal 
         visible={isSuccessModalVisible} 
         onClose={() => {
-          setIsSuccessModalVisible(false); // Hide modal on close
-          router.push('ClaimScreen'); // Navigate back to ClaimScreen
+          setIsSuccessModalVisible(false);
+          router.push('ClaimScreen');
         }} 
       />
     </SafeAreaView>

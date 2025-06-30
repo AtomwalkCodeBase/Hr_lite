@@ -50,11 +50,11 @@ export const addEmpLeave = async () => {
 };
 export const addClaim = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/add_claim/${db_name}/`;
+  return `${newendpoint}/add_claim/${db_name}/`;
 };
 export const processClaim = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/process_claim/${db_name}/`;
+  return `${newendpoint}/process_claim/${db_name}/`;
 };
 export const getEmpClaimdata = async () => {
   const db_name = await getDbName();

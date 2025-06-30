@@ -10,9 +10,10 @@ import {
   Alert,
   Dimensions,
   Platform,
-  ScrollView
+  Animated,
+  Easing
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
@@ -23,15 +24,20 @@ import Loader from '../components/old_components/Loader';
 import HeaderComponent from '../components/HeaderComponent';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DropdownPicker from '../components/DropdownPicker';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 400;
+const ITEMS_PER_PAGE = 10; // Number of items to show per page
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     padding: 10,
-    backgroundColor: '#fff',
   },
   claimCard: {
     backgroundColor: '#ffffff',
@@ -46,7 +52,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     marginHorizontal: 10,
-    maxWidth: '100%', // Ensure card doesn't exceed screen width
+    maxWidth: '100%',
   },
   claimStatusContainer: {
     flexDirection: 'row',
@@ -80,6 +86,8 @@ const styles = StyleSheet.create({
   },
   viewButton: {
     backgroundColor: '#e9ecef',
+    borderWidth: 1,
+    borderColor: '#ced4da',
   },
   returnButton: {
     backgroundColor: '#ffc107',
@@ -92,13 +100,16 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   actionButton: {
-    backgroundColor: '#ffc107',
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
     minWidth: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 40, // Fixed height for consistency
   },
   buttonText: {
     fontSize: 14,
@@ -108,37 +119,88 @@ const styles = StyleSheet.create({
   viewButtonText: {
     color: '#495057',
   },
-  actionButtonText: {
-    color: '#fff',
+  claimHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  searchContainer: {
+  claimIdContainer: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  claimIdText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c5ce7',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e9ecef',
-    padding: 12,
-    borderRadius: 20,
-    marginBottom: 15,
-    marginHorizontal: 10,
+    backgroundColor: '#E3F2FD', // Default background (for submitted)
   },
-  searchInput: {
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+    textTransform: 'uppercase',
+  },
+  claimBody: {
+    marginBottom: 12,
+  },
+  claimRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  claimLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    marginRight: 4,
+    width: 80,
+  },
+  claimValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
     flex: 1,
-    fontSize: 16,
-    color: '#495057',
-    paddingLeft: 10,
   },
-  leftContainer: {
-    flex: 1,
+  amountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
-  rightContainer: {
-    alignItems: 'flex-end',
-    minWidth: 100,
+  amountLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  amountValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#6c5ce7',
+  },
+  actionButtonText: {
+    color: '#fff',
   },
   buttonContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 10,
+    marginTop: 12,
     gap: 8,
-    justifyContent: 'center', // Center buttons when they wrap
+    justifyContent: 'center',
   },
   buttonBase: {
     paddingVertical: 10,
@@ -159,6 +221,109 @@ const styles = StyleSheet.create({
   buttonIcon: {
     marginRight: 6,
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 15,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#495057',
+    paddingLeft: 10,
+    paddingVertical: 8,
+  },
+  filterButton: {
+    backgroundColor: '#6c5ce7',
+    padding: 10,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
+  filterIcon: {
+    transform: [{ rotate: '0deg' }],
+  },
+  filterContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f1f1f1',
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  filterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#495057',
+  },
+  dropdownContainer: {
+    marginBottom: 15,
+  },
+  clearFiltersButton: {
+    backgroundColor: '#6c5ce7',
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearFiltersText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  leftContainer: {
+    flex: 1,
+  },
+  rightContainer: {
+    alignItems: 'flex-end',
+    minWidth: 100,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  paginationButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    backgroundColor: '#6c5ce7',
+  },
+  paginationButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  paginationInfo: {
+    marginHorizontal: 10,
+    fontSize: 14,
+    color: '#495057',
+  },
 });
 
 const ApproveClaim = () => {
@@ -176,6 +341,22 @@ const ApproveClaim = () => {
   const router = useRouter();
   const requestData = 'APPROVE';
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // Dropdown states
+  const [selectedClaimId, setSelectedClaimId] = useState(null);
+  const [claimIdItems, setClaimIdItems] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employeeItems, setEmployeeItems] = useState([]);
+  const [selectedItemName, setSelectedItemName] = useState(null);
+  const [itemNameItems, setItemNameItems] = useState([]);
+
+  // Filter visibility
+  const [showFilters, setShowFilters] = useState(false);
+  const rotateAnim = useState(new Animated.Value(0))[0];
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -183,14 +364,12 @@ const ApproveClaim = () => {
   }, [navigation]);
 
   useEffect(() => {
-    // First fetch employee info
     const fetchEmployeeInfo = async () => {
       setLoading(true);
       try {
         const employeeId = profile?.id;
         setEmp(employeeId);
         
-        // Now that we have the employee ID, fetch claim details
         if (employeeId) {
           await fetchClaimDetails(employeeId);
         }
@@ -205,12 +384,57 @@ const ApproveClaim = () => {
     fetchEmployeeInfo();
   }, []);
 
+  useEffect(() => {
+    // Initialize dropdown items when claimData changes
+    if (claimData.length > 0) {
+      // Filter out claims with expense_status "N"
+      const filteredClaims = claimData.filter(item => item.expense_status !== 'N');
+      
+      const uniqueClaimIds = [...new Set(filteredClaims.map(item => item.claim_id))];
+      setClaimIdItems(uniqueClaimIds.map(id => ({ label: id, value: id })));
+
+      const uniqueEmployees = [...new Set(filteredClaims.map(item => item.employee_name))];
+      setEmployeeItems(uniqueEmployees.map(name => ({ 
+        label: name, 
+        value: name 
+      })));
+
+      const uniqueItemNames = [...new Set(filteredClaims.map(item => item.item_name))];
+      setItemNameItems(uniqueItemNames.map(name => ({ 
+        label: name, 
+        value: name 
+      })));
+
+      // Update filtered data and pagination
+      applyFilters(searchQuery, selectedClaimId, selectedEmployee, selectedItemName);
+    }
+  }, [claimData]);
+
+  const toggleFilters = () => {
+    Animated.timing(rotateAnim, {
+      toValue: showFilters ? 0 : 1,
+      duration: 300,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+    setShowFilters(!showFilters);
+  };
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
   const fetchClaimDetails = async (employeeId) => {
     setIsLoading(true);
     try {
       const res = await getEmpClaim(requestData, employeeId);
-      setClaimData(res.data);
-      setFilteredData(res.data);
+      // Filter out claims with expense_status "N"
+      const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
+      setClaimData(filteredClaims);
+      setFilteredData(filteredClaims);
+      // Calculate total pages
+      setTotalPages(Math.ceil(filteredClaims.length / ITEMS_PER_PAGE));
     } catch (error) {
       console.error("Error fetching claim details:", error);
     } finally {
@@ -235,12 +459,63 @@ const ApproveClaim = () => {
 
   const handleSearch = (text) => {
     setSearchQuery(text);
-    const filtered = claimData.filter((item) => {
-      const empIdMatch = item.employee_name.match(/\[(.*?)\]/);
-      const empId = empIdMatch ? empIdMatch[1] : '';
-      return empId.includes(text);
-    });
+    applyFilters(text, selectedClaimId, selectedEmployee, selectedItemName);
+  };
+
+  const applyFilters = (searchText, claimId, employee, itemName) => {
+    let filtered = [...claimData];
+    
+    // Filter out claims with expense_status "N"
+    filtered = filtered.filter(item => item.expense_status !== 'N');
+    
+    if (searchText) {
+      filtered = filtered.filter((item) => {
+        const empIdMatch = item.employee_name.match(/\[(.*?)\]/);
+        const empId = empIdMatch ? empIdMatch[1] : '';
+        return empId.includes(searchText);
+      });
+    }
+    
+    if (claimId) {
+      filtered = filtered.filter(item => item.claim_id === claimId);
+    }
+    
+    if (employee) {
+      filtered = filtered.filter(item => item.employee_name === employee);
+    }
+    
+    if (itemName) {
+      filtered = filtered.filter(item => item.item_name === itemName);
+    }
+    
     setFilteredData(filtered);
+    setTotalPages(Math.ceil(filtered.length / ITEMS_PER_PAGE));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handleClaimIdSelect = (value) => {
+    setSelectedClaimId(value);
+    applyFilters(searchQuery, value, selectedEmployee, selectedItemName);
+  };
+
+  const handleEmployeeSelect = (value) => {
+    setSelectedEmployee(value);
+    applyFilters(searchQuery, selectedClaimId, value, selectedItemName);
+  };
+
+  const handleItemNameSelect = (value) => {
+    setSelectedItemName(value);
+    applyFilters(searchQuery, selectedClaimId, selectedEmployee, value);
+  };
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedClaimId(null);
+    setSelectedEmployee(null);
+    setSelectedItemName(null);
+    setFilteredData(claimData.filter(item => item.expense_status !== 'N'));
+    setTotalPages(Math.ceil(claimData.filter(item => item.expense_status !== 'N').length / ITEMS_PER_PAGE));
+    setCurrentPage(1);
   };
 
   const closeModal = () => {
@@ -284,44 +559,95 @@ const ApproveClaim = () => {
     }
   };
 
-
   const handleCardPress = (claim) => {
     setSelectedClaim(claim);
     setModalVisible(true);
   };
 
+  // Get current page data
+  const getCurrentPageData = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return [...filteredData].reverse().slice(startIndex, endIndex);
+  };
+
   const renderClaimItem = ({ item }) => {
-    const status = getClaimStatus(item.expense_status);
-    const isSubmitted = status === 'SUBMITTED';
-    const isForwarded = status === 'FORWARDED';
-    const isRejected = status === 'REJECTED';
-    const isApproved = status === 'APPROVED';
-  
-    return (
-      <TouchableOpacity
-        style={styles.claimCard}
+  const status = item.expense_status;
+  const statusText = getClaimStatus(status);
+  const isSubmitted = status === 'S';
+  const isForwarded = status === 'F';
+  const isRejected = status === 'R';
+  const isApproved = status === 'A';
+
+  // Status color mapping
+  const statusStyles = {
+    S: { backgroundColor: '#E3F2FD', textColor: '#1565C0', icon: 'clock' }, // Submitted
+    A: { backgroundColor: '#E8F5E9', textColor: '#2E7D32', icon: 'check-circle' }, // Approved
+    F: { backgroundColor: '#F3E5F5', textColor: '#7B1FA2', icon: 'share-2' }, // Forwarded
+    R: { backgroundColor: '#FFEBEE', textColor: '#C62828', icon: 'x-circle' }, // Rejected
+  };
+
+  const currentStatus = statusStyles[status] || statusStyles['S'];
+
+  return (
+    <View style={[styles.claimCard, {
+      borderLeftWidth: 5,
+      borderLeftColor: currentStatus.textColor
+    }]}>
+      <TouchableOpacity 
+        activeOpacity={0.9}
         onPress={() => handleCardPress(item)}
       >
-        <View style={styles.claimStatusContainer}>
-          <View style={styles.leftContainer}>
-            <Text style={styles.claimText}>{item.claim_id}</Text>
-            <Text style={styles.claimText}>Expense Date: {item.expense_date}</Text>
-            <Text style={styles.claimText}>Item Name: {item.item_name}</Text>
-            <Text style={styles.claimText}>{item.employee_name}</Text>
+        <View style={styles.claimHeader}>
+          <View style={styles.claimIdContainer}>
+            <Text style={styles.claimIdText}>{item.claim_id}</Text>
           </View>
-          <View style={styles.rightContainer}>
-            <Text style={[styles.claimText2, { 
-              color: isRejected ? '#dc3545' : isForwarded ? '#ffc107' : '#28a745' 
-            }]}>
-              {status}
+          <View style={[styles.statusBadge, { backgroundColor: currentStatus.backgroundColor }]}>
+            <Feather 
+              name={currentStatus.icon} 
+              size={14} 
+              color={currentStatus.textColor} 
+            />
+            <Text style={[styles.statusText, { color: currentStatus.textColor }]}>
+              {statusText}
             </Text>
-            <Text style={styles.claimAmountText}> ₹ {item.expense_amt}</Text>
           </View>
         </View>
-  
-        {/* Improved Button Layout */}
+
+        {/* Rest of your card content remains the same */}
+        <View style={styles.claimBody}>
+          <View style={styles.claimRow}>
+            <MaterialIcons name="date-range" size={16} color="#6c5ce7" />
+            <Text style={styles.claimLabel}>Expense Date:</Text>
+            <Text style={styles.claimValue}>{item.expense_date}</Text>
+          </View>
+
+          <View style={styles.claimRow}>
+            <MaterialIcons name="shopping-cart" size={16} color="#6c5ce7" />
+            <Text style={styles.claimLabel}>Item:</Text>
+            <Text style={styles.claimValue} numberOfLines={1} ellipsizeMode="tail">
+              {item.item_name}
+            </Text>
+          </View>
+
+          <View style={styles.claimRow}>
+            <MaterialIcons name="person" size={16} color="#6c5ce7" />
+            <Text style={styles.claimLabel}>Employee:</Text>
+            <Text style={styles.claimValue} numberOfLines={1} ellipsizeMode="tail">
+              {item.employee_name}
+            </Text>
+          </View>
+
+          <View style={styles.amountContainer}>
+            <Text style={styles.amountLabel}>Amount:</Text>
+            <Text style={[styles.amountValue, { color: currentStatus.textColor }]}>
+              ₹{parseFloat(item.expense_amt).toFixed(2)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Rest of your buttons remain the same */}
         <View style={styles.buttonContainer}>
-          {/* View File Button (always visible if file exists) */}
           {item.submitted_file_1 && (
             <TouchableOpacity 
               style={[styles.buttonBase, styles.viewButton]}
@@ -336,8 +662,7 @@ const ApproveClaim = () => {
               <Text style={[styles.buttonText, styles.viewButtonText]}>View File</Text>
             </TouchableOpacity>
           )}          
-  
-          {/* Approve Button (only show if not already approved) */}
+          
           {!isApproved && (
             <TouchableOpacity
               style={[
@@ -356,7 +681,7 @@ const ApproveClaim = () => {
                 />
               )}
               <Text style={[styles.buttonText, styles.actionButtonText]}>
-                {isSubmitted ? 'Approve' : status}
+                {isSubmitted ? 'Approve' : statusText}
               </Text>
             </TouchableOpacity>
           )}
@@ -377,19 +702,19 @@ const ApproveClaim = () => {
           )}
         </View>
       </TouchableOpacity>
-    );
-  };
+    </View>
+  );
+};
 
   if (selectedImageUrl) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={styles.safeArea}>
         <HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
         <View style={{ flex: 1 }}>
-          {/* Using ImageViewer for zoom functionality */}
           <ImageViewer
-            imageUrls={[{ url: selectedImageUrl }]} // Array of images
+            imageUrls={[{ url: selectedImageUrl }]}
             enableSwipeDown={true}
-            onSwipeDown={handleBackPress} // Close the image viewer on swipe down
+            onSwipeDown={handleBackPress}
           />
         </View>
       </SafeAreaView>
@@ -397,8 +722,11 @@ const ApproveClaim = () => {
   }
 
   return (
-    <>
-      <HeaderComponent headerTitle="Approve Claim List" onBackPress={handleBackPress} />
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <HeaderComponent 
+        headerTitle={`Approve Claim List (${filteredData.length})`} 
+        onBackPress={handleBackPress} 
+      />
       <View style={styles.container}>
         <View style={styles.searchContainer}>
           <MaterialIcons name="search" size={moderateScale(24)} color="#888" />
@@ -409,26 +737,104 @@ const ApproveClaim = () => {
             value={searchQuery}
             onChangeText={handleSearch}
           />
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={toggleFilters}
+          >
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <FontAwesome name="filter" size={20} color="white" />
+            </Animated.View>
+          </TouchableOpacity>
         </View>
+
+        {showFilters && (
+          <View style={styles.filterContainer}>
+            <View style={styles.filterHeader}>
+              <Text style={styles.filterTitle}>Filters</Text>
+              {(selectedClaimId || selectedEmployee || selectedItemName) && (
+                <TouchableOpacity onPress={clearAllFilters}>
+                  <Text style={{ color: '#6c5ce7', fontWeight: '500' }}>Clear All</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            <View style={styles.dropdownContainer}>
+              <DropdownPicker
+                label="Claim ID"
+                data={claimIdItems}
+                value={selectedClaimId}
+                setValue={handleClaimIdSelect}
+              />
+            </View>
+
+            <View style={styles.dropdownContainer}>
+              <DropdownPicker
+                label="Employee"
+                data={employeeItems}
+                value={selectedEmployee}
+                setValue={handleEmployeeSelect}
+              />
+            </View>
+
+            <View style={styles.dropdownContainer}>
+              <DropdownPicker
+                label="Item Name"
+                data={itemNameItems}
+                value={selectedItemName}
+                setValue={handleItemNameSelect}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.clearFiltersButton}
+              onPress={clearAllFilters}
+            >
+              <FontAwesome name="times" size={16} color="white" />
+              <Text style={styles.clearFiltersText}>Clear Filters</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         
         {isLoading ? (
           <Loader visible={isLoading} />
         ) : (
-          <ScrollView 
-            style={{ flex: 1 }}
-            showsVerticalScrollIndicator={false}
-            showsHorizontalScrollIndicator={false}
-          >
+          <>
             <FlatList
-              data={[...filteredData].reverse()}
+              data={getCurrentPageData()}
               renderItem={renderClaimItem}
-              keyExtractor={(item) => item.claim_id.toString()}
+              keyExtractor={(item) => item.id.toString()}
               showsVerticalScrollIndicator={false}
-              ListEmptyComponent={<EmptyMessage data={`claim`}/>}
-              contentContainerStyle={{ paddingBottom: verticalScale(20) }}
-              scrollEnabled={false}
+              ListEmptyComponent={<EmptyMessage data="claim" />}
+              contentContainerStyle={{ 
+                paddingBottom: verticalScale(20),
+                flexGrow: 1 
+              }}
             />
-          </ScrollView>
+            
+            {filteredData.length > ITEMS_PER_PAGE && (
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity
+                  style={styles.paginationButton}
+                  onPress={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <Text style={styles.paginationButtonText}>Previous</Text>
+                </TouchableOpacity>
+                
+                <Text style={styles.paginationInfo}>
+                  Page {currentPage} of {totalPages}
+                </Text>
+                
+                <TouchableOpacity
+                  style={styles.paginationButton}
+                  onPress={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  <Text style={styles.paginationButtonText}>Next</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         )}
         
         {selectedClaim && (
@@ -439,7 +845,7 @@ const ApproveClaim = () => {
           />
         )}
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
