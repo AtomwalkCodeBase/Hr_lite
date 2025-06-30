@@ -219,9 +219,9 @@ const ApproveClaimDetails = (props) => {
     : claim?.claim_id;
 
   return (
-    <>
+    <SafeAreaView style={{ flex: 1 }}>
       <HeaderComponent headerTitle={`Approve (${formattedClaimId})`} onBackPress={handleBackPress} />
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
           <View style={styles.claimDetailContainer}>
             {claim.submitted_file_1 && (
@@ -296,8 +296,8 @@ const ApproveClaimDetails = (props) => {
             message="Claim action updated successfully."
           />
         )}
-      </SafeAreaView>
-    </>
+      </View>
+    </SafeAreaView>
   );
 };
 

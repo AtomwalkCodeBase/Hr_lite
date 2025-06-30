@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet } from 'react-native';
+import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing } from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -13,7 +13,8 @@ import EmptyMessage from '../components/EmptyMessage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import DropdownPicker from '../components/DropdownPicker';
 
 const Container = styled.View`
   flex: 1;
@@ -91,6 +92,72 @@ const GroupContent = styled.View`
   margin-left: 10px;
 `;
 
+const SearchContainer = styled.View.attrs(() => ({
+  style: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+}))`
+  flex-direction: row;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  margin-horizontal: 10px;
+`;
+
+const FilterContainer = styled.View.attrs(() => ({
+  style: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+}))`
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  margin-horizontal: 10px;
+  border-width: 1px;
+  border-color: #f1f1f1;
+`;
+
+
+const FilterHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+`;
+
+const FilterTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+`;
+
+const ClearFiltersButton = styled.TouchableOpacity`
+  background-color: #6c5ce7;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ClearFiltersText = styled.Text`
+  color: white;
+  font-weight: bold;
+  margin-left: 8px;
+`;
+
 const styles = StyleSheet.create({
   icon: {
     marginLeft: 8,
@@ -98,6 +165,22 @@ const styles = StyleSheet.create({
   approvedIcon: {
     color: '#4caf50',
     marginLeft: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#495057',
+    paddingLeft: 10,
+    paddingVertical: 8,
+  },
+  filterButton: {
+    backgroundColor: '#6c5ce7',
+    padding: 10,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
+  dropdownContainer: {
+    marginBottom: 15,
   },
 });
 
@@ -121,15 +204,32 @@ const ClaimScreen = (props) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedClaimIdFilter, setSelectedClaimIdFilter] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [claimToDelete, setClaimToDelete] = useState(null);
   const navigation = useNavigation();
 
+  const statusOptions = [
+    { label: 'Submitted', value: 'S' },
+    { label: 'Approved', value: 'A' },
+    { label: 'Forwarded', value: 'F' },
+    { label: 'Rejected', value: 'R' },
+    { label: 'Back to Claimant', value: 'B' },
+  ];
+
+  const rotateAnim = useState(new Animated.Value(0))[0];
+
   useEffect(() => {
-  // Expand the last group (which will be first after reverse) by default when data loads
-  if (groupedClaims.length > 0 && Object.keys(expandedGroups).length === 0) {
-    const lastGroupClaimId = groupedClaims[groupedClaims.length - 1].claim_id;
-    setExpandedGroups({ [lastGroupClaimId]: true });
-  }
-}, [groupedClaims]);
+    if (groupedClaims.length > 0 && Object.keys(expandedGroups).length === 0) {
+      const lastGroupClaimId = groupedClaims[groupedClaims.length - 1].claim_id;
+      setExpandedGroups({ [lastGroupClaimId]: true });
+    }
+  }, [groupedClaims]);
 
   useEffect(() => {
     fetchEmpId();
@@ -142,31 +242,77 @@ const ClaimScreen = (props) => {
   }, [empId]);
 
   useEffect(() => {
-  // Filter claims based on active tab
-  if (activeTab === 'drafts') {
-    const drafts = allClaims.filter(claim => claim.status === 'N' || claim.expense_status === 'N'); // Include both status and expense_status checks
-    setFilteredClaims(drafts);
-    setGroupedClaims([]);
-  } else {
-    const nonDrafts = allClaims.filter(claim => claim.status !== 'N' && claim.expense_status !== 'N'); // Exclude drafts
-    setFilteredClaims(nonDrafts);
-    
-    // Group claims by claim_id for All Claims tab
-    const grouped = nonDrafts.reduce((acc, claim) => {
-      const existingGroup = acc.find(group => group.claim_id === claim.claim_id);
-      if (existingGroup) {
-        existingGroup.claims.push(claim);
-      } else {
-        acc.push({
-          claim_id: claim.claim_id,
-          claims: [claim]
-        });
-      }
-      return acc;
-    }, []);
-    setGroupedClaims(grouped);
-  }
-}, [allClaims, activeTab]);
+    filterClaims();
+  }, [allClaims, activeTab, searchQuery, selectedStatus, selectedClaimIdFilter, selectedEmployee, selectedItem]);
+
+  const toggleFilters = () => {
+    Animated.timing(rotateAnim, {
+      toValue: showFilters ? 0 : 1,
+      duration: 300,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+    setShowFilters(!showFilters);
+  };
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  const filterClaims = () => {
+    let filtered = [...allClaims];
+
+    // Filter based on tab
+    if (activeTab === 'drafts') {
+      filtered = filtered.filter(claim => claim.status === 'N' || claim.expense_status === 'N');
+    } else {
+      filtered = filtered.filter(claim => claim.status !== 'N' && claim.expense_status !== 'N');
+    }
+
+    // Apply other filters
+    if (searchQuery) {
+      filtered = filtered.filter(claim => 
+        claim.claim_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        claim.employee_name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (selectedStatus) {
+      filtered = filtered.filter(claim => claim.expense_status === selectedStatus);
+    }
+
+    if (selectedClaimIdFilter) {
+      filtered = filtered.filter(claim => claim.claim_id === selectedClaimIdFilter);
+    }
+
+    if (selectedEmployee) {
+      filtered = filtered.filter(claim => claim.employee_name === selectedEmployee);
+    }
+
+    if (selectedItem) {
+      filtered = filtered.filter(claim => claim.item_name === selectedItem);
+    }
+
+    setFilteredClaims(filtered);
+
+    // Group claims for "all" tab
+    if (activeTab === 'all') {
+      const grouped = filtered.reduce((acc, claim) => {
+        const existingGroup = acc.find(group => group.claim_id === claim.claim_id);
+        if (existingGroup) {
+          existingGroup.claims.push(claim);
+        } else {
+          acc.push({
+            claim_id: claim.claim_id,
+            claims: [claim]
+          });
+        }
+        return acc;
+      }, []);
+      setGroupedClaims(grouped);
+    }
+  };
 
   const fetchEmpId = async () => {
     try {
@@ -210,25 +356,33 @@ const ClaimScreen = (props) => {
     setModalVisible(true);
   };
 
+  const handleDeleteClaim = async () => {
+    if (!claimToDelete) return;
+    
+    setIsLoading(true);
+    const claimPayload = {
+      claim_id: claimToDelete.claim_id,
+      call_mode: "DELETE",
+    };
 
-  const handleDeleteClaim = async (claimId) => {
-  setIsLoading(true);
-  const claimPayload = {
-    claim_id: claimId,  // Use the passed claimId
-    call_mode: "DELETE",
+    try {
+      await postClaimAction(claimPayload);
+      Alert.alert('Success', 'Claim deleted successfully!');
+      fetchClaimDetails();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete claim.');
+      console.error('Error deleting claim:', error);
+    } finally {
+      setIsLoading(false);
+      setShowDeleteConfirm(false);
+      setClaimToDelete(null);
+    }
   };
 
-  try {
-    await postClaimAction(claimPayload);
-    Alert.alert('Success', 'Draft deleted successfully!');
-    fetchClaimDetails(); // Refresh the data
-  } catch (error) {
-    Alert.alert('Action Failed', 'Failed to delete draft.');
-    console.error('Error deleting draft:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const promptDeleteClaim = (claim) => {
+    setClaimToDelete(claim);
+    setShowDeleteConfirm(true);
+  };
 
   const closeModal = () => {
     setModalVisible(false);
@@ -242,23 +396,20 @@ const ClaimScreen = (props) => {
   };
 
   const handleSubmitDrafts = () => {
-  if (filteredClaims.length === 0) {
-    Alert.alert('No Drafts', 'There are no draft claims to submit.');
-    return;
-  }
-  
-  // Check if all drafts have the same claim_id
-  const uniqueClaimIds = [...new Set(filteredClaims.map(claim => claim.claim_id))];
-  if (uniqueClaimIds.length > 1) {
-    Alert.alert('Error', 'Cannot submit drafts from different claims together.');
-    return;
-  }
-  
-  setSelectedClaimId(uniqueClaimIds[0]);
-  setShowConfirmModal(true);
-};
-
-console.log("Claims==",allClaims)
+    if (filteredClaims.length === 0) {
+      Alert.alert('No Drafts', 'There are no draft claims to submit.');
+      return;
+    }
+    
+    const uniqueClaimIds = [...new Set(filteredClaims.map(claim => claim.claim_id))];
+    if (uniqueClaimIds.length > 1) {
+      Alert.alert('Error', 'Cannot submit drafts from different claims together.');
+      return;
+    }
+    
+    setSelectedClaimId(uniqueClaimIds[0]);
+    setShowConfirmModal(true);
+  };
 
   const confirmSubmitDrafts = async () => {
     setShowConfirmModal(false);
@@ -272,7 +423,7 @@ console.log("Claims==",allClaims)
     try {
       await postClaimAction(claimPayload);
       Alert.alert('Success', 'Drafts submitted successfully!');
-      fetchClaimDetails(); // Refresh the data
+      fetchClaimDetails();
     } catch (error) {
       Alert.alert('Action Failed', 'Failed to submit drafts.');
       console.error('Error submitting drafts:', error);
@@ -296,7 +447,6 @@ console.log("Claims==",allClaims)
     }
   };
 
-  // Update getStatusText to use expense_status
   const getStatusText = (status) => {
     switch (status) {
       case 'S':
@@ -320,7 +470,7 @@ console.log("Claims==",allClaims)
     <ClaimCard 
       claim={item}
       onPress={handleCardPress}
-      onDelete={handleDeleteClaim}
+      onDelete={() => promptDeleteClaim(item)}
       onViewFile={handleViewFile}
       getStatusText={getStatusText}
     />
@@ -334,18 +484,17 @@ console.log("Claims==",allClaims)
   };
 
   const isGroupApproved = (claims) => {
-  return claims.every(claim => claim.expense_status === 'A' && claim.status !== 'N');
-};
+    return claims.every(claim => claim.expense_status === 'A' && claim.status !== 'N');
+  };
 
   const calculateGroupTotal = (claims) => {
-  return claims.reduce((total, claim) => {
-    const amount = parseFloat(claim.expense_amt) || 0;
-    return total + amount;
-  }, 0);
-};
+    return claims.reduce((total, claim) => {
+      const amount = parseFloat(claim.expense_amt) || 0;
+      return total + amount;
+    }, 0);
+  };
 
-
-   const renderGroupedClaimItem = ({ item, index }) => {
+  const renderGroupedClaimItem = ({ item, index }) => {
     const isApproved = isGroupApproved(item.claims);
     const groupTotal = calculateGroupTotal(item.claims);
     
@@ -357,9 +506,9 @@ console.log("Claims==",allClaims)
         >
           <GroupTitleContainer>
             <GroupTitle>Claim ID: {item.claim_id}</GroupTitle>
-            {/* {isApproved && (
+            {isApproved && (
               <GroupStatus isApproved={true}>Approved</GroupStatus>
-            )} */}
+            )}
           </GroupTitleContainer>
           
           <GroupAmount isApproved={isApproved}>
@@ -383,7 +532,7 @@ console.log("Claims==",allClaims)
                 onPress={handleCardPress}
                 onViewFile={handleViewFile}
                 getStatusText={getStatusText}
-                onDelete={handleDeleteClaim}
+                onDelete={() => promptDeleteClaim(claim)}
                 style={{ marginBottom: index === item.claims.length - 1 ? 0 : 8 }}
               />
             ))}
@@ -393,8 +542,18 @@ console.log("Claims==",allClaims)
     );
   };
 
-  
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus(null);
+    setSelectedClaimIdFilter(null);
+    setSelectedEmployee(null);
+    setSelectedItem(null);
+  };
 
+  const getDropdownOptions = (key) => {
+    const uniqueValues = [...new Set(allClaims.map(item => item[key]))];
+    return uniqueValues.map(value => ({ label: value, value }));
+  };
 
   if (selectedImageUrl) {
     return (
@@ -416,7 +575,7 @@ console.log("Claims==",allClaims)
       <HeaderComponent 
         headerTitle={headerTitle} 
         onBackPress={handleBackPress}
-        icon1Name={activeTab === 'drafts' ? "add" : null}
+        icon1Name={activeTab === 'drafts' ? "add-circle" : null}
         icon1OnPress={activeTab === 'drafts' ? () => handlePress('ADD') : null}
       />
       
@@ -426,15 +585,83 @@ console.log("Claims==",allClaims)
             active={activeTab === 'all'} 
             onPress={() => setActiveTab('all')}
           >
-            <TabText active={activeTab === 'all'}>All Claims</TabText>
+            <TabText active={activeTab === 'all'}>Claims</TabText>
           </TabButton>
           <TabButton 
             active={activeTab === 'drafts'} 
             onPress={() => setActiveTab('drafts')}
           >
-            <TabText active={activeTab === 'drafts'}>Drafts</TabText>
+            <TabText active={activeTab === 'drafts'}>Draft Claims</TabText>
           </TabButton>
         </TabContainer>
+
+        <SearchContainer>
+          <MaterialIcons name="search" size={24} color="#888" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search claims..."
+            placeholderTextColor="#888"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={toggleFilters}
+          >
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <FontAwesome name="filter" size={20} color="white" />
+            </Animated.View>
+          </TouchableOpacity>
+        </SearchContainer>
+
+        {showFilters && (
+          <FilterContainer>
+            <FilterHeader>
+              <FilterTitle>Filters</FilterTitle>
+              {(searchQuery || selectedStatus || selectedClaimIdFilter || selectedEmployee || selectedItem) && (
+                <TouchableOpacity onPress={clearAllFilters}>
+                  <Text style={{ color: '#6c5ce7', fontWeight: '500' }}>Clear All</Text>
+                </TouchableOpacity>
+              )}
+            </FilterHeader>
+
+            {activeTab !== 'drafts' && (
+              <View style={styles.dropdownContainer}>
+                <DropdownPicker
+                  label="Status"
+                  data={statusOptions}
+                  value={selectedStatus}
+                  setValue={setSelectedStatus}
+                />
+              </View>
+            )}
+
+            <View style={styles.dropdownContainer}>
+              <DropdownPicker
+                label="Claim ID"
+                data={getDropdownOptions('claim_id')}
+                value={selectedClaimIdFilter}
+                setValue={setSelectedClaimIdFilter}
+              />
+            </View>
+
+            
+
+            <View style={styles.dropdownContainer}>
+              <DropdownPicker
+                label="Item Name"
+                data={getDropdownOptions('item_name')}
+                value={selectedItem}
+                setValue={setSelectedItem}
+              />
+            </View>
+
+            <ClearFiltersButton onPress={clearAllFilters}>
+              <FontAwesome name="times" size={16} color="white" />
+              <ClearFiltersText>Clear Filters</ClearFiltersText>
+            </ClearFiltersButton>
+          </FilterContainer>
+        )}
 
         {activeTab === 'all' ? (
           <FlatList
@@ -476,7 +703,6 @@ console.log("Claims==",allClaims)
           </ButtonWrapper>
         )}
 
-
         {selectedClaim && (
           <ModalComponent
             isVisible={isModalVisible}
@@ -492,6 +718,16 @@ console.log("Claims==",allClaims)
           onCancel={() => setShowConfirmModal(false)}
           confirmText="Yes"
           cancelText="No"
+        />
+
+        <ConfirmationModal
+          visible={showDeleteConfirm}
+          message="Are you sure you want to delete this claim?"
+          onConfirm={handleDeleteClaim}
+          onCancel={() => setShowDeleteConfirm(false)}
+          confirmText="Delete"
+          cancelText="Cancel"
+          confirmColor="#ff4444"
         />
       </Container>
       <Loader visible={isLoading} />
