@@ -82,9 +82,7 @@ const HelpScreen = (props) => {
   };
 
   const handleBackPress = () => {
-    router.push({
-      pathname: 'MoreScreen' 
-    });
+    router.back();
   };
 
   const handleRefresh = () => {

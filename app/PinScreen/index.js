@@ -150,6 +150,12 @@ const AuthScreen = () => {
         }
     };
 
+    const handlePressForget = () => {
+    router.push({
+      pathname: 'ForgetPin',
+    });
+};
+
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar backgroundColor="#a970ff" barStyle="light-content" />
@@ -299,6 +305,12 @@ const AuthScreen = () => {
                                 <Text style={styles.backButtonText}>Back to Login Options</Text>
                             </TouchableOpacity>
                         )}
+                            <TouchableOpacity 
+                                            onPress={handlePressForget}
+                                            style={styles.forgetPinButton}
+                                          >
+                                            <Text style={styles.forgetPinText}>Forgot PIN?</Text>
+                                          </TouchableOpacity>
                     </View>
                 ) : (
                     <View style={styles.card}>
@@ -635,6 +647,18 @@ noteText: {
 bulletPoint: {
     fontWeight: 'bold',
     color: '#FFA726',
+},
+  forgetPinButton: {
+  marginTop: scaleHeight(20),
+  alignSelf: 'center',
+  paddingVertical: scaleHeight(10),
+  paddingHorizontal: scaleWidth(20),
+},
+forgetPinText: {
+  color: '#6B8CBE',
+  fontSize: scaleWidth(16),
+  fontWeight: '500',
+  textDecorationLine: 'underline',
 },
 });
 

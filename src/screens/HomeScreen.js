@@ -1,22 +1,5 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  StatusBar, 
-  TouchableOpacity, 
-  ScrollView, 
-  Dimensions,
-  StyleSheet,
-  SafeAreaView,
-  Platform,
-  RefreshControl,
-  Animated,
-  Alert,
-  FlatList,
-  TextInput,
-  ActivityIndicator
-} from 'react-native';
+import {  View,  Text,  Image,  StatusBar,  TouchableOpacity,  ScrollView,  Dimensions, StyleSheet, SafeAreaView, Platform, RefreshControl, Animated, Alert, FlatList, TextInput, ActivityIndicator} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppContext } from '../../context/AppContext';
 import { getCompanyInfo, getEmployeeInfo, getProfileInfo } from '../services/authServices';
@@ -27,21 +10,14 @@ import * as Location from 'expo-location';
 import moment from 'moment';
 import { useLayoutEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { 
-  MaterialIcons, 
-  FontAwesome5, 
-  Ionicons, 
-  Feather, 
-  MaterialCommunityIcons,
-  AntDesign,
-  FontAwesome6
-} from '@expo/vector-icons';
+import {  MaterialIcons,  FontAwesome5,  Feather,  MaterialCommunityIcons,} from '@expo/vector-icons';
 import { getEmpAttendance, getEvents, postCheckIn } from '../services/productServices';
 import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfirmationModal from '../components/ConfirmationModal';
+import Sidebar from '../components/Sidebar';
 
 const { width, height } = Dimensions.get('window');
 
@@ -84,13 +60,14 @@ const HomePage = ({ navigation }) => {
   const [eventLoading, setEventLoading] = useState(true);
   
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(()=>{
   setReload(true)
   },[])
 
 
-
+ 
   useLayoutEffect(() => {
     if (navigation) {
       navigation.setOptions({
@@ -381,7 +358,7 @@ const HomePage = ({ navigation }) => {
     let location = null;
     let retries = 0;
   
-    while (!location && retries < 5) {
+    while (!location && retries < 1) {
       try {
         location = await Location.getCurrentPositionAsync({});
       } catch (error) {
@@ -527,8 +504,9 @@ const HomePage = ({ navigation }) => {
                           (attendance && attendance.geo_status === 'O') ||
                           previousDayUnchecked;
                           
-  const isCheckOutDisabled = !employeeData || 
-                           (!previousDayUnchecked && (!attendance || attendance.end_time));
+const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
+const isCheckOutDisabled = !employeeData || (!previousDayUnchecked && hasCheckedOut);
+
 
                           
 
@@ -637,6 +615,11 @@ const HomePage = ({ navigation }) => {
           end={[1, 1]}
           style={styles.headerGradient}
         >
+          <View style={styles.menuIconWrapper}>
+            <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.menuIconButton}>
+              <Feather name="menu" size={28} color="#fff" />
+            </TouchableOpacity>
+          </View>
           <View style={styles.headerTop}>
             <View style={styles.headerTopContent}>
               <View style={styles.companySection}>
@@ -922,6 +905,9 @@ const HomePage = ({ navigation }) => {
         confirmText="Check Out"
         cancelText="Cancel"
       />
+
+      {/* Sidebar overlay (should be last to overlay everything) */}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
     </SafeAreaView>
   );
 };
@@ -1292,18 +1278,6 @@ disabledButtonText: {
     fontSize: width * 0.035,
     fontWeight: '500',
   },
-  // modalBackdrop: {
-  //   flex: 1,
-  //   backgroundColor: 'rgba(0,0,0,0.5)',
-  //   justifyContent: 'center',
-  //   alignItems: 'center',
-  // },
-  // modalContent: {
-  //   width: '90%',
-  //   backgroundColor: '#fff',
-  //   borderRadius: 12,
-  //   padding: 20,
-  // },
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',
@@ -1349,6 +1323,33 @@ disabledButtonText: {
     color: '#fff',
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
+  },
+  menuIconWrapper: {
+    // marginTop: 30,
+    position: 'absolute',
+    left: 10,
+    top: 10,
+    zIndex: 50,
+    backgroundColor: 'rgba(169,112,255,0.7)',
+    borderRadius: 20,
+    // padding: 2,
+    elevation: 7,
+  },
+  menuIconButton: {
+    marginTop: 30,
+    padding: 6,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sidebarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    // elevation: 9999,
   },
 });
 

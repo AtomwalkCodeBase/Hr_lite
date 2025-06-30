@@ -15,7 +15,7 @@ import { AntDesign, Feather, FontAwesome, MaterialCommunityIcons, MaterialIcons 
 import { getEmplyoeeList } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -23,6 +23,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const EmployeeListScreen = () => {
 	const navigate = useNavigation();
+	const route = useRouter();
   const [employees, setEmployees] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -80,10 +81,7 @@ const handleTimesheetPress = (employee) => {
 		  const res = await getEmplyoeeList();
 		const EmpId = await AsyncStorage.getItem('empId');
 		let filteredData = res.data;
-		if (EmpId) {
-			filteredData = res.data.filter(emp => emp.emp_id !== EmpId);
-		}
-		setEmployees(filteredData)
+		setEmployees(res.data)
 		} catch (err) {
 		  console.error("Error fetching activities:", err);
 		  Alert.alert('Error', 'Failed to fetch activities');
@@ -126,13 +124,11 @@ const handleTimesheetPress = (employee) => {
           <View style={styles.employeeDetails}>
             <Text style={styles.employeeName}>{employee.name}</Text>
             <Text style={styles.employeeId}>{employee.emp_id}</Text>
-            {employee.job_title && 
             <View style={styles.badgeContainer}>
               <View style={styles.gradeBadge}>
-                <Text style={styles.badgeText}>{employee.job_title}</Text>
+                <Text style={styles.badgeText}>{employee.grade_name}</Text>
               </View>
             </View>
-}
           </View>
         </View>
       </View>

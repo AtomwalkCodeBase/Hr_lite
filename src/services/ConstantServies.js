@@ -158,7 +158,7 @@ export const getactivityList = async () => {
 
 export const getProjectLists = async () => {
   const db_name = await getDbName();
-  return `${newendpoint}/get_project_code_list/${db_name}/`;
+  return `${newendpoint}/get_project_list/${db_name}/`;
 }
 
 export const getTimeSheetList = async () => {

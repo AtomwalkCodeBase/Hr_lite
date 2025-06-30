@@ -38,8 +38,8 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             <DropdownPicker
               label="Project *"
               data={projects.map((project) => ({
-                label: project[0],
-                value: project[0],
+                label: project.title,
+                value: project.project_code,
               }))}
               value={formData.project}
               setValue={(value) => setFormData((prev) => ({ ...prev, project: value }))}
@@ -87,15 +87,29 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             />
           </View>
           {editingTask ? (
+            <View style={{flexDirection: "row", gap: 10}}>
             <TouchableOpacity
               style={[styles.addButton, styles.addOnlyButton]}
               onPress={() => onSubmit("UPDATE")}
               disabled={isLoading}
             >
               <Text style={styles.addButtonText}>
-                {isLoading ? "UPDATING..." : "UPDATE"}
+                {/* {isLoading ? "UPDATING..." : "UPDATE"} */}
+                Update
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.addButton, styles.addOnlyButton]}
+              onPress={() => onSubmit("SUBMIT")}
+              disabled={isLoading}
+            >
+              <Text style={styles.addButtonText}>
+                {/* {isLoading ? "UPDATING..." : "UPDATE"} */}
+                Submit and Update
+              </Text>
+            </TouchableOpacity>
+            </View>
           ) : (
             <View style={styles.addButtonsContainer}>
               <TouchableOpacity
@@ -106,7 +120,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               >
                 <Text style={styles.addButtonText}>
                   {/* {isLoading ? "SAVING..." : "SAVE"} */}
-                  SAVE
+                  Save
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity

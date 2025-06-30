@@ -7,7 +7,7 @@ import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from 
 import DatePicker from "../components/DatePicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Loader from "../components/old_components/Loader";
-import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import { router, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import HeaderComponent from "../components/HeaderComponent";
 import TimeSheetCard from "../components/TimeSheetCard";
 import TimeSheetWeekNavigation from "../components/TimeSheetWeekNavigation";
@@ -42,16 +42,22 @@ const TimeSheet = () => {
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const navigate = useNavigation();
+  const route = useRouter();
+
 
   useEffect(() => {
     (async () => {
+      const storedEmpId = await AsyncStorage.getItem('empId');
       if (employee?.emp_id) {
         setEmpId(employee.emp_id);
-        setIsSelfView(false); // viewing someone else's sheet
+        setIsSelfView(false);
+        if (storedEmpId === employee.emp_id) {
+          route.replace("TimeSheet");
+          return;
+        }
       } else {
-        const storedEmpId = await AsyncStorage.getItem('empId');
         setEmpId(storedEmpId);
-        setIsSelfView(true); // viewing your own sheet
+        setIsSelfView(true); 
       }
     })();
   }, []);
@@ -337,7 +343,7 @@ const handleApproveReject = async (task, action) => {
     getTimeSheetList();
   }, [currentWeekStart]);
 
-  const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task => task.status.toLowerCase() === 's');
+  const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task => task.status.toLowerCase() === 's') || filteredTasks.length === 0 ;
 
   // Filter tasks based on current filters
   useEffect(() => {
@@ -373,6 +379,26 @@ const handleApproveReject = async (task, action) => {
     setFilteredTasks(filtered);
   }, [tasks, filters]);
 
+  // Refactored logic for weekly submit/approve buttons
+  // Helper functions for status checks
+  const getTaskStatuses = (tasksArr) => tasksArr.map(task => (task.status || '').toLowerCase());
+  const statusesInTasks = getTaskStatuses(filteredTasks);
+  const hasStatus = (status) => statusesInTasks.includes(status);
+  const allStatus = (status) => filteredTasks.length > 0 && statusesInTasks.every(s => s === status);
+
+  // New rules for button visibility
+  const showSubmitWeeklyButton = isSelfView &&
+    filteredTasks.length > 0 &&
+    !allStatus('s') &&
+    allStatus('n') &&
+    !hasStatus('n') &&
+    !(hasStatus('r') && hasStatus('a')) &&
+    !statusesInTasks.some(s => s === 'r' || s === 'a');
+
+  const showApproveWeeklyButton = !isSelfView &&
+    filteredTasks.length > 0 &&
+    allStatus('s');
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#a970ff" barStyle="light-content" />
@@ -395,7 +421,7 @@ const handleApproveReject = async (task, action) => {
         formatDisplayDate={formatDisplayDate}
         getCurrentWeekDates={getCurrentWeekDates}
       />
-      <>
+      {/* <> */}
         {/* Task List */}
         <ScrollView
           style={styles.taskList}
@@ -444,9 +470,9 @@ const handleApproveReject = async (task, action) => {
             ))
           )}
 
-          {/* Weekly Submit Button */}
-        </ScrollView>
-                  {!isSelfView && allTasksSubmitted && (
+          </ScrollView>
+          {/* Weekly Submit/Approve Buttons (refactored) */}
+          {showApproveWeeklyButton && (
             <TouchableOpacity
               style={styles.weeklySubmitButton}
               onPress={() => handleWeeklySubmit("WEEKLY_APPROVE")}
@@ -454,7 +480,7 @@ const handleApproveReject = async (task, action) => {
               <Text style={styles.weeklySubmitText}>Approve Weekly TimeSheet</Text>
             </TouchableOpacity>
           )}
-          {isSelfView && !allTasksSubmitted && (
+          {showSubmitWeeklyButton && (
             <TouchableOpacity
               style={styles.weeklySubmitButton}
               onPress={() => handleWeeklySubmit("WEEKLY_SUBMIT")}
@@ -462,7 +488,7 @@ const handleApproveReject = async (task, action) => {
               <Text style={styles.weeklySubmitText}>Submit Weekly TimeSheet</Text>
             </TouchableOpacity>
           )}
-      </>
+      {/* </> */}
 
       {/* Add/Edit Task Modal */}
       <AddEditTaskModal
@@ -514,6 +540,7 @@ const handleApproveReject = async (task, action) => {
           message={errorMessage}
           onClose={() => setIsErrorModalVisible(false)}
         />
+        <Loader visible={isLoading} />
     </SafeAreaView>
   );
 };
