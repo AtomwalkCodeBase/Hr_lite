@@ -343,8 +343,6 @@ const handleApproveReject = async (task, action) => {
     getTimeSheetList();
   }, [currentWeekStart]);
 
-  const allTasksSubmitted = filteredTasks.length > 0 && filteredTasks.every(task => task.status.toLowerCase() === 's') || filteredTasks.length === 0 ;
-
   // Filter tasks based on current filters
   useEffect(() => {
     let filtered = [...tasks];
@@ -390,8 +388,8 @@ const handleApproveReject = async (task, action) => {
   const showSubmitWeeklyButton = isSelfView &&
     filteredTasks.length > 0 &&
     !allStatus('s') &&
-    allStatus('n') &&
-    !hasStatus('n') &&
+    // allStatus('n') &&
+    hasStatus('n') &&
     !(hasStatus('r') && hasStatus('a')) &&
     !statusesInTasks.some(s => s === 'r' || s === 'a');
 

@@ -38,7 +38,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             <DropdownPicker
               label="Project *"
               data={projects.map((project) => ({
-                label: project.title,
+                label: `${project.title} (${project.project_code})`,
                 value: project.project_code,
               }))}
               value={formData.project}
@@ -120,7 +120,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               >
                 <Text style={styles.addButtonText}>
                   {/* {isLoading ? "SAVING..." : "SAVE"} */}
-                  Save
+                  Draft
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -141,7 +141,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
 
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your timesheet will be saved but not submitted. You can edit and submit it later."
+        message="Your timesheet will be in Draft. You can edit and submit it later."
         onConfirm={() => {
           onSubmit("ADD_AND_SAVE")
           setIsConfirmModalVisible(false);

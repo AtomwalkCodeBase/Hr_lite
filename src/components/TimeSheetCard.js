@@ -44,11 +44,11 @@ const TimeSheetCard = ({ task, onEdit, formatDisplayDate, isSelfView, onApprove,
       <View style={styles.taskHeader}>
         <Text style={styles.taskProject}>{task.project_code}</Text>
         <View style={styles.taskHeaderRight}>
-          {isSelfView && (
+          {/* {isSelfView && (
             <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
               <Ionicons name="create-outline" size={20} color="#a970ff" />
             </TouchableOpacity>
-          )}
+          )} */}
           <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}> 
             <MaterialIcons name={status.icon} size={14} color={status.color} /> 
             <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
@@ -67,6 +67,14 @@ const TimeSheetCard = ({ task, onEdit, formatDisplayDate, isSelfView, onApprove,
         </View>
       </View>
       {task.remarks && <Text style={styles.taskRemarks}>{task.remarks}</Text>}
+      {isSelfView && (
+            <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
+              <View style={{flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5}}>
+              <Ionicons name="create-outline" size={20} color="#a970ff" />
+              <Text style={{color: "#a970ff"}}>Edit</Text>
+              </View>
+            </TouchableOpacity>
+          )}
       {showActionButtons && (
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={() => onReject(task, 'REJECT')}>
@@ -150,6 +158,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editButton: {
+    position: "absolute",
+    right: 15,
+    bottom: 15,
     padding: 4,
     borderRadius: 6,
     backgroundColor: "#f8f4ff",
