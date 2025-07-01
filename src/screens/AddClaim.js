@@ -156,11 +156,12 @@ const AddClaim = (props) => {
     formData.append('expense_amt', claimAmount);
     formData.append('expense_date', expense_date);
     formData.append('emp_id', empId);
+    formData.append('call_mode', 'CLAIM_SAVE');
     // formData.append('call_mode', isAddMode ? 'GROUP_SUBMIT' : 'SUBMIT');
 
-    if (isAddMode) {
-      formData.append('call_mode', 'CLAIM_SAVE');
-    }
+    // if (isAddMode) {
+    //   formData.append('call_mode', 'CLAIM_SAVE');
+    // }
     if (project) {
       formData.append('project', project);
     }

@@ -428,7 +428,7 @@ const ApproveClaim = () => {
   const fetchClaimDetails = async (employeeId) => {
     setIsLoading(true);
     try {
-      const res = await getEmpClaim(requestData, employeeId);
+      const res = await getEmpClaim(requestData, employeeId, 'CY');
       // Filter out claims with expense_status "N"
       const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
       setClaimData(filteredClaims);

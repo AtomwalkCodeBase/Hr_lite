@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing } from 'react-native';
+import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing, Dimensions } from 'react-native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -15,6 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import DropdownPicker from '../components/DropdownPicker';
+import FilterModal from '../components/FilterModal';
+
+const { width } = Dimensions.get('window');
+
 
 const Container = styled.View`
   flex: 1;
@@ -61,28 +65,45 @@ const GroupHeader = styled.TouchableOpacity`
 `;
 
 const GroupTitleContainer = styled.View`
+  flex-direction: column;
+  flex: 1;
+`;
+
+const GroupTitleRow = styled.View`
   flex-direction: row;
   align-items: center;
-  flex: 1;
+  margin-bottom: 4px;
 `;
 
 const GroupTitle = styled.Text`
   font-weight: bold;
   color: #333;
+  font-size: ${width < 400 ? 14 : 16}px;
+  max-width: ${width * 0.6}px;
 `;
 
 const GroupStatus = styled.Text`
-  font-size: 12px;
+  font-size: ${width < 400 ? 10 : 12}px;
   color: ${props => props.isApproved ? '#4caf50' : '#666'};
   margin-left: 8px;
   font-style: italic;
 `;
 
+const GroupAmountContainer = styled.View`
+  flex-direction: column;
+  align-items: flex-end;
+`;
+
 const GroupAmount = styled.Text`
-  font-size: 14px;
+  font-size: ${width < 400 ? 14 : 16}px;
   font-weight: bold;
   color: ${props => props.isApproved ? '#4caf50' : '#333'};
-  margin-right: 8px;
+`;
+
+const GroupDate = styled.Text`
+  font-size: ${width < 400 ? 10 : 12}px;
+  color: #666;
+  margin-top: 2px;
 `;
 
 const GroupContent = styled.View`
@@ -127,7 +148,6 @@ const FilterContainer = styled.View.attrs(() => ({
   border-width: 1px;
   border-color: #f1f1f1;
 `;
-
 
 const FilterHeader = styled.View`
   flex-direction: row;
@@ -182,12 +202,23 @@ const styles = StyleSheet.create({
   dropdownContainer: {
     marginBottom: 15,
   },
+  groupHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    flexWrap: 'wrap',
+  },
+  groupAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
+  },
 });
 
 const ClaimScreen = (props) => {
   const {
     headerTitle = "My Claim",
-    buttonLabel = "Apply Claim",
+    buttonLabel = "Add Claim",
     requestData = 'GET',
   } = props.data;
 
@@ -212,15 +243,45 @@ const ClaimScreen = (props) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const navigation = useNavigation();
+  const period = "CY";
 
-  const statusOptions = [
+   const statusOptions = [
     { label: 'Submitted', value: 'S' },
     { label: 'Approved', value: 'A' },
     { label: 'Forwarded', value: 'F' },
     { label: 'Rejected', value: 'R' },
     { label: 'Back to Claimant', value: 'B' },
   ];
+  const getDropdownOptions = (key) => {
+    const uniqueValues = [...new Set(allClaims.map(item => item[key]))];
+    return uniqueValues.map(value => ({ label: value, value }));
+  };
+
+  const filterConfigs = [
+    {
+      label: "Status",
+      options: statusOptions,
+      value: selectedStatus,
+      setValue: setSelectedStatus,
+      show: activeTab !== 'drafts'
+    },
+    {
+      label: "Claim ID",
+      options: getDropdownOptions('claim_id'),
+      value: selectedClaimIdFilter,
+      setValue: setSelectedClaimIdFilter
+    },
+    {
+      label: "Item Name",
+      options: getDropdownOptions('item_name'),
+      value: selectedItem,
+      setValue: setSelectedItem
+    }
+  ];
+
+  const activeFilterConfigs = filterConfigs.filter(config => config.show !== false);
 
   const rotateAnim = useState(new Animated.Value(0))[0];
 
@@ -242,6 +303,28 @@ const ClaimScreen = (props) => {
   }, [empId]);
 
   useEffect(() => {
+    // Check if there are any draft claims and set active tab accordingly
+    if (allClaims.length > 0) {
+      const hasDrafts = allClaims.some(claim => claim.status === 'N' || claim.expense_status === 'N');
+      if (hasDrafts) {
+        setActiveTab('drafts');
+      }
+
+      // Check if there's exactly one draft claim and automatically open edit mode
+      const draftClaims = allClaims.filter(claim => claim.status === 'N' || claim.expense_status === 'N');
+      if (draftClaims.length === 1) {
+        router.push({
+          pathname: 'ClaimApply',
+          params: { 
+            mode: 'EDIT',
+            claimData: JSON.stringify(draftClaims[0])
+          }
+        });
+      }
+    }
+  }, [allClaims]);
+
+  useEffect(() => {
     filterClaims();
   }, [allClaims, activeTab, searchQuery, selectedStatus, selectedClaimIdFilter, selectedEmployee, selectedItem]);
 
@@ -255,10 +338,10 @@ const ClaimScreen = (props) => {
     setShowFilters(!showFilters);
   };
 
-  const rotateInterpolate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
+  // const rotateInterpolate = rotateAnim.interpolate({
+  //   inputRange: [0, 1],
+  //   outputRange: ['0deg', '180deg'],
+  // });
 
   const filterClaims = () => {
     let filtered = [...allClaims];
@@ -325,12 +408,14 @@ const ClaimScreen = (props) => {
 
   const fetchClaimDetails = () => {
     setIsLoading(true);
-    getEmpClaim(requestData, empId).then((res) => {
+    getEmpClaim(requestData, empId, period).then((res) => {
       setAllClaims(res.data || []);
       setIsLoading(false);
-    }).catch((err) => {
+    }).catch((error) => {
       setIsLoading(false);
-      console.error("Error fetching claim data:", err);
+      // console.error("Error fetching claim data:", error.response?.data);
+      console.error("Error fetching claim data:", error);
+
     });
   };
 
@@ -503,24 +588,29 @@ const ClaimScreen = (props) => {
         <GroupHeader 
           onPress={() => toggleGroup(item.claim_id)}
           isApproved={isApproved}
+          activeOpacity={0.7}
         >
-          <GroupTitleContainer>
-            <GroupTitle>Claim ID: {item.claim_id}</GroupTitle>
-            {isApproved && (
-              <GroupStatus isApproved={true}>Approved</GroupStatus>
-            )}
-          </GroupTitleContainer>
-          
-          <GroupAmount isApproved={isApproved}>
-            ₹{groupTotal.toFixed(2)}
-          </GroupAmount>
-          
-          <Ionicons 
-            name={expandedGroups[item.claim_id] ? 'chevron-up' : 'chevron-down'} 
-            size={20} 
-            color={isApproved ? '#4caf50' : '#666'} 
-            style={styles.icon}
-          />
+          <View style={styles.groupHeaderContent}>
+            <GroupTitleContainer>
+              <GroupTitle>Claim ID: {item.claim_id}</GroupTitle>
+              {isApproved && (
+                <GroupStatus isApproved={true}>Approved</GroupStatus>
+              )}
+            </GroupTitleContainer>
+            
+            <View style={styles.groupAmountContainer}>
+              <GroupAmount isApproved={isApproved}>
+                ₹{groupTotal.toFixed(2)}
+              </GroupAmount>
+              
+              <Ionicons 
+                name={expandedGroups[item.claim_id] ? 'chevron-up' : 'chevron-down'} 
+                size={20} 
+                color={isApproved ? '#4caf50' : '#666'} 
+                style={styles.icon}
+              />
+            </View>
+          </View>
         </GroupHeader>
         
         {expandedGroups[item.claim_id] && (
@@ -533,7 +623,10 @@ const ClaimScreen = (props) => {
                 onViewFile={handleViewFile}
                 getStatusText={getStatusText}
                 onDelete={() => promptDeleteClaim(claim)}
-                style={{ marginBottom: index === item.claims.length - 1 ? 0 : 8 }}
+                style={{ 
+                  marginBottom: index === item.claims.length - 1 ? 0 : 8,
+                  marginHorizontal: width < 400 ? 2 : 8
+                }}
               />
             ))}
           </GroupContent>
@@ -550,10 +643,10 @@ const ClaimScreen = (props) => {
     setSelectedItem(null);
   };
 
-  const getDropdownOptions = (key) => {
-    const uniqueValues = [...new Set(allClaims.map(item => item[key]))];
-    return uniqueValues.map(value => ({ label: value, value }));
-  };
+  // const getDropdownOptions = (key) => {
+  //   const uniqueValues = [...new Set(allClaims.map(item => item[key]))];
+  //   return uniqueValues.map(value => ({ label: value, value }));
+  // };
 
   if (selectedImageUrl) {
     return (
@@ -575,8 +668,10 @@ const ClaimScreen = (props) => {
       <HeaderComponent 
         headerTitle={headerTitle} 
         onBackPress={handleBackPress}
-        icon1Name={activeTab === 'drafts' ? "add-circle" : null}
-        icon1OnPress={activeTab === 'drafts' ? () => handlePress('ADD') : null}
+        icon2Name={activeTab === 'drafts' ? "add-circle" : null}
+        icon2OnPress={activeTab === 'drafts' ? () => handlePress('ADD') : null}
+        icon1Name="filter"
+        icon1OnPress={() => setShowFilterModal(true)}
       />
       
       <Container>
@@ -595,73 +690,7 @@ const ClaimScreen = (props) => {
           </TabButton>
         </TabContainer>
 
-        <SearchContainer>
-          <MaterialIcons name="search" size={24} color="#888" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search claims..."
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={toggleFilters}
-          >
-            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-              <FontAwesome name="filter" size={20} color="white" />
-            </Animated.View>
-          </TouchableOpacity>
-        </SearchContainer>
-
-        {showFilters && (
-          <FilterContainer>
-            <FilterHeader>
-              <FilterTitle>Filters</FilterTitle>
-              {(searchQuery || selectedStatus || selectedClaimIdFilter || selectedEmployee || selectedItem) && (
-                <TouchableOpacity onPress={clearAllFilters}>
-                  <Text style={{ color: '#6c5ce7', fontWeight: '500' }}>Clear All</Text>
-                </TouchableOpacity>
-              )}
-            </FilterHeader>
-
-            {activeTab !== 'drafts' && (
-              <View style={styles.dropdownContainer}>
-                <DropdownPicker
-                  label="Status"
-                  data={statusOptions}
-                  value={selectedStatus}
-                  setValue={setSelectedStatus}
-                />
-              </View>
-            )}
-
-            <View style={styles.dropdownContainer}>
-              <DropdownPicker
-                label="Claim ID"
-                data={getDropdownOptions('claim_id')}
-                value={selectedClaimIdFilter}
-                setValue={setSelectedClaimIdFilter}
-              />
-            </View>
-
-            
-
-            <View style={styles.dropdownContainer}>
-              <DropdownPicker
-                label="Item Name"
-                data={getDropdownOptions('item_name')}
-                value={selectedItem}
-                setValue={setSelectedItem}
-              />
-            </View>
-
-            <ClearFiltersButton onPress={clearAllFilters}>
-              <FontAwesome name="times" size={16} color="white" />
-              <ClearFiltersText>Clear Filters</ClearFiltersText>
-            </ClearFiltersButton>
-          </FilterContainer>
-        )}
+        
 
         {activeTab === 'all' ? (
           <FlatList
@@ -728,6 +757,14 @@ const ClaimScreen = (props) => {
           confirmText="Delete"
           cancelText="Cancel"
           confirmColor="#ff4444"
+        />
+
+        <FilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onClearFilters={clearAllFilters}
+          filterConfigs={activeFilterConfigs}
+          modalTitle="Filter Claims"
         />
       </Container>
       <Loader visible={isLoading} />

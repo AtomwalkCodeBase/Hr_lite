@@ -43,13 +43,16 @@ export async function postEmpLeave(leave_type) {
     return authAxios(url, data);
   }
 
-  export async function getEmpClaim(call_type, emp_id) {
+  export async function getEmpClaim(call_type, emp_id , period) {
     let data = {};
     if (call_type ){
         data['call_mode'] = call_type;
     }
     if (emp_id){
         data['emp_id'] = emp_id;
+    }
+    if (period){
+        data['period'] = period;
     }
     console.log("Data to be sent--",data)
     const url = await getEmpClaimdata();
