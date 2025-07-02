@@ -7,109 +7,163 @@ import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Loader from '../components/old_components/Loader';
 
 // Styled Components
-const Container = styled.View`
-  flex: 1;
-  padding: 20px;
-  background-color: #fff;
-`;
 const MainContainer = styled(SafeAreaView)`
   flex: 1;
-  background-color: #fff;
+  background-color: #f8f9fa;
 `;
 
-const CalendarContainer = styled.View`
+const Container = styled.View`
+  flex: 1;
+  padding: 16px;
+`;
+
+const CalendarHeader = styled.View`
+  background-color: #a970ff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  elevation: 3;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 3px;
+`;
+
+const MonthNavigation = styled.View`
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  background-color: #3f87f9;
-  padding: 10px;
-  border-radius: 5px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 `;
 
 const MonthText = styled.Text`
   color: #fff;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
-const NavButtonContainer = styled.TouchableOpacity`
-  width: 40px;
-  height: 40px;
+const NavButton = styled.TouchableOpacity`
+  width: 36px;
+  height: 36px;
   justify-content: center;
   align-items: center;
-  background-color: #fff;
-  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
 `;
 
-const WeekDays = styled.View`
+const WeekDaysContainer = styled.View`
   flex-direction: row;
   justify-content: space-around;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  background-color: #f8f9fa;
+  padding: 8px 0;
+  border-radius: 8px;
 `;
 
 const WeekDayText = styled.Text`
   font-size: 14px;
-  font-weight: bold;
-  color: #777;
+  font-weight: 600;
+  color: #6c757d;
+  width: 14.2%;
+  text-align: center;
 `;
 
-const Calendar = styled.View`
+const CalendarGrid = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 8px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-offset: 0px 1px;
+  shadow-opacity: 0.05;
+  shadow-radius: 2px;
 `;
 
 const DayContainer = styled.View`
   width: 14.2%;
   align-items: center;
-  margin-bottom: 15px;
+  padding: 8px 0;
 `;
 
 const DayText = styled.Text`
   font-size: 14px;
-  margin-bottom: 5px;
-  font-weight: bold;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 4px;
+`;
+
+const StatusIndicator = styled.View`
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: ${(props) =>
+    props.status === 'N' ? '#ff6b6b' :
+    props.status === 'L' ? '#ffa502' :
+    props.status === 'C' ? '#339af0' :
+    props.status === 'H' ? '#748ffc' : '#51cf66'};
+  justify-content: center;
+  align-items: center;
 `;
 
 const StatusText = styled.Text`
-  font-size: 14px;
-  font-weight: bold;
-  color: ${(props) =>
-    props.status === 'N' ? 'red' :
-    props.status === 'L' ? 'orange' :
-    props.status === 'C' ? 'blue' :
-    props.status === 'H' ? 'blue' : 'green'};
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
 `;
 
 const StatusGuideContainer = styled.View`
-  margin-top: 15px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 12px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-offset: 0px 1px;
+  shadow-opacity: 0.05;
+  shadow-radius: 2px;
 `;
 
 const StatusGuideTitle = styled.Text`
   font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 10px;
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 12px;
 `;
 
-const StatusGuideItem = styled.Text`
-  font-size: 15px;
-  margin: 2px 0;
-  font-weight: bold;
-  color: ${(props) => {
+const StatusGuideItem = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 6px;
+`;
+
+const StatusBullet = styled.View`
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background-color: ${(props) => {
     switch (props.status) {
-      case 'L': return 'orange';
-      case 'N': return 'red';
-      case 'C': return 'blue';
-      case 'P': return 'green';
-      case 'H': return 'blue';
-      default: return 'black';
+      case 'L': return '#ffa502';
+      case 'N': return '#ff6b6b';
+      case 'C': return '#339af0';
+      case 'P': return '#51cf66';
+      case 'H': return '#748ffc';
+      default: return '#adb5bd';
     }
   }};
+  margin-right: 8px;
+`;
+
+const StatusLabel = styled.Text`
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
 `;
 
 // Constants
@@ -124,8 +178,9 @@ const AttendanceStatus = ({ id: empId }) => {
   const [attendance, setAttendance] = useState({});
   const [holiday, setHoliday] = useState({});
   const navigation = useNavigation();
-  const [isErrorVisiable, setIsErrorVisiable ] = useState(false);
+  const [isErrorVisiable, setIsErrorVisiable] = useState(false);
   const [lastValidDate, setLastValidDate] = useState(null);
+  const [loading, setLoading] = useState(true);
   
   const currentMonth = date.getMonth();
   const currentYear = date.getFullYear();
@@ -142,23 +197,25 @@ const AttendanceStatus = ({ id: empId }) => {
         year: currentYear,
       };
 
-      console.log("Emp id--",empId)
-
       try {
+        setLoading(true);
         const [attendanceRes, holidayRes] = await Promise.all([
           getEmpAttendance(data),
           getEmpHoliday(data)
-          
         ]);
-        // console.log("data",holidayRes.data);
+        
+        console.log("Attendance Data:", attendanceRes.data);
+        console.log("Holiday Data:", holidayRes.data);
         
         processAttendanceData(attendanceRes.data);
         processHolidayData(holidayRes.data);
 
-         setLastValidDate(new Date(currentYear, currentMonth, 1));
+        setLastValidDate(new Date(currentYear, currentMonth, 1));
       } catch (error) {
-        setIsErrorVisiable(true);
+        setIsErrorVisible(true);
         console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -259,9 +316,9 @@ const AttendanceStatus = ({ id: empId }) => {
       days.push(
         <DayContainer key={day}>
           <DayText>{day}</DayText>
-          <StatusText status={holidayStatus || attendance[day] || 'N'}>
-            {displayStatus}
-          </StatusText>
+          <StatusIndicator status={holidayStatus || attendance[day] || 'N'}>
+            <StatusText>{displayStatus}</StatusText>
+          </StatusIndicator>
         </DayContainer>
       );
     }
@@ -269,7 +326,7 @@ const AttendanceStatus = ({ id: empId }) => {
     return days;
   };
 
- return (
+  return (
     <MainContainer>
       <HeaderComponent 
         headerTitle="Attendance Status" 
@@ -277,42 +334,59 @@ const AttendanceStatus = ({ id: empId }) => {
       />
       
       <Container>
-        <CalendarContainer>
-          <NavButtonContainer onPress={() => changeMonth(-1)}>
-            <Icon name="chevron-left" size={24} color="#3f87f9" />
-          </NavButtonContainer>
-          <MonthText>
-            {`${date.toLocaleString('default', { month: 'long' })} ${currentYear}`}
-          </MonthText>
-          <NavButtonContainer onPress={() => changeMonth(1)}>
-            <Icon name="chevron-right" size={24} color="#3f87f9" />
-          </NavButtonContainer>
-        </CalendarContainer>
+        <CalendarHeader>
+          <MonthNavigation>
+            <NavButton onPress={() => changeMonth(-1)}>
+              <Icon name="chevron-left" size={24} color="#fff" />
+            </NavButton>
+            <MonthText>
+              {`${date.toLocaleString('default', { month: 'long' })} ${currentYear}`}
+            </MonthText>
+            <NavButton onPress={() => changeMonth(1)}>
+              <Icon name="chevron-right" size={24} color="#fff" />
+            </NavButton>
+          </MonthNavigation>
 
-        <WeekDays>
-          {WEEK_DAYS.map((day, index) => (
-            <WeekDayText key={index}>{day}</WeekDayText>
-          ))}
-        </WeekDays>
+          <WeekDaysContainer>
+            {WEEK_DAYS.map((day, index) => (
+              <WeekDayText key={index}>{day}</WeekDayText>
+            ))}
+          </WeekDaysContainer>
+        </CalendarHeader>
 
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <Calendar>
+          <CalendarGrid>
             {renderCalendarDays()}
-          </Calendar>
+          </CalendarGrid>
           
           <StatusGuideContainer>
             <StatusGuideTitle>Status Guide</StatusGuideTitle>
-            <StatusGuideItem status="P">P - Present</StatusGuideItem>
-            <StatusGuideItem status="L">L - On Leave</StatusGuideItem>
-            <StatusGuideItem status="C">C - Company Holiday</StatusGuideItem>
-            <StatusGuideItem status="H">H - Weekly Holiday</StatusGuideItem>
-            <StatusGuideItem status="N">N - Not Submitted</StatusGuideItem>
+            <StatusGuideItem>
+              <StatusBullet status="P" />
+              <StatusLabel>Present</StatusLabel>
+            </StatusGuideItem>
+            <StatusGuideItem>
+              <StatusBullet status="L" />
+              <StatusLabel>On Leave</StatusLabel>
+            </StatusGuideItem>
+            <StatusGuideItem>
+              <StatusBullet status="C" />
+              <StatusLabel>Company Holiday</StatusLabel>
+            </StatusGuideItem>
+            <StatusGuideItem>
+              <StatusBullet status="H" />
+              <StatusLabel>Weekly Holiday</StatusLabel>
+            </StatusGuideItem>
+            <StatusGuideItem>
+              <StatusBullet status="N" />
+              <StatusLabel>Not Submitted</StatusLabel>
+            </StatusGuideItem>
           </StatusGuideContainer>
         </ScrollView>
 
         <ErrorModal
           visible={isErrorVisiable}
-          message="Your Holiday Calender did not setup for 2026"
+          message="Your Holiday Calendar is not setup for this period"
           onClose={() => {
             setIsErrorVisiable(false);
             if (lastValidDate) {
@@ -320,6 +394,10 @@ const AttendanceStatus = ({ id: empId }) => {
             }
           }}
         />
+         <Loader visible={loading} onTimeout={() => {
+          setIsErrorVisiable(true);
+          setLoading(false);
+        }} />
       </Container>
     </MainContainer>
   );

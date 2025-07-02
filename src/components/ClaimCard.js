@@ -151,47 +151,60 @@ const ApprovalText = styled.Text`
 const DeleteButton = styled(TouchableOpacity)`
   flex-direction: row;
   align-items: center;
-  margin-top: 12px;
-  background-color:rgb(239, 17, 51);
+  margin-top: 6px;
+  background-color: rgb(239, 17, 51);
   padding: 6px 12px;
   border-radius: 6px;
   align-self: flex-start;
 `;
 
 const DeleteButtonText = styled.Text`
-  color:rgb(255, 255, 255);
+  color: rgb(255, 255, 255);
   font-size: 14px;
   font-weight: 500;
   margin-left: 6px;
 `;
 
-const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () => {} }) => {
+const UpdateButton = styled(TouchableOpacity)`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 6px;
+  background-color: #1976D2;
+  padding: 6px 12px;
+  border-radius: 6px;
+  align-self: flex-start;
+`;
+
+const UpdateButtonText = styled.Text`
+  color: rgb(255, 255, 255);
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 6px;
+`;
+const ButtonContainer = styled.View`
+  flex-direction: column;
+  margin-left: 10px;
+  justify-content: center;
+`;
+
+const ButtonContainer2 = styled.View`
+  flex-direction: row;
+  /* margin-left: 10px; */
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () => {}, onUpdate = () => {} }) => {
   const status = claim.expense_status;
   const statusText = getStatusText(status);
 
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Claim',
-      'Are you sure you want to delete this draft claim?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => onDelete(claim.id),
-        },
-      ],
-      { cancelable: true }
-    );
-  };
+  // const handleDelete = () => onDelete(claim.id);
+  const handleUpdate = () => onUpdate(claim);
 
   return (
     <ClaimCardContainer onPress={() => onPress(claim)} status={status}>
       <HeaderRow>
-        <ClaimIdText>{claim.claim_id}</ClaimIdText>
+        <ClaimIdText>{claim.item_name}</ClaimIdText>
         <StatusBadge status={status}>
           <Feather 
             name={
@@ -214,10 +227,15 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}>
-          <DetailRow>
-            <DetailLabel>Item Name:</DetailLabel>
-            <DetailValue>{claim.item_name}</DetailValue>
+          
+           {status !== 'N' && (
+          
+            
+            <DetailRow>
+            {/* <DetailLabel>Item Name:</DetailLabel> */}
+            <DetailValue>{claim.claim_id}</DetailValue>
           </DetailRow>
+        )}
 
           <DetailRow>
             <DetailLabel>Expense Date:</DetailLabel>
@@ -230,14 +248,17 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
           </DetailRow>
         </View>
 
-        {/* Delete button aligned to right of detail rows */}
-        {status === 'N' && onDelete && (
-          <View style={{ justifyContent: 'center', marginLeft: 10 }}>
-            <DeleteButton onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={18} color="#fff" />
-              <DeleteButtonText>Delete</DeleteButtonText>
-            </DeleteButton>
-          </View>
+        {/* Action buttons aligned to right of detail rows */}
+        {status === 'N' && (
+          <ButtonContainer>
+            
+            {/* {onDelete && (
+              <DeleteButton onPress={handleDelete}>
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+                <DeleteButtonText>Delete</DeleteButtonText>
+              </DeleteButton>
+            )} */}
+          </ButtonContainer>
         )}
       </View>
 
@@ -245,12 +266,32 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
         <AmountText status={status}>₹ {claim.expense_amt}</AmountText>
       </AmountContainer>
 
-      {claim.submitted_file_1 && (
+      {/* {claim.submitted_file_1 && (
         <ViewFileButton onPress={() => onViewFile(claim.submitted_file_1)}>
           <MaterialIcons name="insert-drive-file" size={18} color="#1976D2" />
           <ViewFileText>View Attachment</ViewFileText>
         </ViewFileButton>
-      )}
+      )} */}
+      <ButtonContainer2>
+        {claim.submitted_file_1 && (
+          <ViewFileButton onPress={() => onViewFile(claim.submitted_file_1)}>
+            <MaterialIcons name="insert-drive-file" size={18} color="#1976D2" />
+            <ViewFileText>View Attachment</ViewFileText>
+          </ViewFileButton>
+        )}
+
+        {status === 'N' && onDelete && (
+          // <DeleteButton onPress={handleDelete}>
+          //   <Ionicons name="trash-outline" size={18} color="#fff" />
+          //   <DeleteButtonText>Delete</DeleteButtonText>
+          // </DeleteButton>
+          <UpdateButton onPress={handleUpdate}>
+              <Ionicons name="create-outline" size={18} color="#fff" />
+              <UpdateButtonText>Update</UpdateButtonText>
+            </UpdateButton>
+        )}
+      </ButtonContainer2>
+
 
       {(status === 'A' || status === 'R') && claim.approved_date && (
         <ApprovalInfo>

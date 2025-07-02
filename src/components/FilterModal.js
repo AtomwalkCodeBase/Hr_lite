@@ -7,7 +7,8 @@ const FilterModal = ({
   visible,
   onClose,
   onClearFilters,
-  filterConfigs = [], // Array of filter configurations
+  onApplyFilters, // New prop for applying filters
+  filterConfigs = [],
   modalTitle = "Filters",
   applyButtonText = "Apply Filters",
   clearButtonText = "Clear Filters"
@@ -59,7 +60,10 @@ const FilterModal = ({
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.applyButton, !hasSelectedFilters && styles.disabledButton]}
-                onPress={onClose}
+                onPress={() => {
+                  onApplyFilters(); // Call the apply filters function
+                  onClose(); // Close the modal
+                }}
                 disabled={!hasSelectedFilters}
               >
                 <Text style={[styles.applyButtonText, !hasSelectedFilters && styles.disabledButtonText]}>

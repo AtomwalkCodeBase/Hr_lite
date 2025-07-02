@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Keyboard, Alert } from 'react-native';
+import { Keyboard, Alert, View, Text } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { getExpenseItem, getExpenseProjectList, postClaim } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -38,12 +38,24 @@ const AddClaim = (props) => {
   const [errors, setErrors] = useState({});
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
   const navigation = useNavigation();
   const router = useRouter();
 
-  // Determine the mode (default to 'APPLY' if not provided)
-  const mode = props?.data?.mode || 'APPLY';
+  // Parse props data
+  const { masterClaimId, mode, claimData } = props.data || {};
   const isAddMode = mode === 'ADD';
+  const isEditMode = mode === 'EDIT';
+  const isViewMode = mode === 'VIEW';
+  
+  // Parse claim data if available
+  const parsedClaimData = claimData ? JSON.parse(claimData) : null;
+
+  console.log("Received props data:", {
+    mode,
+    masterClaimId,
+    parsedClaimData
+  });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -55,7 +67,34 @@ const AddClaim = (props) => {
     fetchClaimItemList();
     fetchProjectList();
     fetchEmpId();
+
+    // Pre-fill form if in EDIT mode with received data
+    if (isEditMode && parsedClaimData) {
+      setItem(parsedClaimData.item_id?.toString() || '');
+      setProject(parsedClaimData.project_id?.toString() || '');
+      setClaimAmount(parsedClaimData.expense_amt || '');
+      setRemark(parsedClaimData.remarks || '');
+      
+      // Set file info from existing claim
+      if (parsedClaimData.submitted_file_1) {
+        const urlParts = parsedClaimData.submitted_file_1.split('/');
+        setFileName(urlParts[urlParts.length - 1].split('?')[0]);
+      }
+
+      // Parse and set date from "26-Jun-2025" format
+      if (parsedClaimData.expense_date) {
+        const months = {
+          'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+          'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+        };
+        const [day, monthStr, year] = parsedClaimData.expense_date.split('-');
+        const month = months[monthStr];
+        setExpenseDate(new Date(year, month, day));
+      }
+    }
   }, []);
+
+  
 
   const fetchClaimItemList = async () => {
     setIsLoading(true);
@@ -63,7 +102,7 @@ const AddClaim = (props) => {
       const response = await getExpenseItem();
       const formattedData = response.data.map(item => ({
         label: item.name,
-        value: item.id
+        value: item.id.toString() // Ensure string value for dropdown
       }));
       setClaimItem(formattedData);
     } catch (error) {
@@ -77,9 +116,10 @@ const AddClaim = (props) => {
     setIsLoading(true);
     try {
       const response = await getExpenseProjectList();
+      // console.log("Project list--",response.data)
       const formattedData = response.data.map(project => ({
         label: project.title,
-        value: project.id
+        value: project.id.toString() // Ensure string value for dropdown
       }));
       setProjectList(formattedData);
     } catch (error) {
@@ -130,7 +170,8 @@ const AddClaim = (props) => {
       isValid = false;
     }
 
-    if (!fileUri) {
+    // File is only required for new claims or when updating without existing file
+    if (!fileUri && !parsedClaimData?.submitted_file_1) {
       handleError('Please select a file', 'file');
       isValid = false;
     }
@@ -142,28 +183,40 @@ const AddClaim = (props) => {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    const expense_date = `${expenseDate.getDate().toString().padStart(2, '0')}-${(expenseDate.getMonth() + 1).toString().padStart(2, '0')}-${expenseDate.getFullYear()}`;
+    
+    // Format date as "DD-MM-YYYY"
+    const formattedDate = `${expenseDate.getDate().toString().padStart(2, '0')}-${(expenseDate.getMonth() + 1).toString().padStart(2, '0')}-${expenseDate.getFullYear()}`;
 
     const formData = new FormData();
-    formData.append('file_1', {
-      uri: fileUri,
-      name: fileName,
-      type: fileMimeType,
-    });
+    
+    // Only append file if a new one was selected
+    if (fileUri) {
+      formData.append('file_1', {
+        uri: fileUri,
+        name: fileName,
+        type: fileMimeType,
+      });
+    }
+    
     formData.append('remarks', remark);
     formData.append('item', item);
     formData.append('quantity', '1');
     formData.append('expense_amt', claimAmount);
-    formData.append('expense_date', expense_date);
+    formData.append('expense_date', formattedDate);
     formData.append('emp_id', empId);
-    formData.append('call_mode', 'CLAIM_SAVE');
-    // formData.append('call_mode', isAddMode ? 'GROUP_SUBMIT' : 'SUBMIT');
+    
+    if (isEditMode) {
+      formData.append('call_mode', 'CLAIM_UPDATE');
+      formData.append('claim_id', parsedClaimData.id); // Use the specific claim ID for updates
+    } else {
+      formData.append('call_mode', 'CLAIM_SAVE');
+      if (isAddMode && masterClaimId) {
+        formData.append('m_claim_id', masterClaimId);
+      }
+    }
 
-    // if (isAddMode) {
-    //   formData.append('call_mode', 'CLAIM_SAVE');
-    // }
     if (project) {
-      formData.append('project', project);
+      formData.append('project_id', project);
     }
 
     try {
@@ -172,11 +225,11 @@ const AddClaim = (props) => {
         setIsSuccessModalVisible(true);
       } else {
         console.error('Unexpected response:', res);
-        Alert.alert('Claim Submission Error', 'Failed to claim. Unexpected response.');
+        Alert.alert('Error', res.data?.message || 'Failed to process claim');
       }
     } catch (error) {
-      Alert.alert('Claim Submission Failed', `Failed to claim: ${error.response?.data?.message || error.response?.data?.detail}`);
-      console.log("Error Message==",error.response?.data?.message)
+      Alert.alert('Error', error.response?.data?.message || 'Failed to submit claim');
+      console.error("Submission error:", error.response?.data);
     } finally {
       setIsLoading(false);
     }
@@ -185,7 +238,12 @@ const AddClaim = (props) => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <HeaderComponent 
-        headerTitle={isAddMode ? "Add Draft Claim" : "Apply Claim"} 
+        headerTitle={
+          isViewMode ? "View Claim" : 
+          isEditMode ? "Edit Claim Item" :
+          isAddMode && masterClaimId ? "Add Claim Item" : 
+          "Add New Claim"
+        } 
         onBackPress={handleBackPress}
       />
       {isLoading ? (
@@ -193,38 +251,86 @@ const AddClaim = (props) => {
           visible={isLoading}
           onTimeout={() => {
             setIsLoading(false);
-            Alert.alert('Timeout', 'Not able to add the Claim.');
+            Alert.alert('Timeout', 'Not able to process the Claim.');
           }}
         />
       ) : (
         <Container>
+          {isEditMode && (
+            <View style={{ 
+              padding: 15,
+              backgroundColor: '#e3f2fd',
+              borderRadius: 8,
+              marginBottom: 15,
+              borderLeftWidth: 4,
+              borderLeftColor: '#2196f3'
+            }}>
+              <Text style={{ 
+                fontWeight: 'bold',
+                color: '#333',
+                marginBottom: 5
+              }}>
+                Editing Claim Item
+              </Text>
+              <Text style={{ color: '#666' }}>
+                Claim ID: {parsedClaimData?.master_claim_id || 'N/A'}
+              </Text>
+            </View>
+          )}
+
+          {isAddMode && masterClaimId && (
+            <View style={{ 
+              padding: 15,
+              backgroundColor: '#f0e5ff',
+              borderRadius: 8,
+              marginBottom: 15,
+              borderLeftWidth: 4,
+              borderLeftColor: '#a970ff'
+            }}>
+              <Text style={{ 
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                Adding to Claim: {masterClaimId}
+              </Text>
+            </View>
+          )}
+
           <DropdownPicker
             label="Expense Item"
             data={claimItem}
             value={item}
             setValue={setItem}
             error={errors.item}
+            disabled={isViewMode}
           />
+          
           {projectList.length > 0 && (
             <DropdownPicker
               label="Project"
               data={projectList}
               value={project}
               setValue={setProject}
+              disabled={isViewMode}
             />
           )}  
+          
           <DatePicker 
             cDate={expenseDate} 
             label="Expense Date" 
             setCDate={setExpenseDate}
             error={errors.expenseDate}
+            disabled={isViewMode}
           />
+          
           <AmountInput 
             claimAmount={claimAmount} 
             label="Expense Amount" 
             setClaimAmount={setClaimAmount}
             error={errors.claimAmount}
+            disabled={isViewMode}
           />
+          
           <FilePicker 
             label="Attach File"
             fileName={fileName}
@@ -232,18 +338,32 @@ const AddClaim = (props) => {
             setFileUri={setFileUri}
             setFileMimeType={setFileMimeType}
             error={errors.file}
+            existingFileName={parsedClaimData?.submitted_file_1 ? 
+              parsedClaimData.submitted_file_1.split('/').pop().split('?')[0] : 
+              null
+            }
+            disabled={isViewMode}
           />
+          
           <RemarksTextArea 
             remark={remark} 
             setRemark={setRemark}
             error={errors.remarks}
+            disabled={isViewMode}
           />
-          <SubmitButton
-            label={isAddMode ? "Save Draft" : "Submit Claim"}
-            onPress={validate}
-            bgColor={colors.primary}
-            textColor="white"
-          />
+          
+          {!isViewMode && (
+            <SubmitButton
+              label={
+                isEditMode ? "Update Claim" : 
+                isAddMode ? "Save Draft" : 
+                "Submit Claim"
+              }
+              onPress={validate}
+              bgColor={isEditMode ? colors.info : colors.primary}
+              textColor="white"
+            />
+          )}
         </Container>
       )}
       
@@ -252,7 +372,12 @@ const AddClaim = (props) => {
         onClose={() => {
           setIsSuccessModalVisible(false);
           router.push('ClaimScreen');
-        }} 
+        }}
+        message={
+          isEditMode ? "Claim updated successfully!" :
+          isAddMode ? "Claim item added successfully!" :
+          "Claim submitted successfully!"
+        }
       />
     </SafeAreaView>
   );
