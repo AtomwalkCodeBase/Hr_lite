@@ -1,92 +1,158 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import ConfirmationModal from "./ConfirmationModal";
 
-const TimeSheetCard = ({ task, onEdit, formatDisplayDate, isSelfView, onApprove, onReject }) => {
+const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete }) => {
+
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const statusConfig = {
     s: {
       color: '#2196F3',
       icon: 'schedule',
       label: 'SUBMITTED',
-      bgColor: '#5AC8FA15'
+      bgColor: '#E3F2FD',
+      borderColor: '#2196F3'
     },
     a: {
-      color: '#008000',
-      icon: 'check-circle-outline',
+      color: '#4CAF50',
+      icon: 'check-circle',
       label: 'APPROVED',
-      bgColor: '#4CD96415'
+      bgColor: '#E8F5E8',
+      borderColor: '#4CAF50'
     },
     r: {
-      color: '#FF6B6B',
-      icon: 'clear',
+      color: '#f44336',
+      icon: 'cancel',
       label: 'REJECTED',
-      bgColor: '#FF6B6B15'
+      bgColor: '#FFEBEE',
+      borderColor: '#f44336'
     },
     n: {
-      color: '#888888',
+      color: '#EF6C00',
       icon: 'schedule',
-      label: 'Not Submitted',
-      bgColor: '#88888815'
+      label: 'DRAFT',
+      bgColor: '#FFF3E0',
+      borderColor: '#FF9800'
     },
     default: {
-      color: '#888888',
+      color: '#9E9E9E',
       icon: 'help-outline',
-      label: 'Unknown',
-      bgColor: '#88888815'
+      label: 'UNKNOWN',
+      bgColor: '#F5F5F5',
+      borderColor: '#9E9E9E'
     }
   };
+
   const statusKey = (task.status || 'default').toLowerCase();
   const status = statusConfig[statusKey] || statusConfig.default;
   const showActionButtons = !isSelfView && ['s'].includes(statusKey);
 
   return (
-    <View style={styles.taskCard}>
-      <View style={styles.taskHeader}>
-        <Text style={styles.taskProject}>{task.project_code}</Text>
-        <View style={styles.taskHeaderRight}>
-          {/* {isSelfView && (
-            <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
-              <Ionicons name="create-outline" size={20} color="#a970ff" />
-            </TouchableOpacity>
-          )} */}
-          <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}> 
-            <MaterialIcons name={status.icon} size={14} color={status.color} /> 
-            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
+    <View style={[styles.taskCard, { borderLeftColor: status.borderColor }]}>
+      {/* Header with Project and Status */}
+      <View style={styles.cardHeader}>
+        <View style={styles.projectSection}>
+          <Text style={styles.projectCode}>{task.project_code}</Text>
+          <Text style={styles.projectTitle} numberOfLines={1}>
+            {task.project_title || 'Project Title'}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: status.bgColor, borderColor: status.borderColor }]}>
+          <MaterialIcons name={status.icon} size={16} color={status.color} />
+          <Text style={[styles.statusText, { color: status.color }]}>
+            {status.label}
+          </Text>
+        </View>
+      </View>
+
+      {/* Activity Section */}
+      <View style={styles.activitySection}>
+        <MaterialIcons name="work" size={16} color="#666" />
+        <Text style={styles.activityText}>{task.activity_name}</Text>
+      </View>
+
+      {/* Time and Date Section */}
+      <View style={styles.timeSection}>
+        <View style={styles.timeItem}>
+          <View style={styles.timeIcon}>
+            <Ionicons name="calendar" size={16} color="#a970ff" />
+          </View>
+          <View>
+            <Text style={styles.timeLabel}>Date</Text>
+            <Text style={styles.timeValue}>{task.a_date}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.timeItem}>
+          <View style={styles.timeIcon}>
+            <Ionicons name="time" size={16} color="#a970ff" />
+          </View>
+          <View>
+            <Text style={styles.timeLabel}>Hours</Text>
+            <Text style={styles.timeValue}>{task.effort}h</Text>
           </View>
         </View>
       </View>
-      <Text style={styles.taskActivity}>{task.activity_name}</Text>
-      <View style={styles.taskDetails}>
-        <View style={styles.taskDetailItem}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.taskDetailText}>{formatDisplayDate(task.a_date)}</Text>
-        </View>
-        <View style={styles.taskDetailItem}>
-          <Ionicons name="time-outline" size={16} color="#666" />
-          <Text style={styles.taskDetailText}>{task.effort}h</Text>
-        </View>
-      </View>
-      {task.remarks && <Text style={styles.taskRemarks}>{task.remarks}</Text>}
-      {isSelfView && (
-            <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
-              <View style={{flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5}}>
-              <Ionicons name="create-outline" size={20} color="#a970ff" />
-              <Text style={{color: "#a970ff"}}>Edit</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-      {showActionButtons && (
-        <View style={styles.actionButtonsContainer}>
-          <TouchableOpacity style={[styles.actionButton, styles.rejectButton]} onPress={() => onReject(task, 'REJECT')}>
-            <MaterialIcons name="close" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Reject</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.approveButton]} onPress={() => onApprove(task, 'APPROVE')}>
-            <MaterialIcons name="check" size={18} color="#fff" />
-            <Text style={styles.actionButtonText}>Approve</Text>
-          </TouchableOpacity>
+
+      {/* Remarks Section */}
+      {task.remarks && (
+        <View style={styles.remarksSection}>
+          <View style={styles.remarksHeader}>
+            <Ionicons name="chatbubble-outline" size={14} color="#666" />
+            <Text style={styles.remarksLabel}>Notes</Text>
+          </View>
+          <Text style={styles.remarksText}>{task.remarks}</Text>
         </View>
       )}
+
+      {/* Action Buttons */}
+      <View style={styles.actionSection}>
+        {isSelfView && (
+          <View style={{flexDirection: "row", gap: 10}}>
+          <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+
+          {isSelfView && ['n'].includes(statusKey) && 
+          <TouchableOpacity style={[styles.editButton, {backgroundColor: "#f44336"}]} onPress={() => setIsConfirmModalVisible(true)}>
+            <Ionicons name="create-outline" size={20} color="#fff" />
+            <Text style={styles.editButtonText}>Delete</Text>
+          </TouchableOpacity>}
+         </View>
+        )}
+
+        {showActionButtons && (
+          <View style={styles.approvalButtons}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.rejectButton]} 
+              onPress={() => onReject(task, 'REJECT')}
+            >
+              <MaterialIcons name="close" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Reject</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.approveButton]} 
+              onPress={() => onApprove(task, 'APPROVE')}
+            >
+              <MaterialIcons name="check" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Approve</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+      <ConfirmationModal
+        visible={isConfirmModalVisible}
+        message="Your task will be Deleted. Are you sure ?"
+       onConfirm={() => {
+          onDelete(task);
+          setIsConfirmModalVisible(false);
+        }}
+        onCancel={() => setIsConfirmModalVisible(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </View>
   );
 };
@@ -97,100 +163,167 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
+    marginHorizontal: 12,
+    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowRadius: 4,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
   },
-  taskHeader: {
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
+    alignItems: "flex-start",
+    marginBottom: 12,
   },
-  taskProject: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#333",
+  projectSection: {
     flex: 1,
+    marginRight: 12,
+  },
+  projectCode: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 2,
+  },
+  projectTitle: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
   },
   statusBadge: {
     flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "white",
-  },
-  taskActivity: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 12,
-  },
-  taskDetails: {
-    flexDirection: "row",
-    gap: 20,
-    marginBottom: 8,
-  },
-  taskDetailItem: {
-    flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
     gap: 4,
   },
-  taskDetailText: {
-    fontSize: 14,
-    color: "#666",
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  taskRemarks: {
-    fontSize: 14,
-    color: "#888",
-    fontStyle: "italic",
-    marginTop: 4,
+  activitySection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+    gap: 8,
   },
-  taskHeaderRight: {
+  activityText: {
+    fontSize: 14,
+    color: "#444",
+    fontWeight: "500",
+    flex: 1,
+  },
+  timeSection: {
+    flexDirection: "row",
+    marginBottom: 12,
+    gap: 24,
+  },
+  timeItem: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  editButton: {
-    position: "absolute",
-    right: 15,
-    bottom: 15,
-    padding: 4,
-    borderRadius: 6,
-    backgroundColor: "#f8f4ff",
+  timeIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#f3f0ff",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    marginTop: 16,
+  timeLabel: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "500",
+  },
+  timeValue: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "600",
+  },
+  remarksSection: {
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  remarksHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  remarksLabel: {
+    fontSize: 12,
+    color: "#666",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  remarksText: {
+    fontSize: 14,
+    color: "#555",
+    lineHeight: 20,
+    fontStyle: "italic",
+  },
+  actionSection: {
+    marginTop: 8,
+    // position: "absolute",
+    // right: 15,
+    // bottom: 15,
+  },
+  editButton: {
+    flexGrow: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#a970ff",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 6,
+  },
+  editButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  approvalButtons: {
+    flexDirection: "row",
     gap: 12,
   },
   actionButton: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     gap: 6,
   },
   approveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
   },
   rejectButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: "#f44336",
   },
   actionButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 
-export default TimeSheetCard; 
+export default TimeSheetCard;

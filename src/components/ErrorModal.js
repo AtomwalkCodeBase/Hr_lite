@@ -53,7 +53,7 @@ const ButtonText = styled.Text`
   font-weight: bold;
 `;
 
-const ErrorModal = ({ visible, message, onClose, onRetry }) => (
+const ErrorModal = ({ visible,label="Oops!", message, onClose, onRetry }) => (
   <Modal transparent visible={visible} animationType="fade">
     <ModalContainer>
       <ModalContent>
@@ -63,7 +63,7 @@ const ErrorModal = ({ visible, message, onClose, onRetry }) => (
             style={{ width: 80, height: 80 }}
           />
         </IconContainer>
-        <TitleText>Oops!</TitleText>
+        <TitleText>{label}</TitleText>
         <MessageText>{message || "Something went wrong, please try again"}</MessageText>
         
         <ButtonContainer>

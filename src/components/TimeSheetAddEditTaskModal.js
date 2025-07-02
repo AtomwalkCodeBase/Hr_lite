@@ -1,17 +1,56 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, TouchableOpacity, View, Text, ScrollView, TextInput, StyleSheet, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DropdownPicker from "./DropdownPicker";
 import DatePicker from "./DatePicker";
 import Loader from "./old_components/Loader";
 import ConfirmationModal from "./ConfirmationModal";
+import TimePicker from "./TimePicker";
+import ErrorModal from "./ErrorModal";
 
 const { height } = Dimensions.get("window");
 
 
 const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, setFormData, editingTask, projects, activities}) => {
 
-  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false)
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+
+
+useEffect(() => {
+    if (formData.hours && parseFloat(formData.hours) > 24) {
+    setFormData((prev) => ({ ...prev, hours: "24" }));
+  }
+  if (formData.startTime instanceof Date && formData.endTime instanceof Date) {
+    const diffMs = formData.endTime - formData.startTime;
+    if (diffMs > 0) {
+      const hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+      setFormData((prev) => ({ ...prev, hours }));
+      setErrorMessage(""); // Clear if times are valid
+    }
+  }
+}, [formData.startTime, formData.endTime]);
+
+useEffect(() => {
+  const isValidTimeRange =
+    formData.startTime instanceof Date && formData.endTime instanceof Date;
+  if (formData.hours) {
+    const hoursNum = parseFloat(formData.hours);
+    if (hoursNum > 24) {
+      setErrorMessage("Hours cannot exceed 24.");
+    } else if (isValidTimeRange) {
+      const expectedHours = ((formData.endTime - formData.startTime) / (1000 * 60 * 60)).toFixed(2);
+      if (hoursNum.toFixed(2) !== expectedHours) {
+        setErrorMessage("Entered hours do not match Start and End time.");
+      } else {
+        setErrorMessage("");
+      }
+    } else {
+      setErrorMessage(""); // No time selected, allow hours freely (under 24)
+    }
+  }
+}, [parseFloat(formData.hours)]);
 
   return(
   <Modal visible={visible} transparent animationType="slide">
@@ -35,8 +74,9 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* <View style={styles.formGroup}> */}
+          {projects.length > 0 && 
             <DropdownPicker
-              label="Project *"
+              label="Project "
               data={projects.map((project) => ({
                 label: `${project.title} (${project.project_code})`,
                 value: project.project_code,
@@ -44,6 +84,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               value={formData.project}
               setValue={(value) => setFormData((prev) => ({ ...prev, project: value }))}
             />
+        }
           {/* </View> */}
           {/* <View style={styles.formGroup}> */}
             <DropdownPicker
@@ -57,23 +98,46 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             />
           {/* </View> */}
           {/* <View style={styles.formGroup}> */}
-            <DatePicker
-              cDate={formData.date}
-              label="Date *"
-              setCDate={(date) => setFormData((prev) => ({ ...prev, date }))}
-            />
+           <DatePicker
+            cDate={formData.date}
+            label="Date *"
+            setCDate={(date) => setFormData((prev) => ({ ...prev, date }))}
+            minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
+            maximumDate={new Date()}
+          />
           {/* </View> */}
+
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Working Hours *</Text>
+            <TimePicker
+              label="Start Time"
+              cDate={formData.startTime}
+              setCDate={(value) => setFormData((prev) => ({ ...prev, startTime: value }))}
+            />
+          </View>
+          <View style={styles.formGroup}>
+            <TimePicker
+              label="End Time"
+              cDate={formData.endTime}
+              setCDate={(value) => setFormData((prev) => ({ ...prev, endTime: value }))}
+            />
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Efforts </Text>
             <TextInput
               style={styles.input}
               value={formData.hours}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, hours: value }))}
+               onChangeText={(value) => {
+                  if (!isNaN(value) && parseFloat(value) <= 24) {
+                    setFormData((prev) => ({ ...prev, hours: value }));
+                  }
+                }}
               placeholder="Enter hours"
               keyboardType="numeric"
               placeholderTextColor="#999"
             />
           </View>
+          {errorMessage ? (<Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>) : null}
           <View style={styles.formGroup}>
             <Text style={styles.label}>Remarks</Text>
             <TextInput
@@ -99,16 +163,16 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={[styles.addButton, styles.addOnlyButton]}
               onPress={() => onSubmit("SUBMIT")}
               disabled={isLoading}
             >
               <Text style={styles.addButtonText}>
-                {/* {isLoading ? "UPDATING..." : "UPDATE"} */}
+                {isLoading ? "UPDATING..." : "UPDATE"}
                 Submit and Update
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             </View>
           ) : (
             <View style={styles.addButtonsContainer}>
@@ -120,19 +184,19 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               >
                 <Text style={styles.addButtonText}>
                   {/* {isLoading ? "SAVING..." : "SAVE"} */}
-                  Draft
+                   Save
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[styles.addButton, styles.addAndSaveButton]}
                 onPress={() => onSubmit("SUBMIT")}
                 disabled={isLoading}
               >
                 <Text style={styles.addButtonText}>
-                  {/* {isLoading ? "SUBMITTING..." : "SUBMIT"} */}
+                  {isLoading ? "SUBMITTING..." : "SUBMIT"}
                   SUBMIT
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           )}
         </ScrollView>
@@ -141,7 +205,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
 
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your timesheet will be in Draft. You can edit and submit it later."
+        message="Your task will be in Draft move. You can edit or submit it later."
         onConfirm={() => {
           onSubmit("ADD_AND_SAVE")
           setIsConfirmModalVisible(false);
@@ -149,6 +213,13 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Save"
         cancelText="Cancel"
+      />
+
+      <ErrorModal
+        // label="Duplicate Entry Detected"
+        visible={isErrorModalVisible}
+        message={errorMessage}
+        onClose={() => setIsErrorModalVisible(false)}
       />
     <Loader visible={isLoading} />
   </Modal>

@@ -3,6 +3,7 @@ import { Platform, Text } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import styled from 'styled-components/native';
 import { colors } from '../Styles/appStyle';
+import { Ionicons } from '@expo/vector-icons';
 
 const DatePickerButton = styled.TouchableOpacity`
   flex-direction: row;
@@ -34,29 +35,41 @@ const Icon = styled.Image`
   height: 24px;
 `;
 
-const DatePicker = ({ error, label, cDate, setCDate, minimumDate, maximumDate }) => {
+const TimePicker = ({ error, label, cDate, setCDate }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const isValidDate = cDate instanceof Date && !isNaN(cDate);
+
+  // Format time as HH:MM AM/PM or '--:--' if invalid
+  const formatTime = (date) => {
+    if (!isValidDate) return '--:--';
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
 
   return (
     <FieldContainer>
       <Label>{label}</Label>
       <DatePickerButton onPress={() => setShowDatePicker(true)}>
-        <DateText>{cDate.toDateString()}</DateText>
-        <Icon source={require('../../assets/images/c-icon.png')} />
+        <DateText>{formatTime(cDate)}</DateText>
+        <Ionicons name="time-outline" size={22} color="black" />
       </DatePickerButton>
 
       {showDatePicker && (
         <DateTimePicker
-          value={cDate}
-          mode="date"
+          value={isValidDate ? cDate : new Date()}
+          mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={(event, selectedDate) => {
-            const currentDate = selectedDate || cDate;
-            setShowDatePicker(Platform.OS === 'ios');
-            setCDate(currentDate);
+            if (selectedDate) {
+              setShowDatePicker(Platform.OS === 'ios'); // Stay open on iOS
+              setCDate(selectedDate);
+              console.log('Selected time:', selectedDate);
+            }
           }}
-          {...(minimumDate ? { minimumDate } : {})}
-          {...(maximumDate ? { maximumDate } : {})}
         />
       )}
 
@@ -70,4 +83,4 @@ const DatePicker = ({ error, label, cDate, setCDate, minimumDate, maximumDate })
 };
 
 
-export default DatePicker;
+export default TimePicker;

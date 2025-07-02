@@ -251,9 +251,13 @@ export async function getActivitylist() {
   return authAxios(url);
 }
 
-export async function getProjectlist() {
+export async function getProjectlist(empId) {
+  let data = {};
+  if (empId) {
+    data['emp_id'] = empId;
+  }
   const url = await getProjectLists();
-  return authAxios(url);
+  return authAxios(url,data);
 }
 
 export async function getEmplyoeeList() {

@@ -1,88 +1,149 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, TouchableOpacity, View, Text, ScrollView, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DropdownPicker from "./DropdownPicker";
+import DatePicker from "./DatePicker";
 
-const FilterModal = ({
-  visible,
-  onClose,
-  filters,
-  setFilters,
-  projects,
-  activities,
-  statuses,
-  clearFilters
-}) => (
-  <Modal visible={visible} transparent animationType="slide">
-    <TouchableOpacity
-      activeOpacity={1}
-      style={styles.modalOverlay}
-      onPress={onClose}
-    >
+const FilterModal = ({ visible, onClose, filters, setFilters, projects, activities, statuses, clearFilters, startDate, endDate, currentWeekStart, getCurrentWeekDates }) => {
+  const [tempFilters, setTempFilters] = useState(filters);
+  const [tempStartDate, setTempStartDate] = useState(startDate || getCurrentWeekDates(currentWeekStart).start);
+  const [tempEndDate, setTempEndDate] = useState(endDate || getCurrentWeekDates(currentWeekStart).end);
+
+  useEffect(() => {
+    // Sync temp state with props when modal opens
+    setTempFilters(filters);
+    setTempStartDate(filters.startDate || getCurrentWeekDates(currentWeekStart).start);
+    setTempEndDate(filters.endDate || getCurrentWeekDates(currentWeekStart).end);
+  }, [visible, filters, currentWeekStart]);
+
+  const areFiltersUnchanged = () => {
+    const { start, end } = getCurrentWeekDates(currentWeekStart);
+    return (
+      !tempFilters.project &&
+      !tempFilters.status &&
+      !tempFilters.activity &&
+      tempStartDate.toDateString() === start.toDateString() &&
+      tempEndDate.toDateString() === end.toDateString()
+    );
+  };
+
+  const handleApplyFilters = () => {
+    setFilters(tempFilters);
+    setFilters((prev) => ({
+      ...prev,
+      startDate: tempStartDate,
+      endDate: tempEndDate,
+    }));
+    onClose();
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters({
+      startDate: null,
+      endDate: null,
+      project: "",
+      status: "",
+      activity: "",
+    });
+    setTempStartDate(getCurrentWeekDates(currentWeekStart).start);
+    setTempEndDate(getCurrentWeekDates(currentWeekStart).end);
+    clearFilters();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
       <TouchableOpacity
         activeOpacity={1}
-        style={styles.modalContent}
-        onPress={() => {}}
+        style={styles.modalOverlay}
+        onPress={onClose}
       >
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Filter Tasks</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.formGroup}>
-            <DropdownPicker
-              label="Project"
-              data={projects.map((project) => ({
-                label: project[0],
-                value: project[0],
-              }))}
-              value={filters.project}
-              setValue={(value) => setFilters((prev) => ({ ...prev, project: value }))}
-            />
-          </View>
-          <View style={styles.formGroup}>
-            <DropdownPicker
-              label="Activity"
-              data={activities.map((activity) => ({
-                label: activity.name,
-                value: activity.name,
-              }))}
-              value={filters.activity}
-              setValue={(value) => setFilters((prev) => ({ ...prev, activity: value }))}
-            />
-          </View>
-          <View style={styles.formGroup}>
-            <DropdownPicker
-              label="Status"
-              data={statuses.map((status) => ({
-                label: status,
-                value: status,
-              }))}
-              value={filters.status}
-              setValue={(value) => setFilters((prev) => ({ ...prev, status: value }))}
-            />
-          </View>
-          <View style={styles.filterButtons}>
-            <TouchableOpacity
-              style={styles.clearButton}
-              onPress={clearFilters}
-            >
-              <Text style={styles.clearButtonText}>Clear Filters</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.applyButton}
-              onPress={onClose}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.modalContent}
+          onPress={() => {}}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Filter Tasks</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-        </ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.formGroup}>
+              <DatePicker
+                cDate={tempStartDate}
+                label="Start Date"
+                setCDate={setTempStartDate}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <DatePicker
+                cDate={tempEndDate}
+                label="End Date"
+                setCDate={setTempEndDate}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <DropdownPicker
+                label="Project"
+                data={projects.map((project) => ({
+                  label: `${project.title} (${project.project_code})`,
+                  value: project.project_code,
+                }))}
+                value={tempFilters.project}
+                setValue={(value) => setTempFilters((prev) => ({ ...prev, project: value }))}
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <DropdownPicker
+                label="Activity"
+                data={activities.map((activity) => ({
+                  label: activity.name,
+                  value: activity.name,
+                }))}
+                value={tempFilters.activity}
+                setValue={(value) => setTempFilters((prev) => ({ ...prev, activity: value }))}
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <DropdownPicker
+                label="Status"
+                data={statuses.map((status) => ({
+                  label: status,
+                  value: status,
+                }))}
+                value={tempFilters.status}
+                setValue={(value) => setTempFilters((prev) => ({ ...prev, status: value }))}
+              />
+            </View>
+            <View style={styles.filterButtons}>
+              <TouchableOpacity
+                style={[styles.clearButton, areFiltersUnchanged() && styles.disabledButton]}
+                onPress={handleClearFilters}
+                disabled={areFiltersUnchanged()}
+              >
+                <Text style={[styles.clearButtonText, areFiltersUnchanged() && styles.disabledButtonText]}>
+                  Clear Filters
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.applyButton, areFiltersUnchanged() && styles.disabledButton]}
+                onPress={handleApplyFilters}
+                disabled={areFiltersUnchanged()}
+              >
+                <Text style={[styles.applyButtonText, areFiltersUnchanged() && styles.disabledButtonText]}>
+                  Apply Filters
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -142,6 +203,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  disabledButton: {
+    backgroundColor: "#e0e0e0",
+    opacity: 0.5,
+  },
+  disabledButtonText: {
+    color: "#999",
   },
 });
 
