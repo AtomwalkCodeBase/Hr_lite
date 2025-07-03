@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, StatusBar, Dimensions, Image, Alert, TouchableOpacity } from "react-native";
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import DropdownPicker from "../components/DropdownPicker";
 import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from "../services/productServices";
-import DatePicker from "../components/DatePicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Loader from "../components/old_components/Loader";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
@@ -12,15 +10,13 @@ import HeaderComponent from "../components/HeaderComponent";
 import TimeSheetCard from "../components/TimeSheetCard";
 import TimeSheetWeekNavigation from "../components/TimeSheetWeekNavigation";
 import AddEditTaskModal from '../components/TimeSheetAddEditTaskModal';
-// import FilterModal from '../components/TimeSheetFilterModal';
 import RemarkModal from '../components/RemarkModal';
 import SuccessModal from "../components/SuccessModal";
 import ErrorModal from "../components/ErrorModal";
 import ApplyButton from "../components/ApplyButton";
 import WeeklySummary from "../components/WeeklySummary";
 import FilterModal from "../components/FilterModal";
-
-const { width, height } = Dimensions.get("window");
+import ConfirmationModal from "../components/ConfirmationModal";
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
@@ -48,6 +44,8 @@ const TimeSheet = () => {
   const [activeTab, setActiveTab] = useState('timesheet'); // New state for active tab
   const navigate = useNavigation();
   const route = useRouter();
+  const [SubmitConfirmModalVisible, setSubmitConfirmModalVisible] = useState(false);
+  const [ApproveConfirmModalVisible, setApproveConfirmModalVisible] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -85,12 +83,13 @@ const TimeSheet = () => {
     year: '',
     month: '',
   });
+  const [pendingFilters, setPendingFilters] = useState(filters);
 
-  const statuses = ["NOT SUBMITTED", "SUBMITTED", "APPROVED", "REJECTED"];
+  const statuses = ["SUBMITTED", "APPROVED", "REJECTED"];
 
   // Check if any filters are active
   const hasActiveFilters = () => {
-    return  filters.project || filters.status || filters.activity;
+    return  filters.project || filters.status || filters.activity || filters.month || filters.year;
   };
 
   const formatDateForAPI = (date) => {
@@ -176,26 +175,31 @@ const TimeSheet = () => {
   };
 
   const getTimeSheetList = async () => {
-    const { start, end } = getCurrentWeekDates(currentWeekStart);
+    if (!EmpId) return;
+    setIsLoading(true);
+
+    const { start, end } = getFilterDateRange(filters, currentWeekStart);
     const formattedStartDate = formatDateForAPI(start);
     const formattedEndDate = formatDateForAPI(end);
-    if (!EmpId) return; 
-    setIsLoading(true);
+
     try {
-      const res = await getTimesheetData( EmpId, formattedStartDate, formattedEndDate);
+      const res = await getTimesheetData(EmpId, formattedStartDate, formattedEndDate);
+      console.log("dtaadsas", res.data)
       setTasks(res.data.reverse() || []);
-       setIsLoading(false);
     } catch (err) {
       console.error("Error fetching timesheet data:", err);
       Alert.alert("Error", "Failed to fetch timesheet data");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // Update useEffect dependency to include filters
   useEffect(() => {
     if (EmpId) {
       getTimeSheetList();
     }
-  }, [EmpId, currentWeekStart]);
+  }, [EmpId, currentWeekStart, filters.year, filters.month]);
 
   const handleSubmit = async (callMode) => {
     if (callMode !== 'APPROVE' && callMode !== 'REJECT') {
@@ -241,7 +245,7 @@ const TimeSheet = () => {
       }
     }
 
-    // console.log("data of the api",submittedData)
+    console.log("data of the api",submittedData)
 
     try {
       const res = await postTimeList(submittedData);
@@ -363,31 +367,34 @@ const editTask = (task) => {
     const { start, end } = getCurrentWeekDates(currentWeekStart);
     const formattedStartDate = formatDateForAPI(start);
     const formattedEndDate = formatDateForAPI(end);
-
     setIsLoading(true);
-
-    const empId = await AsyncStorage.getItem("empId");
-
-    let submittedData = {
-      a_emp_id: EmpId,
-      emp_id: empId,
-      start_date: formattedStartDate,
-      end_date: formattedEndDate,
-      call_mode: callMode,
-    };
-    
     try {
+      const empId = await AsyncStorage.getItem("empId");
+      const submittedData = {
+        a_emp_id: EmpId,
+        emp_id: empId,
+        start_date: formattedStartDate,
+        end_date: formattedEndDate,
+        call_mode: callMode,
+      };
+      console.log("Submitting weekly timesheet:", submittedData);
       const res = await postTimeList(submittedData);
       if (res.status === 200) {
         setIsSuccessModalVisible(true);
-        setSuccessMessage(`Weekly Timesheet submitted successfully for: ${formattedStartDate} to ${formattedEndDate}`);
+        setSuccessMessage(`Weekly Timesheet ${callMode === "WEEKLY_SUBMIT" ? "submitted" : "approved"} successfully for: ${formattedStartDate} to ${formattedEndDate}`);
+        await getTimeSheetList();
+      } else {
+        setIsErrorModalVisible(true);
+        setErrorMessage(`Failed to ${callMode === "WEEKLY_SUBMIT" ? "submit" : "approve"} weekly Timesheet`);
       }
     } catch (err) {
-      console.error("Error Weekly Timesheet not Submitted:", err);
+      console.error(`Error ${callMode === "WEEKLY_SUBMIT" ? "submitting" : "approving"} weekly Timesheet:`, err);
       setIsErrorModalVisible(true);
-      setErrorMessage("Failed to submit weekly Timesheet");
+      setErrorMessage(err?.response?.data?.message || `Failed to ${callMode === "WEEKLY_SUBMIT" ? "submit" : "approve"} weekly Timesheet`);
     } finally {
       setIsLoading(false);
+      setSubmitConfirmModalVisible(false);
+      setApproveConfirmModalVisible(false);
     }
   };
 
@@ -402,17 +409,7 @@ const editTask = (task) => {
       remarks: "",
     });
   };
-
-  const clearFilters = () => {
-    setFilters({
-      startDate: null,
-      endDate: null,
-      project: "",
-      status: "",
-      activity: "",
-    });
-  };
-
+  
   const getProjectDropdownOptions = (labelKey, valueKey) => {
     return projects.map(item => ({
       label: `${item[labelKey]} (${item[valueKey]})`,
@@ -425,29 +422,86 @@ const editTask = (task) => {
     return uniqueValues.map(value => ({ label: value, value }));
   };
 
-  const filterConfigs = [
+  const getFilterDateRange = (filters, currentWeekStart) => {
+    const getLastDayOfMonth = (year, month) => new Date(year, month, 0).getDate();
+    const defaultYear = currentYear;
+
+    if (filters.month) {
+      const year = filters.year ? Number(filters.year) : defaultYear;
+      const month = Number(filters.month);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month - 1, getLastDayOfMonth(year, month));
+      // console.log(`Selected Month Filter: ${month}-${year} (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
+      return { start, end, type: 'month', year }; // Include year for navigation
+    } else if (filters.year) {
+      const year = Number(filters.year);
+      const start = new Date(year, 0, 1);
+      const end = new Date(year, 11, 31);
+      // console.log(`Selected Year Filter: ${year} (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
+      return { start, end, type: 'year', year };
+    } else {
+      const { start, end } = getCurrentWeekDates(currentWeekStart);
+      // console.log(`Default Week Filter: (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
+      return { start, end, type: 'week', year: defaultYear };
+    }
+  };
+
+  const currentYear = new Date().getFullYear();
+    const yearOptions = useMemo(() => {
+    const range = 5; // Configurable range (±5 years from current year)
+    return Array.from({ length: range * 2 + 1 }, (_, i) => {
+      const year = currentYear - range + i;
+      return { label: year.toString(), value: year };
+    });
+  }, []);
+
+  const monthOptions = useMemo(() => [
+    { label: "January", value: 1 },
+    { label: "February", value: 2 },
+    { label: "March", value: 3 },
+    { label: "April", value: 4 },
+    { label: "May", value: 5 },
+    { label: "June", value: 6 },
+    { label: "July", value: 7 },
+    { label: "August", value: 8 },
+    { label: "September", value: 9 },
+    { label: "October", value: 10 },
+    { label: "November", value: 11 },
+    { label: "December", value: 12 },
+  ], []);
+
+  const filterConfigs = useMemo(() => [
     {
       label: "Project",
-      options: getProjectDropdownOptions('title', 'project_code'),
-      value: projects,
-      setValue: (value) => setFilters((prev) => ({ ...prev, project: value }))
+      options: getProjectDropdownOptions("title", "project_code"),
+      value: pendingFilters.project,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, project: value })),
     },
     {
       label: "Activity",
-      options: getActivityDropdownOptions('name'),
-      value: activities,
-      setValue: (value) => setFilters((prev) => ({ ...prev, activity: value }))
+      options: getActivityDropdownOptions("name"),
+      value: pendingFilters.activity,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, activity: value })),
     },
     {
       label: "Status",
-      options: statuses.map((status) => ({
-                  label: status,
-                  value: status,
-                })),
-      value: statuses,
-      setValue: (value) => setFilters((prev) => ({ ...prev, status: value }))
+      options: statuses.map((status) => ({ label: status, value: status })),
+      value: pendingFilters.status,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, status: value })),
     },
-  ];
+    {
+      label: "Year",
+      options: yearOptions,
+      value: pendingFilters.year,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, year: value, month: "" })),
+    },
+    {
+      label: "Month",
+      options: monthOptions,
+      value: pendingFilters.month,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, month: value })),
+    },
+  ], [pendingFilters, projects, activities, statuses, yearOptions, monthOptions]);
 
   // Filter tasks based on current filters
 useEffect(() => {
@@ -470,40 +524,35 @@ useEffect(() => {
       (task) => task.activity_name === filters.activity
     );
   }
-
-  // if (filters.startDate && filters.endDate) {
-  //   filtered = filtered.filter((task) => {
-  //     const taskDate = parseTaskDate(task.a_date);
-  //     if (!taskDate || isNaN(taskDate.getTime())) return false;
-  //     return (
-  //       taskDate >= new Date(filters.startDate.setHours(0, 0, 0, 0)) &&
-  //       taskDate <= new Date(filters.endDate.setHours(23, 59, 59, 999))
-  //     );
-  //   });
-  // }
-
   setFilteredTasks(filtered);
 }, [tasks, filters]);
 
-  const weekNavStart = filters.startDate || getCurrentWeekDates(currentWeekStart).start;
-  const weekNavEnd = filters.endDate || getCurrentWeekDates(currentWeekStart).end;
-
   const getTaskStatuses = (tasksArr) => tasksArr.map(task => (task.status || '').toLowerCase());
-  const statusesInTasks = getTaskStatuses(filteredTasks);
-  const hasStatus = (status) => statusesInTasks.includes(status);
-  const allStatus = (status) => filteredTasks.length > 0 && statusesInTasks.every(s => s === status);
+  // const statusesInTasks = getTaskStatuses(filteredTasks);
+  // const hasStatus = (status) => statusesInTasks.includes(status);
+  // const allStatus = (status) => filteredTasks.length > 0 && statusesInTasks.every(s => s === status);
 
-  const showSubmitWeeklyButton = isSelfView &&
-    filteredTasks.length > 0 &&
-    !allStatus('s') &&
-    allStatus('n') &&
-    // hasStatus('n') 
-    !(hasStatus('r') && hasStatus('a')) &&
-    !statusesInTasks.some(s => s === 'r' || s === 'a');
+  // const showSubmitWeeklyButton = isSelfView &&
+  //   filteredTasks.length > 0 &&
+  //   !allStatus('s') &&
+  //   allStatus('n') &&
+  //   // hasStatus('n') 
+  //   !(hasStatus('r') && hasStatus('a')) &&
+  //   !statusesInTasks.some(s => s === 'r' || s === 'a');
 
-  const showApproveWeeklyButton = !isSelfView &&
-    filteredTasks.length > 0 &&
-    allStatus('s');
+  // const showApproveWeeklyButton = !isSelfView &&
+  //   filteredTasks.length > 0 &&
+  //   allStatus('s');
+
+  const taskStatuses = getTaskStatuses(filteredTasks);
+  const showSubmitWeeklyButton = isSelfView && filteredTasks.length > 0 && taskStatuses.every(status => status === 'n');
+  const showAddIcon = isSelfView && (filteredTasks.length === 0 || taskStatuses.every(status => status === 'n'));
+  const showApproveWeeklyButton = !isSelfView && filteredTasks.length > 0 && taskStatuses.every(status => status === 's' || status === 'r');
+
+  const openFilterModal = () => {
+    setPendingFilters(filters);
+    setShowFilterModal(true);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -513,189 +562,203 @@ useEffect(() => {
         headerTitle="Timesheet" 
         onBackPress={() => navigate.goBack()}
         icon1Name="filter"
-        icon1OnPress={() => setShowFilterModal(true)}
-        icon2Name={isSelfView ? "add" : undefined}
-        icon2OnPress={isSelfView ? () => setShowAddModal(true) : undefined}
+        icon1OnPress={openFilterModal}
+        icon2Name={showAddIcon ? "add" : undefined}
+        icon2OnPress={showAddIcon ? () => setShowAddModal(true) : undefined}
       />
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'timesheet' && styles.activeTab]}
-          onPress={() => setActiveTab('timesheet')}
-        >
-          <Text style={[styles.tabText, activeTab === 'timesheet' && styles.activeTabText]}>
-            Timesheet
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'summary' && styles.activeTab]}
-          onPress={() => setActiveTab('summary')}
-        >
-          <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
-            Summary
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Tab Navigation  */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'timesheet' && styles.activeTab]}
+            onPress={() => setActiveTab('timesheet')}
+          >
+            <Text style={[styles.tabText, activeTab === 'timesheet' && styles.activeTabText]}>
+          Timesheet
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'summary' && styles.activeTab]}
+            onPress={() => setActiveTab('summary')}
+          >
+            <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
+          Summary
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {activeTab === 'timesheet' && (
-        <ScrollView
-          style={styles.taskList}
-          showsVerticalScrollIndicator={false}
-        >
-          <TimeSheetWeekNavigation
-            currentWeekStart={currentWeekStart}
-            onNavigate={navigateWeek}
-            formatDisplayDate={formatDisplayDate}
-            getCurrentWeekDates={getCurrentWeekDates}
-          />
+        {activeTab === 'timesheet' && (
+          <ScrollView
+            style={styles.taskList}
+            showsVerticalScrollIndicator={false}
+          >
+            <TimeSheetWeekNavigation
+          currentWeekStart={currentWeekStart}
+          onNavigate={navigateWeek}
+          formatDisplayDate={formatDisplayDate}
+          getCurrentWeekDates={getCurrentWeekDates}
+          filterRange={{ year: filters.year, month: filters.month, setFilters }}
+          getFilterDateRange={getFilterDateRange}
+          monthOptions={monthOptions}
+            />
 
-          {employee && (
-            <View style={styles.employeeContainer}>
-              <View style={styles.avatarContainer}>
-                {employee.image && (
-                  <Image
-                    source={{ uri: employee.image }}
-                    style={styles.avatar}
-                  />
-                )}
-                {employee.is_manager && (
-                  <View style={styles.managerBadge}>
-                    <Feather name="award" size={12} color="#fff" />
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.employeeInfo}>
-                <Text style={styles.employeeName}>{employee.name}</Text>
-                <Text style={styles.employeeId}>{employee.emp_id}</Text>
-              </View>
+            {employee && (
+          <View style={styles.employeeContainer}>
+            <View style={styles.avatarContainer}>
+              {employee.image && (
+            <Image
+              source={{ uri: employee.image }}
+              style={styles.avatar}
+            />
+              )}
+              {employee.is_manager && (
+            <View style={styles.managerBadge}>
+              <Feather name="award" size={12} color="#fff" />
             </View>
-          )}
-
-          {filteredTasks.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>
-                {hasActiveFilters() 
-                  ? "No timesheet entries match your current filters" 
-                  : employee 
-                    ? "No Timesheet found for this employee" 
-                    : "No timesheet found for this period"
-                }
-              </Text>
-              {hasActiveFilters() && (
-                <Text style={styles.emptySubText}>
-                  Try adjusting your filters to see more results
-                </Text>
               )}
             </View>
-          ) : (
-            filteredTasks.map((task) => (
-              <TimeSheetCard
-                key={task.id}
-                task={task}
-                onEdit={editTask}
-                isSelfView={isSelfView}
-                onApprove={handleApproveReject}
-                onReject={handleApproveReject}
-                onDelete={handleDelete}
-              />
-            ))
-          )}
-        </ScrollView>
-      )}
 
-      {activeTab === 'summary' && (
-        <ScrollView
-          style={styles.taskList}
-          showsVerticalScrollIndicator={false}
-        >
-          {showWeeklySummary && filteredTasks.length > 0 ? (
-            <WeeklySummary
-              tasks={filteredTasks}
-              formatDisplayDate={formatDisplayDate}
-              getCurrentWeekDates={getCurrentWeekDates}
-              currentWeekStart={currentWeekStart}
-              onToggleSummary={() => setShowWeeklySummary(!showWeeklySummary)}
-            />
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="calendar-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>
-                No summary available for this period
-              </Text>
+            <View style={styles.employeeInfo}>
+              <Text style={styles.employeeName}>{employee.name}</Text>
+              <Text style={styles.employeeId}>{employee.emp_id}</Text>
             </View>
-          )}
-        </ScrollView>
-      )}
+          </View>
+            )}
 
-      {showApproveWeeklyButton && (
-        <View style={styles.actionButtonContainer}>
-          <ApplyButton 
-            onPress={() => handleWeeklySubmit("WEEKLY_APPROVE")}
-            buttonText="Approve Weekly TimeSheet"
-            icon='add-circle'
+            {filteredTasks.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="calendar-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>
+              {employee
+            ? hasActiveFilters()
+              ? "No timesheet entries match your current filters for this employee"
+              : "No Timesheet found for this employee"
+            : hasActiveFilters()
+              ? "No timesheet entries match your current filters"
+              : "No Timesheet found for this period"
+              }
+            </Text>
+            {hasActiveFilters() && (
+              <Text style={styles.emptySubText}>
+            Try adjusting your filters to see more results
+              </Text>
+            )}
+          </View>
+            ) : (
+          filteredTasks.map((task) => (
+            <TimeSheetCard
+              key={task.id}
+              task={task}
+              onEdit={editTask}
+              isSelfView={isSelfView}
+              onApprove={handleApproveReject}
+              onReject={handleApproveReject}
+              onDelete={handleDelete}
+            />
+          ))
+            )}
+          </ScrollView>
+        )}
+
+        {activeTab === 'summary' && (
+          <ScrollView
+            style={styles.taskList}
+            showsVerticalScrollIndicator={false}
+          >
+            {showWeeklySummary && filteredTasks.length > 0 ? (
+          <WeeklySummary
+            tasks={filteredTasks}
+            formatDisplayDate={formatDisplayDate}
+            getCurrentWeekDates={getCurrentWeekDates}
+            currentWeekStart={currentWeekStart}
+            isSelfView={isSelfView}
+            onToggleSummary={() => setShowWeeklySummary(!showWeeklySummary)}
           />
-        </View>
-      )}
-      
-      {showSubmitWeeklyButton && (
-        <View style={styles.actionButtonContainer}>
-          <ApplyButton 
-            onPress={() => handleWeeklySubmit("WEEKLY_SUBMIT")}
-            buttonText="Submit Weekly TimeSheet"
+            ) : (
+          <View style={styles.emptyState}>
+            <Ionicons name="calendar-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>
+              No summary available for this period
+            </Text>
+          </View>
+            )}
+          </ScrollView>
+        )}
+
+        {showApproveWeeklyButton && (
+          <View style={styles.actionButtonContainer}>
+            <ApplyButton 
+          // onPress={() => handleWeeklySubmit("WEEKLY_APPROVE")}
+          onPress={() => setApproveConfirmModalVisible(true)}
+          buttonText="Approve Weekly TimeSheet"
+          // icon='add-circle'
+            />
+          </View>
+        )}
+        
+        {showSubmitWeeklyButton && (
+          <View style={styles.actionButtonContainer}>
+            <ApplyButton 
+          // onPress={() => handleWeeklySubmit("WEEKLY_SUBMIT")}
+          onPress={() => setSubmitConfirmModalVisible(true)}
+          buttonText="Submit Weekly TimeSheet"
+            />
+          </View>
+        )}
+
+        <AddEditTaskModal
+          visible={showAddModal}
+          onClose={closeAddModal}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          formData={formData}
+          setFormData={setFormData}
+          editingTask={editingTask}
+          projects={projects}
+          activities={activities}
+        />
+        <FilterModal
+            visible={showFilterModal}
+            onClose={() => setShowFilterModal(false)}
+            onClearFilters={() => {
+              setPendingFilters({
+                project: "",
+                status: "",
+                activity: "",
+                year: "",
+                month: "",
+              });
+              setFilters({
+                project: "",
+                status: "",
+                activity: "",
+                year: "",
+                month: "",
+              });
+              setCurrentWeekStart(new Date()); // <-- This resets the week view!
+            }}
+            filterConfigs={filterConfigs}
+            modalTitle="Filter TimeSheet"
+            onApplyFilters={() => {
+              setFilters(pendingFilters);
+              setShowFilterModal(false);
+            }}
           />
-        </View>
-      )}
-
-      <AddEditTaskModal
-        visible={showAddModal}
-        onClose={closeAddModal}
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        formData={formData}
-        setFormData={setFormData}
-        editingTask={editingTask}
-        projects={projects}
-        activities={activities}
-      />
-
-      {/* <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        filters={filters}
-        setFilters={setFilters}
-        projects={projects}
-        activities={activities}
-        statuses={statuses}
-        startDate={filters.startDate || getCurrentWeekDates(currentWeekStart).start}
-        endDate={filters.endDate || getCurrentWeekDates(currentWeekStart).end}
-        clearFilters={clearFilters}
-        currentWeekStart={currentWeekStart}
-        getCurrentWeekDates={getCurrentWeekDates}
-      /> */}
-      <FilterModal
-          visible={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          onClearFilters={clearFilters}
-          filterConfigs={filterConfigs}
-          modalTitle="Filter TimeSheet"
+          
+        {/* Remark modal for weekly Approve and reject */}
+        <RemarkModal
+          visible={showRemarkModal}
+          onClose={() => setShowRemarkModal(false)}
+          remark={remark}
+          setRemark={setRemark}
+          isLoading={isLoading}
+          selectedAction={selectedAction}
+          onSubmit={handleSubmit}
         />
 
-      <RemarkModal
-        visible={showRemarkModal}
-        onClose={() => setShowRemarkModal(false)}
-        remark={remark}
-        setRemark={setRemark}
-        isLoading={isLoading}
-        selectedAction={selectedAction}
-        onSubmit={handleSubmit}
-      />
-
-      <SuccessModal
-        visible={isSuccessModalVisible}
-        onClose={() => {
+        <SuccessModal
+          visible={isSuccessModalVisible}
+          onClose={() => {
           setIsSuccessModalVisible(false);
         }}
         message={successMessage}
@@ -706,6 +769,24 @@ useEffect(() => {
         visible={isErrorModalVisible}
         message={errorMessage}
         onClose={() => setIsErrorModalVisible(false)}
+      />
+
+      <ConfirmationModal
+          visible={SubmitConfirmModalVisible || ApproveConfirmModalVisible}
+          message={
+            SubmitConfirmModalVisible
+              ? "Once you submit timesheet you can not add new task for this week. Are you sure to submit it?"
+              : "Are you sure you want to approve this timesheet for this particular employee?"
+          }
+          onConfirm={() => {
+            handleWeeklySubmit(SubmitConfirmModalVisible ? "WEEKLY_SUBMIT" : "WEEKLY_APPROVE");
+          }}
+          onCancel={() => {
+            setSubmitConfirmModalVisible(false);
+            setApproveConfirmModalVisible(false);
+          }}
+          confirmText={SubmitConfirmModalVisible ? "Submit" : "Approve"}
+          cancelText="Cancel"
       />
       
       <Loader visible={isLoading} />

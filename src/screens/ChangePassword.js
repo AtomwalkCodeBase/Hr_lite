@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Animated, Easing, ScrollView, KeyboardAvoidingView, Platform, BackHandler } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Animated, ScrollView, KeyboardAvoidingView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
@@ -24,28 +24,6 @@ const ResetPasswordScreen = () => {
 
   const shakeAnim = new Animated.Value(0);
   const router = useRouter();
-
-  useEffect(() => {
-    // Handle Android back button
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleBackPress
-    );
-
-    return () => backHandler.remove();
-  }, []);
-
-  const handleBackPress = async () => {
-    if (isMandatoryReset) {
-      Alert.alert(
-        'PIN Update Required',
-        'You must update your default PIN to continue using the app.',
-        [{ text: 'OK' }]
-      );
-      return true; // Prevent going back
-    }
-    return false; // Allow going back
-  };
 
   const handleCancel = async () => {
     if (isMandatoryReset) {
@@ -178,7 +156,7 @@ const ResetPasswordScreen = () => {
                     placeholder="Enter your current PIN"
                     secureTextEntry
                     keyboardType="numeric"
-                    maxLength={10}
+                    maxLength={6}
                     value={oldPin}
                     onChangeText={setOldPin}
                     placeholderTextColor={colors.grey}
@@ -200,7 +178,7 @@ const ResetPasswordScreen = () => {
                     style={styles.input}
                     placeholder="Enter your new PIN"
                     keyboardType="numeric"
-                    maxLength={10}
+                    maxLength={6}
                     value={newPin}
                     onChangeText={setNewPin}
                     secureTextEntry
@@ -223,7 +201,7 @@ const ResetPasswordScreen = () => {
                     style={styles.input}
                     placeholder="Confirm your new PIN"
                     keyboardType="numeric"
-                    maxLength={10}
+                    maxLength={6}
                     value={confirmPin}
                     onChangeText={setConfirmPin}
                     secureTextEntry

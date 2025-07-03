@@ -442,7 +442,7 @@ const submitCheckout = async (payload) => {
               </TouchableOpacity>
 
               {/* Check Out Button - only show if start_time exists */}
-              {(previousDayUnchecked || (attendance && attendance.end_time === null)) && (
+              {(previousDayUnchecked || (attendance && (!attendance.end_time || attendance.end_time === "" || attendance.end_time === null))) && (
                 <TouchableOpacity
                   onPress={() => {
                     if (previousDayUnchecked) {

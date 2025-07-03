@@ -256,7 +256,7 @@ export async function getProjectlist(empId) {
   if (empId) {
     data['emp_id'] = empId;
   }
-  const url = await getProjectLists();
+  const url = await getProjectList();
   return authAxios(url,data);
 }
 

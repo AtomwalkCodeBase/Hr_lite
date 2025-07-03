@@ -156,10 +156,10 @@ export const getactivityList = async () => {
   return `${newendpoint}/get_activity_list/${db_name}/`;
 }
 
-export const getProjectLists = async () => {
-  const db_name = await getDbName();
-  return `${newendpoint}/get_project_list/${db_name}/`;
-}
+// export const getProjectLists = async () => {
+//   const db_name = await getDbName();
+//   return `${newendpoint}/get_project_list/${db_name}/`;
+// }
 
 export const getTimeSheetList = async () => {
   const db_name = await getDbName();

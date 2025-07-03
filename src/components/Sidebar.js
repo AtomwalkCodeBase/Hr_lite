@@ -11,7 +11,8 @@ import {
   Dimensions,
   StatusBar,
   Platform,
-  ScrollView
+  ScrollView,
+  Image
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppContext } from '../../context/AppContext';
@@ -68,8 +69,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 10,
-	    borderTopRightRadius: 25,
-    borderBottomRightRadius: 25,
+	  borderTopRightRadius: 25,
+    borderBottomRightRadius: 20,
   },
   sidebarContent: {
     flex: 1,
@@ -159,8 +160,8 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   footer: {
-    paddingHorizontal: 24,
-    paddingVertical: 15,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
@@ -406,7 +407,11 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
           <View style={styles.header}>
             <View style={styles.profileSection}>
               <View style={styles.avatar}>
-                <Feather name="user" size={24} color={colors.primary} />
+                {profile.image ? (
+                  <Image source={{ uri: profile.image }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+                ) : (
+                  <Feather name="user" size={24} color={colors.primary} />
+                )}
               </View>
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>

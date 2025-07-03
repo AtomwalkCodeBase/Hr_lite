@@ -1,154 +1,113 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Alert } from "react-native";
-import { MaterialIcons, Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import md5 from "md5"; // Import md5 for task hashing
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import md5 from 'md5';
+
+const MAX_DAILY_HOURS = 9;
 
 const WeeklySummary = ({
   tasks,
   formatDisplayDate,
   getCurrentWeekDates,
   currentWeekStart,
+  isSelfView,
 }) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
-  const [weeklyData, setWeeklyData] = useState({});
   const [showExceedModal, setShowExceedModal] = useState(false);
   const [exceedingDays, setExceedingDays] = useState([]);
-  const [taskHash, setTaskHash] = useState(""); // Store hash of tasks to detect changes
+  const [taskHash, setTaskHash] = useState('');
 
-    const statusConfig = {
-    s: {
-      color: '#2196F3',
-      icon: 'schedule',
-      label: 'SUBMITTED',
-      bgColor: '#E3F2FD',
-      borderColor: '#2196F3'
-    },
-    a: {
-      color: '#4CAF50',
-      icon: 'check-circle',
-      label: 'APPROVED',
-      bgColor: '#E8F5E8',
-      borderColor: '#4CAF50'
-    },
-    r: {
-      color: '#f44336',
-      icon: 'cancel',
-      label: 'REJECTED',
-      bgColor: '#FFEBEE',
-      borderColor: '#f44336'
-    },
-    n: {
-      color: '#FF9800',
-      icon: 'schedule',
-      label: 'DRAFT',
-      bgColor: '#FFF3E0',
-      borderColor: '#FF9800'
-    },
-    default: {
-      color: '#9E9E9E',
-      icon: 'help-outline',
-      label: 'UNKNOWN',
-      bgColor: '#F5F5F5',
-      borderColor: '#9E9E9E'
-    }
+  const statusConfig = {
+    s: { color: '#2196F3', icon: 'schedule', label: 'SUBMITTED', bgColor: '#E3F2FD', borderColor: '#2196F3' },
+    a: { color: '#4CAF50', icon: 'check-circle', label: 'APPROVED', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
+    r: { color: '#f44336', icon: 'cancel', label: 'REJECTED', bgColor: '#FFEBEE', borderColor: '#f44336' },
+    n: { color: '#FF9800', icon: 'schedule', label: 'DRAFT', bgColor: '#FFF3E0', borderColor: '#FF9800' },
+    default: { color: '#9E9E9E', icon: 'help-outline', label: 'UNKNOWN', bgColor: '#F5F5F5', borderColor: '#9E9E9E' },
   };
 
-
-
-  // console.log("data", tasks)
-
-  useEffect(() => {
-    calculateWeeklyData();
-  }, [tasks, currentWeekStart]);
-
-  const parseTaskDate = (dateStr) => {
-    if (!dateStr) {
-      console.warn("Null or undefined date string received");
+  // Updated parseTaskDate for DD-MMM-YYYY format (e.g., 30-Jun-2025)
+  const parseTaskDate = useCallback((dateStr) => {
+    if (!dateStr || typeof dateStr !== 'string') {
+      console.warn(`Invalid date string: ${dateStr}`);
       return null;
     }
-    let date;
+
     const monthMap = {
       Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
       Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
     };
-    if (dateStr.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
-      const [day, mon, year] = dateStr.split("-");
-      const monthKey = mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase();
-      const month = monthMap[monthKey];
-      if (month !== undefined) {
-        date = new Date(Number(year), month, Number(day));
-        // console.log(`Parsed ${dateStr} to ${date.toISOString()}`);
-      } else {
-        console.warn(`Invalid month in date string: ${dateStr}`);
-      }
-    } else if (dateStr.includes("-")) {
-      const parts = dateStr.split("-");
-      if (parts.length === 3) {
-        if (parts[0].length === 4) {
-          date = new Date(dateStr);
-        } else {
-          date = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        }
-      }
-    } else {
-      date = new Date(dateStr);
-    }
-    if (isNaN(date?.getTime())) {
-      console.warn(`Invalid date parsed from ${dateStr}`);
+
+    const regex = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/;
+    const match = dateStr.match(regex);
+    if (!match) {
+      console.warn(`Invalid date format (expected DD-MMM-YYYY): ${dateStr}`);
       return null;
     }
-    return date;
-  };
 
-  const formatDateForComparison = (date) => {
+    const [, day, mon, year] = match;
+    const monthKey = mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase();
+    const month = monthMap[monthKey];
+    if (month === undefined) {
+      console.warn(`Invalid month in date string: ${dateStr}`);
+      return null;
+    }
+
+    const parsedDay = Number(day);
+    const parsedYear = Number(year);
+    if (parsedDay < 1 || parsedDay > 31 || parsedYear < 1900 || parsedYear > 2100) {
+      console.warn(`Invalid day or year in date string: ${dateStr}`);
+      return null;
+    }
+
+    const date = new Date(parsedYear, month, parsedDay);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date parsed: ${dateStr}`);
+      return null;
+    }
+
+    console.log(`Parsed ${dateStr} to ${date.toISOString()}`);
+    return date;
+  }, []);
+
+  const formatDateForComparison = useCallback((date) => {
     if (!date || isNaN(date.getTime())) {
-      console.warn("Invalid date in formatDateForComparison:", date);
-      return "";
+      console.warn('Invalid date in formatDateForComparison:', date);
+      return '';
     }
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []);
 
-  const calculateWeeklyData = async () => {
+  // Calculate weekly data with memoization
+  const weeklyData = useMemo(() => {
     if (!currentWeekStart || isNaN(new Date(currentWeekStart).getTime())) {
-      console.error("Invalid currentWeekStart date:", currentWeekStart);
-      Alert.alert("Error", "Invalid week start date provided.");
-      return;
+      console.error('Invalid currentWeekStart:', currentWeekStart);
+      return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
     }
 
     const { start } = getCurrentWeekDates(currentWeekStart);
     if (!start || isNaN(start.getTime())) {
-      console.error("Invalid start date from getCurrentWeekDates:", start);
-      Alert.alert("Error", "Failed to calculate week start date.");
-      return;
+      console.error('Invalid start date:', start);
+      return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
     }
 
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-      try {
-        const day = new Date(start.getTime());
-        day.setDate(start.getDate() + i);
-        if (isNaN(day.getTime())) {
-          console.error(`Invalid date generated for day ${i}:`, day);
-          continue;
-        }
-        weekDays.push(day);
-      } catch (error) {
-        console.error(`Error generating date for day ${i}:`, error);
-      }
-    }
+    // Generate week days
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      return isNaN(day.getTime()) ? null : day;
+    }).filter(Boolean);
 
     if (weekDays.length === 0) {
-      console.error("No valid week days generated.");
-      Alert.alert("Error", "Unable to generate valid week dates.");
-      return;
+      console.error('No valid week days generated.');
+      return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
     }
 
-    const weeklyStats = {
+    const stats = {
       days: {},
       projects: {},
       totalHours: 0,
@@ -157,9 +116,10 @@ const WeeklySummary = ({
       exceedingDays: [],
     };
 
+    // Initialize days
     weekDays.forEach((day) => {
       const dayStr = formatDateForComparison(day);
-      weeklyStats.days[dayStr] = {
+      stats.days[dayStr] = {
         date: day,
         tasks: [],
         totalHours: 0,
@@ -168,135 +128,125 @@ const WeeklySummary = ({
       };
     });
 
-    // Calculate task hash to detect changes
-    const newTaskHash = md5(JSON.stringify(tasks));
-    const storedTaskHash = await AsyncStorage.getItem(`taskHash_${formatDateForComparison(new Date(currentWeekStart))}`);
-
-    // If tasks have changed, clear the dismissed flag
-    if (newTaskHash !== storedTaskHash) {
-      await AsyncStorage.removeItem(`dismissedExceedModal_${formatDateForComparison(new Date(currentWeekStart))}`);
-      await AsyncStorage.setItem(`taskHash_${formatDateForComparison(new Date(currentWeekStart))}`, newTaskHash);
-    }
-
+    // Process tasks
     tasks.forEach((task, index) => {
-      try {
-        const taskDate = parseTaskDate(task.a_date);
-        if (!taskDate) {
-          console.warn(`Skipping task ${index} due to invalid date: ${task.a_date}`);
-          return;
+      const taskDate = parseTaskDate(task.a_date);
+      if (!taskDate) {
+        console.warn(`Skipping task ${index} due to invalid date: ${task.a_date}`);
+        return;
+      }
+      const taskDateStr = formatDateForComparison(taskDate);
+      if (stats.days[taskDateStr]) {
+        const hours = parseFloat(task.effort) || 0;
+        const status = (task.status || 'n').toLowerCase();
+
+        // console.log(`Processing task ${index} on ${task.a_date} (${taskDateStr}): ${hours}h, Project: ${task.project_code}, Status: ${status}`);
+
+        stats.days[taskDateStr].tasks.push(task);
+        stats.days[taskDateStr].totalHours += hours;
+        stats.days[taskDateStr].projects.add(task.project_code);
+
+        switch (status) {
+          case 'a':
+            stats.days[taskDateStr].statusCounts.approved++;
+            break;
+          case 's':
+            stats.days[taskDateStr].statusCounts.submitted++;
+            break;
+          case 'r':
+            stats.days[taskDateStr].statusCounts.rejected++;
+            break;
+          default:
+            stats.days[taskDateStr].statusCounts.notSubmitted++;
+            break;
         }
-        const taskDateStr = formatDateForComparison(taskDate);
 
-        if (weeklyStats.days[taskDateStr]) {
-          const hours = parseFloat(task.effort) || 0;
-          const status = (task.status || "n").toLowerCase();
+        stats.totalHours += hours;
 
-        //   console.log(`Assigning task on ${task.a_date} (${taskDateStr}): ${hours}h, Project: ${task.project_code}, Status: ${status}`);
+        if (!stats.projects[task.project_code]) {
+          stats.projects[task.project_code] = { hours: 0, tasks: 0 };
+        }
+        stats.projects[task.project_code].hours += hours;
+        stats.projects[task.project_code].tasks++;
 
-          weeklyStats.days[taskDateStr].tasks.push(task);
-          weeklyStats.days[taskDateStr].totalHours += hours;
-          weeklyStats.days[taskDateStr].projects.add(task.project_code);
+        if (stats.days[taskDateStr].totalHours > stats.maxDayHours) {
+          stats.maxDayHours = stats.days[taskDateStr].totalHours;
+        }
 
-          switch (status) {
-            case "a":
-              weeklyStats.days[taskDateStr].statusCounts.approved++;
-              break;
-            case "s":
-              weeklyStats.days[taskDateStr].statusCounts.submitted++;
-              break;
-            case "r":
-              weeklyStats.days[taskDateStr].statusCounts.rejected++;
-              break;
-            default:
-              weeklyStats.days[taskDateStr].statusCounts.notSubmitted++;
-              break;
+        if (stats.days[taskDateStr].totalHours > MAX_DAILY_HOURS) {
+          if (!stats.exceedingDays.includes(taskDateStr)) {
+            stats.exceedingDays.push(taskDateStr);
           }
-
-          weeklyStats.totalHours += hours;
-
-          if (!weeklyStats.projects[task.project_code]) {
-            weeklyStats.projects[task.project_code] = { hours: 0, tasks: 0 };
-          }
-          weeklyStats.projects[task.project_code].hours += hours;
-          weeklyStats.projects[task.project_code].tasks++;
-
-          if (weeklyStats.days[taskDateStr].totalHours > weeklyStats.maxDayHours) {
-            weeklyStats.maxDayHours = weeklyStats.days[taskDateStr].totalHours;
-          }
-
-          if (weeklyStats.days[taskDateStr].totalHours > 9) {
-            if (!weeklyStats.exceedingDays.includes(taskDateStr)) {
-              weeklyStats.exceedingDays.push(taskDateStr);
-            }
-          }
-		}
-        // } else {
-        //   console.log(`Task on ${task.a_date} (${taskDateStr}) is outside the current week`);
-        // }
-      } catch (error) {
-        console.warn(`Error processing task ${index}:`, task, error);
+        }
       }
     });
 
-    // console.log("Calculated weekly stats:", JSON.stringify(weeklyStats, null, 2));
+    stats.exceedsLimit = stats.exceedingDays.length > 0;
+    return stats;
+  }, [tasks, currentWeekStart, parseTaskDate, formatDateForComparison, getCurrentWeekDates]);
 
-    weeklyStats.exceedsLimit = weeklyStats.exceedingDays.length > 0;
-    setWeeklyData(weeklyStats);
-    setExceedingDays(weeklyStats.exceedingDays);
-    setTaskHash(newTaskHash);
+  // Async storage operations for exceed modal
+  useEffect(() => {
+    const updateExceedModal = async () => {
+      const weekKey = formatDateForComparison(new Date(currentWeekStart));
+      const newTaskHash = md5(JSON.stringify(tasks));
+      const storedTaskHash = await AsyncStorage.getItem(`taskHash_${weekKey}`);
 
-    // Check AsyncStorage for dismissed flag
-    const dismissedKey = `dismissedExceedModal_${formatDateForComparison(new Date(currentWeekStart))}`;
-    const isDismissed = await AsyncStorage.getItem(dismissedKey);
+      if (newTaskHash !== storedTaskHash) {
+        await AsyncStorage.removeItem(`dismissedExceedModal_${weekKey}`);
+        await AsyncStorage.setItem(`taskHash_${weekKey}`, newTaskHash);
+      }
 
-    if (weeklyStats.exceedsLimit && !isDismissed) {
-      setShowExceedModal(true);
-    } else {
-      setShowExceedModal(false);
-    }
-  };
+      const isDismissed = await AsyncStorage.getItem(`dismissedExceedModal_${weekKey}`);
+      setTaskHash(newTaskHash);
+      setExceedingDays(weeklyData.exceedingDays);
+      setShowExceedModal(weeklyData.exceedsLimit && !isDismissed);
+    };
 
-  const handleUnderstand = async () => {
-    const dismissedKey = `dismissedExceedModal_${formatDateForComparison(new Date(currentWeekStart))}`;
-    await AsyncStorage.setItem(dismissedKey, "true");
+    updateExceedModal();
+  }, [weeklyData, tasks, currentWeekStart, formatDateForComparison]);
+
+  const handleUnderstand = useCallback(async () => {
+    const weekKey = formatDateForComparison(new Date(currentWeekStart));
+    await AsyncStorage.setItem(`dismissedExceedModal_${weekKey}`, 'true');
     setShowExceedModal(false);
-  };
+  }, [currentWeekStart, formatDateForComparison]);
 
-  const getDayName = (date) => {
-    if (!date || isNaN(date.getTime())) return "Invalid";
-    return date.toLocaleDateString("en-US", { weekday: "short" });
-  };
+  const getDayName = useCallback((date) => {
+    if (!date || isNaN(date.getTime())) return 'Invalid';
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }, []);
 
-  const getStatusColor = (hours) => {
-    if (hours === 0) return "#e0e0e0";
-    if (hours > 0 && hours <= 8) return "#4CAF50";
-    if (hours > 8 && hours <= 9) return "#FF9800";
-    return "#f44336";
-  };
+  const getStatusColor = useCallback((hours) => {
+    if (hours === 0) return '#e0e0e0';
+    if (hours <= 8) return '#4CAF50';
+    if (hours <= MAX_DAILY_HOURS) return '#FF9800';
+    return '#f44336';
+  }, []);
 
-  const getStatusText = (hours) => {
-    if (hours === 0) return "No Work";
-    if (hours > 0 && hours <= 8) return "Normal";
-    if (hours > 8 && hours <= 9) return "Extended";
-    return "Exceeded";
-  };
+  const getStatusText = useCallback((hours) => {
+    if (hours === 0) return 'No Work';
+    if (hours <= 8) return 'Normal';
+    if (hours <= MAX_DAILY_HOURS) return 'Extended';
+    return 'Exceeded';
+  }, []);
 
-  const openDayDetail = (dayData) => {
-    setSelectedDay(dayData);
-    setShowDetailModal(true);
-  };
-
-  const getDominantStatus = (statusCounts) => {
+  const getDominantStatus = useCallback((statusCounts) => {
     const { approved, submitted, rejected, notSubmitted } = statusCounts;
     if (approved > 0 && submitted === 0 && rejected === 0)
-      return { status: "approved", color: "#4CAF50", icon: "check-circle" };
+      return { status: 'approved', color: '#4CAF50', icon: 'check-circle' };
     if (submitted > 0 && approved === 0 && rejected === 0)
-      return { status: "submitted", color: "#2196F3", icon: "schedule" };
-    if (rejected > 0) return { status: "rejected", color: "#f44336", icon: "cancel" };
+      return { status: 'submitted', color: '#2196F3', icon: 'schedule' };
+    if (rejected > 0) return { status: 'rejected', color: '#f44336', icon: 'cancel' };
     if (approved > 0 || submitted > 0)
-      return { status: "mixed", color: "#FF9800", icon: "warning" };
-    return { status: "not-submitted", color: "#888888", icon: "schedule" };
-  };
+      return { status: 'mixed', color: '#FF9800', icon: 'warning' };
+    return { status: 'not-submitted', color: '#888888', icon: 'schedule' };
+  }, []);
+
+  const openDayDetail = useCallback((dayData) => {
+    setSelectedDay(dayData);
+    setShowDetailModal(true);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -306,10 +256,8 @@ const WeeklySummary = ({
           <Text style={styles.summaryTitle}>Weekly Overview</Text>
         </View>
         <View style={styles.totalHours}>
-          <Text
-            style={[styles.totalHoursText, { color: weeklyData.exceedsLimit ? "#f44336" : "#a970ff" }]}
-          >
-            {weeklyData.totalHours?.toFixed(1) || "0.0"}h
+          <Text style={[styles.totalHoursText, { color: weeklyData.exceedsLimit ? '#f44336' : '#a970ff' }]}>
+            {weeklyData.totalHours.toFixed(1)}h
           </Text>
           <Text style={styles.totalLabel}>Weekly Total Hours</Text>
         </View>
@@ -322,11 +270,10 @@ const WeeklySummary = ({
           <Text style={styles.tableHeaderText}>Projects</Text>
           <Text style={styles.tableHeaderText}>Status</Text>
         </View>
-
         <ScrollView style={styles.tableBody} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {Object.entries(weeklyData.days || {}).map(([dateStr, dayData]) => {
+          {Object.entries(weeklyData.days).map(([dateStr, dayData]) => {
             const statusInfo = getDominantStatus(dayData.statusCounts);
-            const isExceeding = dayData.totalHours > 9;
+            const isExceeding = dayData.totalHours > MAX_DAILY_HOURS;
 
             return (
               <TouchableOpacity
@@ -338,21 +285,16 @@ const WeeklySummary = ({
                   <Text style={styles.dayName}>{getDayName(dayData.date)}</Text>
                   <Text style={styles.dayDate}>{dayData.date.getDate()}</Text>
                 </View>
-
                 <View style={styles.hoursColumn}>
                   <Text style={[styles.hoursText, { color: getStatusColor(dayData.totalHours) }]}>
                     {dayData.totalHours.toFixed(1)}h
                   </Text>
                   <Text style={styles.hoursStatus}>{getStatusText(dayData.totalHours)}</Text>
                 </View>
-
                 <View style={styles.projectsColumn}>
                   <Text style={styles.projectCount}>{dayData.projects.size}</Text>
-                  <Text style={styles.projectLabel}>
-                    {dayData.projects.size === 1 ? "project" : "projects"}
-                  </Text>
+                  <Text style={styles.projectLabel}>{dayData.projects.size === 1 ? 'project' : 'projects'}</Text>
                 </View>
-
                 <View style={styles.statusColumn}>
                   <MaterialIcons name={statusInfo.icon} size={20} color={statusInfo.color} />
                   {isExceeding && (
@@ -365,11 +307,11 @@ const WeeklySummary = ({
         </ScrollView>
       </View>
 
-      {Object.keys(weeklyData.projects || {}).length > 0 && (
+      {Object.keys(weeklyData.projects).length > 0 && (
         <View style={styles.projectSection}>
           <Text style={styles.sectionTitle}>Project Time Distribution</Text>
           <View style={styles.projectGrid}>
-            {Object.entries(weeklyData.projects || {}).map(([project, data]) => (
+            {Object.entries(weeklyData.projects).map(([project, data]) => (
               <View key={project} style={styles.projectCard}>
                 <View style={styles.projectHeader}>
                   <Text style={styles.projectCode}>{project.trim()}</Text>
@@ -379,7 +321,7 @@ const WeeklySummary = ({
                   <View
                     style={[
                       styles.progressFill,
-                      { width: weeklyData.totalHours ? `${(data.hours / weeklyData.totalHours) * 100}%` : "0%" },
+                      { width: weeklyData.totalHours ? `${(data.hours / weeklyData.totalHours) * 100}%` : '0%' },
                     ]}
                   />
                 </View>
@@ -393,29 +335,28 @@ const WeeklySummary = ({
         </View>
       )}
 
-      <Modal visible={showExceedModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.exceedModal}>
-            <MaterialIcons name="warning" size={48} color="#f44336" />
-            <Text style={styles.exceedTitle}>Daily Hour Limit Exceeded</Text>
-            <Text style={styles.exceedMessage}>
-              You have exceeded 9 hours on {exceedingDays.length} day(s) this week:
-              {"\n"}
-              {exceedingDays.map(dateStr => {
-                const date = new Date(dateStr);
-                return formatDisplayDate(date);
-              }).join(", ")}
-              {"\n\n"}
-              Consider redistributing your work hours for better work-life balance.
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={styles.modalButton} onPress={handleUnderstand}>
-                <Text style={styles.modalButtonText}>Understand</Text>
-              </TouchableOpacity>
+      {isSelfView && (
+        <Modal visible={showExceedModal} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.exceedModal}>
+              <MaterialIcons name="warning" size={48} color="#f44336" />
+              <Text style={styles.exceedTitle}>Daily Hour Limit Exceeded</Text>
+              <Text style={styles.exceedMessage}>
+                You have exceeded {MAX_DAILY_HOURS} hours on {exceedingDays.length} day(s):
+                {'\n'}
+                {exceedingDays.map((dateStr) => formatDisplayDate(new Date(dateStr))).join(', ')}
+                {'\n\n'}
+                Consider redistributing your work hours for better work-life balance.
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.modalButton} onPress={handleUnderstand}>
+                  <Text style={styles.modalButtonText}>Understand</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
 
       <Modal visible={showDetailModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -428,7 +369,6 @@ const WeeklySummary = ({
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-
             {selectedDay && (
               <ScrollView style={styles.detailContent}>
                 <View style={styles.dayStats}>
@@ -445,28 +385,25 @@ const WeeklySummary = ({
                     <Text style={styles.statValue}>{selectedDay.tasks.length}</Text>
                   </View>
                 </View>
-
                 <Text style={styles.tasksTitle}>Tasks</Text>
                 {selectedDay.tasks.map((task, index) => {
-                const taskStatusKey = (task.status || 'default').toLowerCase();
-                const taskStatus = statusConfig[taskStatusKey] || statusConfig.default;
-                return (
-                  <View key={index} style={styles.taskDetailCard}>
-                    <View style={styles.taskDetailHeader}>
-                      <Text style={styles.taskProject}>{task.project_code.trim()}</Text>
-                      <View style={[styles.statusBadge, { backgroundColor: taskStatus.bgColor }]}>
-                        <MaterialIcons name={taskStatus.icon} size={16} color={taskStatus.color} />
-                        <Text style={[styles.statusText, { color: taskStatus.color }]}>
-                          {taskStatus.label}
-                        </Text>
+                  const taskStatusKey = (task.status || 'default').toLowerCase();
+                  const taskStatus = statusConfig[taskStatusKey] || statusConfig.default;
+                  return (
+                    <View key={index} style={styles.taskDetailCard}>
+                      <View style={styles.taskDetailHeader}>
+                        <Text style={styles.taskProject}>{task.project_code.trim()}</Text>
+                        <View style={[styles.statusBadge, { backgroundColor: taskStatus.bgColor }]}>
+                          <MaterialIcons name={taskStatus.icon} size={16} color={taskStatus.color} />
+                          <Text style={[styles.statusText, { color: taskStatus.color }]}>{taskStatus.label}</Text>
+                        </View>
+                        <Text style={styles.taskHours}>{task.effort}h</Text>
                       </View>
-                      <Text style={styles.taskHours}>{task.effort}h</Text>
+                      <Text style={styles.taskActivity}>{task.activity_name}</Text>
+                      {task.remarks && <Text style={styles.taskRemarks}>{task.remarks}</Text>}
                     </View>
-                    <Text style={styles.taskActivity}>{task.activity_name}</Text>
-                    {task.remarks && <Text style={styles.taskRemarks}>{task.remarks}</Text>}
-                  </View>
-                );
-              })}
+                  );
+                })}
               </ScrollView>
             )}
           </View>

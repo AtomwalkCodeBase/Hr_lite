@@ -116,6 +116,14 @@ const [successMessage, setSuccessMessage] = useState('');
         'Please check your registered email & login with new PIN.'
       );
       setIsSuccessModalVisible(true);
+
+      setTimeout(() => {
+         router.replace({
+           pathname: "AuthScreen",
+           params: { backTohome: "true" }
+         });
+       }, 3000);
+       
     } else {
       throw new Error(response?.data?.message || 'Failed to process your request');
     }

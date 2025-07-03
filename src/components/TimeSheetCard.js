@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import ConfirmationModal from "./ConfirmationModal";
+import TaskDetailsModal from "./TaskDetailsModal ";
 
 const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete }) => {
 
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+   const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
   const statusConfig = {
     s: {
       color: '#2196F3',
@@ -47,6 +49,10 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
   const statusKey = (task.status || 'default').toLowerCase();
   const status = statusConfig[statusKey] || statusConfig.default;
   const showActionButtons = !isSelfView && ['s'].includes(statusKey);
+
+    const handleCardPress = () => {
+    setIsDetailsModalVisible(true);
+  };
 
   return (
     <View style={[styles.taskCard, { borderLeftColor: status.borderColor }]}>
@@ -108,7 +114,7 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
-        {isSelfView && (
+        {isSelfView && !['s','a','r'].includes(statusKey) && (
           <View style={{flexDirection: "row", gap: 10}}>
           <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
             <Ionicons name="create-outline" size={20} color="#fff" />
@@ -141,6 +147,12 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
             </TouchableOpacity>
           </View>
         )}
+
+         <TouchableOpacity style={styles.tapIndicator} onPress={handleCardPress}>
+          <Text style={styles.tapText}>Tap to view details</Text>
+          <Ionicons name="information-circle-outline" size={16} color="#a970ff" />
+        </TouchableOpacity>
+        
       </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
@@ -152,6 +164,13 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+       <TaskDetailsModal
+        visible={isDetailsModalVisible}
+        onClose={() => setIsDetailsModalVisible(false)}
+        task={task}
+        status={status}
       />
     </View>
   );
@@ -323,6 +342,21 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+    tapIndicator: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  tapText: {
+    fontSize: 12,
+    color: '#a970ff',
+    fontWeight: '500',
   },
 });
 

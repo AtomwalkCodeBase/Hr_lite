@@ -5,7 +5,7 @@ import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Keybo
 import { FontAwesome, Ionicons, MaterialIcons, Entypo } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Logos from '../../assets/images/Atom_walk_logo.jpg';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { empLoginURL } from '../../src/services/ConstantServies';
 import { getCompanyInfo, getDBListInfo } from '../../src/services/authServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,6 +25,7 @@ const scaleHeight = (size) => (height / 812) * size;
 
 
 const LoginScreen = () => {
+  const { backTohome } = useLocalSearchParams();
   const router = useRouter();
   const [mobileNumberOrEmpId, setMobileNumberOrEmpId] = useState('');
   const [dbName, setDBName] = useState('');
@@ -360,139 +361,164 @@ useEffect(() => {
   return (
     <SafeAreaContainer>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-          <Container>
-            <Header style={styles.headerContainer}>
-              <LinearGradient 
-                colors={['#a970ff', '#8a5bda']} 
-                start={[0, 0]} 
-                end={[1, 1]}
-                style={styles.headerGradient}
-              >
-                <View style={styles.headerTop}>
-                  
-                  
-                  <View style={styles.logoContainer}>
-                                      {Logos ? (
-                                      <Image source={Logos} style={styles.logo} />
-                                      ) : (
-                                      <View style={styles.companyPlaceholder}>
-                                          <MaterialIcons name="business" size={scaleWidth(40)} color="#fff" />
-                                      </View>
-                                      )}
-                                  </View>
-                  {profileName && (
-                    <WelcomeContainer>
-                      <GreetingText>Welcome back,</GreetingText>
-                      <UserNameText>{profileName}</UserNameText>
-                    </WelcomeContainer>
+      <Container>
+        <Header style={styles.headerContainer}>
+          <LinearGradient
+            colors={["#a970ff", "#8a5bda"]}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerTop}>
+              <View style={styles.logoContainer}>
+                {Logos ? (
+                  <Image source={Logos} style={styles.logo} />
+                ) : (
+                  <View style={styles.companyPlaceholder}>
+                    <MaterialIcons
+                      name="business"
+                      size={scaleWidth(40)}
+                      color="#fff"
+                    />
+                  </View>
+                )}
+              </View>
+              {profileName && (
+                <WelcomeContainer>
+                  <GreetingText>Welcome back,</GreetingText>
+                  <UserNameText>{profileName}</UserNameText>
+                </WelcomeContainer>
+              )}
+            </View>
+          </LinearGradient>
+        </Header>
+        <MainContent keyboardStatus={keyboardStatus}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Content>
+              <Card>
+                <Title>Login</Title>
+
+                <InputContainer>
+                  {dbList.length > 0 && (
+                    <CompanyDropdown
+                      label="Company"
+                      data={dbList.map((company) => ({
+                        label: company.ref_cust_name,
+                        value: company.ref_cust_name,
+                      }))}
+                      value={selectedCompany}
+                      setValue={handleCompanyChange}
+                      error={companyError}
+                    />
                   )}
-                </View>
-              </LinearGradient>
-            </Header>
-            <MainContent keyboardStatus={keyboardStatus}>
-            <ScrollView 
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-                <Content>
-                  <Card>
-                    <Title>Login</Title>
-                    
-                    <InputContainer>
-        {dbList.length > 0 && (
-          <CompanyDropdown
-            label="Company"
-            data={dbList.map(company => ({
-              label: company.ref_cust_name,
-              value: company.ref_cust_name
-            }))}
-            value={selectedCompany}
-            setValue={handleCompanyChange}
-            error={companyError}
-          />
-        )}
-        
-                      <InputLabel>Enter your Mobile number or Emp ID</InputLabel>
-                      <InputWrapper>
-          <MaterialIcons name="person" size={20} color="#6c757d" />
-                        <Input
-                          placeholder="Mobile number or Emp ID"
-                          value={mobileNumberOrEmpId}
-                          onChangeText={(text) => setMobileNumberOrEmpId(text.replace(/\s/g, ''))} // This removes all spaces
-                          keyboardType="default"
-                          placeholderTextColor="#6c757d"
-                          maxLength={15}
-                        />
-                      </InputWrapper>
-                      <InputLabel>Enter your PIN (min 4 digits)</InputLabel>
-                      <InputWrapper>
-          <MaterialIcons name="lock-outline" size={20} color="#6c757d" />
-                        <Input
-            placeholder="PIN (min 4 digits)"
-            value={pin}
-            onChangeText={setPin}
-                          secureTextEntry={!isPasswordVisible}
-            keyboardType="numeric"
-            placeholderTextColor="#6c757d"
-            maxLength={6} // Increased max length but validation still requires min 4
-          />
-          <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
-            <MaterialIcons
-              name={isPasswordVisible ? 'visibility' : 'visibility-off'}
-              size={20}
-              color="#6c757d"
-                          />
-          </TouchableOpacity>
-                      </InputWrapper>
-                      
-                      {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
-                      
-                      <LoginButton 
-                        onPress={handlePress}
-                        disabled={isLoginDisabled}
-                        style={{ backgroundColor: isLoginDisabled ? '#fff' : '#007AFF' }}
-                      >
-                        <LoginButtonText style={{ color: isLoginDisabled ? '#454545' : '#fff' }}>
-                          LOGIN
-                        </LoginButtonText>
-                      </LoginButton>
 
-                    </InputContainer>
-                  </Card>
+                  <InputLabel>Enter your Mobile number or Emp ID</InputLabel>
+                  <InputWrapper>
+                    <MaterialIcons name="person" size={20} color="#6c757d" />
+                    <Input
+                      placeholder="Mobile number or Emp ID"
+                      value={mobileNumberOrEmpId}
+                      onChangeText={(text) =>
+                        setMobileNumberOrEmpId(text.replace(/\s/g, ""))
+                      } // This removes all spaces
+                      keyboardType="default"
+                      placeholderTextColor="#6c757d"
+                      maxLength={15}
+                    />
+                  </InputWrapper>
+                  <InputLabel>Enter your PIN (min 4 digits)</InputLabel>
+                  <InputWrapper>
+                    <MaterialIcons
+                      name="lock-outline"
+                      size={20}
+                      color="#6c757d"
+                    />
+                    <Input
+                      placeholder="PIN (min 4 digits)"
+                      value={pin}
+                      onChangeText={setPin}
+                      secureTextEntry={!isPasswordVisible}
+                      keyboardType="numeric"
+                      placeholderTextColor="#6c757d"
+                      maxLength={6} // Increased max length but validation still requires min 4
+                    />
+                    <TouchableOpacity
+                      onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+                    >
+                      <MaterialIcons
+                        name={
+                          isPasswordVisible ? "visibility" : "visibility-off"
+                        }
+                        size={20}
+                        color="#6c757d"
+                      />
+                    </TouchableOpacity>
+                  </InputWrapper>
 
-                  {(userPin && bioStatus) && (
+                  {errorMessage ? <ErrorText>{errorMessage}</ErrorText> : null}
+
+                  <LoginButton
+                    onPress={handlePress}
+                    disabled={isLoginDisabled}
+                    style={{
+                      backgroundColor: isLoginDisabled ? "#fff" : "#007AFF",
+                    }}
+                  >
+                    <LoginButtonText
+                      style={{ color: isLoginDisabled ? "#454545" : "#fff" }}
+                    >
+                      LOGIN
+                    </LoginButtonText>
+                  </LoginButton>
+                </InputContainer>
+              </Card>
+
+              {!backTohome && (
+                <>
+                  {userPin && bioStatus && (
                     <AlternativeLogin onPress={handlePressPassword}>
                       <FingerprintIcon>
-                        <Entypo name="fingerprint" size={scaleWidth(24)} color="#fff" />
+                        <Entypo
+                          name="fingerprint"
+                          size={scaleWidth(24)}
+                          color="#fff"
+                        />
                       </FingerprintIcon>
-                      <AlternativeLoginText>Login with PIN/Fingerprint</AlternativeLoginText>
+                      <AlternativeLoginText>
+                        Login with PIN/Fingerprint
+                      </AlternativeLoginText>
                     </AlternativeLogin>
                   )}
 
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={handlePressForget}
                     style={styles.forgetPinButton}
                   >
                     <Text style={styles.forgetPinText}>Forgot PIN?</Text>
                   </TouchableOpacity>
-                </Content>
-                </ScrollView>
-                </MainContent>
+                </>
+              )}
+            </Content>
+          </ScrollView>
+        </MainContent>
 
-            <Footer style={styles.fixedFooter}>
-              <FooterText>Version Code: {appVersion}</FooterText>
-            </Footer>
-          </Container>
-        {/* </KeyboardAvoidingView> */}
-        <Loader 
-        visible={loading} 
+        <Footer style={styles.fixedFooter}>
+          <FooterText>Version Code: {appVersion}</FooterText>
+        </Footer>
+      </Container>
+      {/* </KeyboardAvoidingView> */}
+      <Loader
+        visible={loading}
         onTimeout={() => {
-                    setLoading(false); // Hide loader
-                    Alert.alert('Timeout', 'Not able to Login.');
-                  }}
+          setLoading(false); // Hide loader
+          Alert.alert("Timeout", "Not able to Login.");
+        }}
       />
-      </SafeAreaContainer>
+    </SafeAreaContainer>
   );
 };
 
