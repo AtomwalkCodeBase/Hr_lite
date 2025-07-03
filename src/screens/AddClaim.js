@@ -139,8 +139,15 @@ const AddClaim = (props) => {
   };
 
   const handleBackPress = () => {
+  if (mode === 'ADD NEW') {
+    router.navigate({
+      pathname: 'home',
+      params: { screen: 'HomePage' }
+    });
+  } else {
     router.push('ClaimScreen');
-  };
+  }
+};
 
   const handleError = (error, input) => {
     setErrors(prevState => ({ ...prevState, [input]: error }));
@@ -225,11 +232,11 @@ const AddClaim = (props) => {
         setIsSuccessModalVisible(true);
       } else {
         console.error('Unexpected response:', res);
-        Alert.alert('Error', res.data?.message || 'Failed to process claim');
+        // Alert.alert('Error', res.data?.message || 'Failed to process claim');
       }
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to submit claim');
-      console.error("Submission error:", error.response?.data);
+      // console.error("Submission error:", error.response?.data);
     } finally {
       setIsLoading(false);
     }

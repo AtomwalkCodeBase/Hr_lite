@@ -66,7 +66,7 @@ export const getExpenseItemList = async () => {
 };
 export const getProjectList = async () => {
   const db_name = await getDbName();
-  return `${endpoint}/project_list/${db_name}/`;
+  return `${newendpoint}/get_project_list/${db_name}/`;
 };
 export const getEmpAttendanceData = async () => {
   const db_name = await getDbName();

@@ -4,7 +4,6 @@ import {
   FlatList,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Linking,
   Alert,
@@ -13,7 +12,7 @@ import {
   Animated,
   Easing
 } from 'react-native';
-import { MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
@@ -24,11 +23,98 @@ import Loader from '../components/old_components/Loader';
 import HeaderComponent from '../components/HeaderComponent';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DropdownPicker from '../components/DropdownPicker';
+import FilterModal from '../components/FilterModal';
+import styled from 'styled-components/native';
+import ClaimCard from '../components/ClaimCard';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 400;
-const ITEMS_PER_PAGE = 10; // Number of items to show per page
+const ITEMS_PER_PAGE = 10;
+
+const GroupHeader = styled.TouchableOpacity`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: ${props => props.isApproved ? '#f0f9f0' : props.isForwarded ? '#f0f5ff' : props.isRejected ? '#ffebee' : '#fffaf2'};
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border-left-width: 6px;
+  border-left-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+`;
+
+const GroupTitle = styled.Text`
+  font-size: 16px;
+  font-weight: bold;
+  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+  margin-right: 8px;
+`;
+
+const GroupSubtitle = styled.Text`
+  font-size: 13px;
+  color: #666;
+  margin-top: 4px;
+`;
+
+const GroupAmount = styled.Text`
+  font-size: 16px;
+  font-weight: bold;
+  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+  margin-right: 8px;
+`;
+
+const ItemCard = styled.View`
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left-width: 4px;
+  border-left-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+`;
+
+const ItemHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 8px;
+`;
+
+const ItemName = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+`;
+
+const ItemAmount = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+`;
+
+const ItemDetail = styled.View`
+  flex-direction: row;
+  margin-bottom: 4px;
+`;
+
+const ItemLabel = styled.Text`
+  font-size: 13px;
+  color: #666;
+  width: 80px;
+`;
+
+const ItemValue = styled.Text`
+  font-size: 13px;
+  color: #333;
+  flex: 1;
+`;
+
+const StatusIndicator = styled.View`
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  margin-right: 5px;
+  background-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+`;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -38,162 +124,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
-  },
-  claimCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#a970ff',
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-    marginHorizontal: 10,
-    maxWidth: '100%',
-  },
-  claimStatusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  claimText: {
-    fontSize: 15,
-    color: '#2f2f2f',
-    fontWeight: '500',
-    marginVertical: 2,
-  },
-  claimText2: {
-    fontSize: 15,
-    fontWeight: '500',
-    marginVertical: 2,
-  },
-  claimAmountText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007bff',
-    marginVertical: 2,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 10,
-  },
-  buttonColumn: {
-    flexDirection: 'column',
-    marginTop: 10,
-  },
-  viewButton: {
-    backgroundColor: '#e9ecef',
-    borderWidth: 1,
-    borderColor: '#ced4da',
-  },
-  returnButton: {
-    backgroundColor: '#ffc107',
-  },
-  approveButton: {
-    backgroundColor: '#3c9df1',
-  },
-  disabledButton: {
-    backgroundColor: '#6c757d',
-    opacity: 0.6,
-  },
-  actionButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-    minWidth: 100,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 40, // Fixed height for consistency
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  viewButtonText: {
-    color: '#495057',
-  },
-  claimHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  claimIdContainer: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  claimIdText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6c5ce7',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD', // Default background (for submitted)
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-    textTransform: 'uppercase',
-  },
-  claimBody: {
-    marginBottom: 12,
-  },
-  claimRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  claimLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-    marginRight: 4,
-    width: 80,
-  },
-  claimValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    flex: 1,
-  },
-  amountContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  amountLabel: {
-    fontSize: 14,
-    color: '#666',
-  },
-  amountValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#6c5ce7',
-  },
-  actionButtonText: {
-    color: '#fff',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -218,87 +148,43 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ced4da',
   },
+  approveButton: {
+    backgroundColor: '#3c9df1',
+  },
+  returnButton: {
+    backgroundColor: '#ffc107',
+  },
+  disabledButton: {
+    backgroundColor: '#6c757d',
+    opacity: 0.6,
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  actionButtonText: {
+    color: '#fff',
+  },
+  viewButtonText: {
+    color: '#495057',
+  },
   buttonIcon: {
     marginRight: 6,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 15,
-    marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#495057',
-    paddingLeft: 10,
-    paddingVertical: 8,
-  },
-  filterButton: {
-    backgroundColor: '#6c5ce7',
-    padding: 10,
-    borderRadius: 10,
-    marginLeft: 10,
-  },
-  filterIcon: {
-    transform: [{ rotate: '0deg' }],
-  },
-  filterContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f1f1',
-  },
-  filterHeader: {
+  masterButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
+    marginTop: 15,
   },
-  filterTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#495057',
-  },
-  dropdownContainer: {
-    marginBottom: 15,
-  },
-  clearFiltersButton: {
-    backgroundColor: '#6c5ce7',
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 10,
-    flexDirection: 'row',
+  masterActionButton: {
+    flex: 1,
+    marginHorizontal: 5,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  clearFiltersText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  leftContainer: {
-    flex: 1,
-  },
-  rightContainer: {
-    alignItems: 'flex-end',
-    minWidth: 100,
+    flexDirection: 'row',
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -324,202 +210,180 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#495057',
   },
+  filterButton: {
+    backgroundColor: '#6c5ce7',
+    padding: 10,
+    borderRadius: 10,
+    marginLeft: 10,
+  },
 });
 
 const ApproveClaim = () => {
   const { profile } = useContext(AppContext);
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [claimData, setClaimData] = useState([]);
-  const [emp, setEmp] = useState('');
   const [filteredData, setFilteredData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigation = useNavigation();
   const router = useRouter();
   const requestData = 'APPROVE';
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Dropdown states
-  const [selectedClaimId, setSelectedClaimId] = useState(null);
-  const [claimIdItems, setClaimIdItems] = useState([]);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [employeeItems, setEmployeeItems] = useState([]);
-  const [selectedItemName, setSelectedItemName] = useState(null);
-  const [itemNameItems, setItemNameItems] = useState([]);
-
-  // Filter visibility
-  const [showFilters, setShowFilters] = useState(false);
-  const rotateAnim = useState(new Animated.Value(0))[0];
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-  }, [navigation]);
-
-  useEffect(() => {
-    const fetchEmployeeInfo = async () => {
-      setLoading(true);
-      try {
-        const employeeId = profile?.id;
-        setEmp(employeeId);
-        
-        if (employeeId) {
-          await fetchClaimDetails(employeeId);
-        }
-      } catch (error) {
-        setLoading(false);
-        console.error("Error fetching employee info:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEmployeeInfo();
-  }, []);
-
-  useEffect(() => {
-    // Initialize dropdown items when claimData changes
-    if (claimData.length > 0) {
-      // Filter out claims with expense_status "N"
-      const filteredClaims = claimData.filter(item => item.expense_status !== 'N');
-      
-      const uniqueClaimIds = [...new Set(filteredClaims.map(item => item.claim_id))];
-      setClaimIdItems(uniqueClaimIds.map(id => ({ label: id, value: id })));
-
-      const uniqueEmployees = [...new Set(filteredClaims.map(item => item.employee_name))];
-      setEmployeeItems(uniqueEmployees.map(name => ({ 
-        label: name, 
-        value: name 
-      })));
-
-      const uniqueItemNames = [...new Set(filteredClaims.map(item => item.item_name))];
-      setItemNameItems(uniqueItemNames.map(name => ({ 
-        label: name, 
-        value: name 
-      })));
-
-      // Update filtered data and pagination
-      applyFilters(searchQuery, selectedClaimId, selectedEmployee, selectedItemName);
-    }
-  }, [claimData]);
-
-  const toggleFilters = () => {
-    Animated.timing(rotateAnim, {
-      toValue: showFilters ? 0 : 1,
-      duration: 300,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-    setShowFilters(!showFilters);
-  };
-
-  const rotateInterpolate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
+  // Filter state
+  const [filters, setFilters] = useState({
+    status: null,
+    claimId: null,
+    employee: null,
   });
+  const [activeFilters, setActiveFilters] = useState({
+    status: null,
+    claimId: null,
+    employee: null,
+  });
+  const [pendingFilters, setPendingFilters] = useState({
+    status: null,
+    claimId: null,
+    employee: null,
+  });
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
-  const fetchClaimDetails = async (employeeId) => {
-    setIsLoading(true);
-    try {
-      const res = await getEmpClaim(requestData, employeeId, 'CY');
-      // Filter out claims with expense_status "N"
-      const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
-      setClaimData(filteredClaims);
-      setFilteredData(filteredClaims);
-      // Calculate total pages
-      setTotalPages(Math.ceil(filteredClaims.length / ITEMS_PER_PAGE));
-    } catch (error) {
-      console.error("Error fetching claim details:", error);
-    } finally {
-      setIsLoading(false);
+  const filterConfigs = [
+    {
+      label: "Status",
+      options: [
+        { label: "Submitted", value: "S" },
+        { label: "Approved", value: "A" },
+        { label: "Forwarded", value: "F" },
+        { label: "Rejected", value: "R" },
+      ],
+      value: pendingFilters.status,
+      setValue: (value) => setPendingFilters(prev => ({ ...prev, status: value })),
+    },
+    {
+      label: "Claim ID",
+      options: claimData.length > 0 
+        ? [...new Set(claimData.map(item => item.master_claim_id))].map(id => ({
+            label: id,
+            value: id,
+          }))
+        : [],
+      value: pendingFilters.claimId,
+      setValue: (value) => setPendingFilters(prev => ({ ...prev, claimId: value })),
+    },
+    {
+      label: "Employee",
+      options: claimData.length > 0
+        ? [...new Set(claimData.map(item => item.employee_name))].map(name => ({
+            label: name,
+            value: name,
+          }))
+        : [],
+      value: pendingFilters.employee,
+      setValue: (value) => setPendingFilters(prev => ({ ...prev, employee: value })),
     }
+  ];
+
+  const handleApplyFilters = () => {
+    setActiveFilters(pendingFilters);
+    setShowFilterModal(false);
   };
 
-  const getClaimStatus = (status) => {
-    switch (status) {
-      case 'S':
-        return 'SUBMITTED';
-      case 'A':
-        return 'APPROVED';
-      case 'F':
-        return 'FORWARDED';
-      case 'R':
-        return 'REJECTED';
-      default:
-        return 'UNKNOWN';
-    }
+  const handleClearFilters = () => {
+    setPendingFilters({
+      status: null,
+      claimId: null,
+      employee: null,
+    });
+    setActiveFilters({
+      status: null,
+      claimId: null,
+      employee: null,
+    });
   };
 
-  const handleSearch = (text) => {
-    setSearchQuery(text);
-    applyFilters(text, selectedClaimId, selectedEmployee, selectedItemName);
+  const getCurrentPageData = () => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredData.slice(startIndex, endIndex);
   };
 
-  const applyFilters = (searchText, claimId, employee, itemName) => {
+  useEffect(() => {
     let filtered = [...claimData];
     
-    // Filter out claims with expense_status "N"
-    filtered = filtered.filter(item => item.expense_status !== 'N');
-    
-    if (searchText) {
-      filtered = filtered.filter((item) => {
-        const empIdMatch = item.employee_name.match(/\[(.*?)\]/);
-        const empId = empIdMatch ? empIdMatch[1] : '';
-        return empId.includes(searchText);
-      });
+    if (activeFilters.status) {
+      filtered = filtered.filter(item => item.expense_status === activeFilters.status);
     }
     
-    if (claimId) {
-      filtered = filtered.filter(item => item.claim_id === claimId);
+    if (activeFilters.claimId) {
+      filtered = filtered.filter(item => item.master_claim_id === activeFilters.claimId);
     }
     
-    if (employee) {
-      filtered = filtered.filter(item => item.employee_name === employee);
-    }
-    
-    if (itemName) {
-      filtered = filtered.filter(item => item.item_name === itemName);
+    if (activeFilters.employee) {
+      filtered = filtered.filter(item => item.employee_name === activeFilters.employee);
     }
     
     setFilteredData(filtered);
     setTotalPages(Math.ceil(filtered.length / ITEMS_PER_PAGE));
-    setCurrentPage(1); // Reset to first page when filters change
-  };
-
-  const handleClaimIdSelect = (value) => {
-    setSelectedClaimId(value);
-    applyFilters(searchQuery, value, selectedEmployee, selectedItemName);
-  };
-
-  const handleEmployeeSelect = (value) => {
-    setSelectedEmployee(value);
-    applyFilters(searchQuery, selectedClaimId, value, selectedItemName);
-  };
-
-  const handleItemNameSelect = (value) => {
-    setSelectedItemName(value);
-    applyFilters(searchQuery, selectedClaimId, selectedEmployee, value);
-  };
-
-  const clearAllFilters = () => {
-    setSearchQuery('');
-    setSelectedClaimId(null);
-    setSelectedEmployee(null);
-    setSelectedItemName(null);
-    setFilteredData(claimData.filter(item => item.expense_status !== 'N'));
-    setTotalPages(Math.ceil(claimData.filter(item => item.expense_status !== 'N').length / ITEMS_PER_PAGE));
     setCurrentPage(1);
-  };
+  }, [activeFilters, claimData]);
 
   const closeModal = () => {
     setModalVisible(false);
+  };
+
+  useLayoutEffect(() => {
+    const fetchClaimDetails = async () => {
+      setIsLoading(true);
+      try {
+        const employeeId = profile?.id;
+        if (employeeId) {
+          const res = await getEmpClaim(requestData, employeeId, 'CY');
+          // Filter out claims with expense_status "N"
+          const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
+          setClaimData(filteredClaims);
+          setFilteredData(filteredClaims);
+          setTotalPages(Math.ceil(filteredClaims.length / ITEMS_PER_PAGE));
+          
+          // Initialize expanded groups
+          const initialExpanded = {};
+          filteredClaims.forEach(claim => {
+            initialExpanded[claim.master_claim_id] = false;
+          });
+          setExpandedGroups(initialExpanded);
+        }
+      } catch (error) {
+        console.error("Error fetching claim details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClaimDetails();
+  }, []);
+
+  const getClaimStatus = (status) => {
+    switch (status) {
+      case 'S': return 'SUBMITTED';
+      case 'A': return 'APPROVED';
+      case 'F': return 'FORWARDED';
+      case 'R': return 'REJECTED';
+      default: return 'UNKNOWN';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'S': return '#ff9800';
+      case 'A': return '#4caf50';
+      case 'F': return '#3c9df1';
+      case 'R': return '#f44336';
+      default: return '#666';
+    }
   };
 
   const handleViewFile = (fileUrl) => {
@@ -534,18 +398,20 @@ const ApproveClaim = () => {
     }
   };
 
-  const handleApprove = (claimDetails, callType) => {
-    const formattedClaimDetails = typeof claimDetails === 'object'
-      ? JSON.stringify(claimDetails)
-      : claimDetails;
-
+  const handleApprove = (claimDetails, callType, isMaster = false) => {
     router.push({
       pathname: 'ApproveDetails',
       params: {
-        claimDetails: formattedClaimDetails,
-        callType
+        claimDetails: JSON.stringify(claimDetails),
+        callType,
+        isMaster: isMaster.toString()
       },
     });
+  };
+
+  const handleCardPress = (claim) => {
+    setSelectedClaim(claim);
+    setModalVisible(true);
   };
 
   const handleBackPress = () => {
@@ -559,149 +425,151 @@ const ApproveClaim = () => {
     }
   };
 
-  const handleCardPress = (claim) => {
-    setSelectedClaim(claim);
-    setModalVisible(true);
+  const toggleGroup = (claimId) => {
+    setExpandedGroups(prev => ({
+      ...prev,
+      [claimId]: !prev[claimId]
+    }));
   };
 
-  // Get current page data
-  const getCurrentPageData = () => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return [...filteredData].reverse().slice(startIndex, endIndex);
+  const calculateGroupTotal = (claim) => {
+    if (claim.claim_items && claim.claim_items.length > 0) {
+      return claim.claim_items.reduce((total, item) => {
+        const amount = parseFloat(item.expense_amt) || 0;
+        return total + amount;
+      }, 0);
+    }
+    return parseFloat(claim.expense_amt) || 0;
   };
 
-  const renderClaimItem = ({ item }) => {
-  const status = item.expense_status;
-  const statusText = getClaimStatus(status);
-  const isSubmitted = status === 'S';
-  const isForwarded = status === 'F';
-  const isRejected = status === 'R';
-  const isApproved = status === 'A';
+  console.log("Claim Data==",claimData[1])
 
-  // Status color mapping
-  const statusStyles = {
-    S: { backgroundColor: '#E3F2FD', textColor: '#1565C0', icon: 'clock' }, // Submitted
-    A: { backgroundColor: '#E8F5E9', textColor: '#2E7D32', icon: 'check-circle' }, // Approved
-    F: { backgroundColor: '#F3E5F5', textColor: '#7B1FA2', icon: 'share-2' }, // Forwarded
-    R: { backgroundColor: '#FFEBEE', textColor: '#C62828', icon: 'x-circle' }, // Rejected
-  };
-
-  const currentStatus = statusStyles[status] || statusStyles['S'];
-
+  const renderGroupedClaimItem = ({ item }) => {
+  const masterStatus = item.expense_status;
+  const masterStatusText = getClaimStatus(masterStatus);
+  const masterStatusColor = getStatusColor(masterStatus);
+  const isMasterSubmitted = masterStatus === 'S';
+  const isMasterApproved = masterStatus === 'A';
+  const isMasterForwarded = masterStatus === 'F';
+  const isMasterRejected = masterStatus === 'R';
+  const groupTotal = calculateGroupTotal(item);
+  
   return (
-    <View style={[styles.claimCard, {
-      borderLeftWidth: 5,
-      borderLeftColor: currentStatus.textColor
-    }]}>
-      <TouchableOpacity 
-        activeOpacity={0.9}
-        onPress={() => handleCardPress(item)}
+    <View style={{ marginBottom: 15, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', elevation: 2 }}>
+      <GroupHeader 
+        onPress={() => toggleGroup(item.master_claim_id)}
+        isApproved={isMasterApproved}
+        isForwarded={isMasterForwarded}
+        isRejected={isMasterRejected}
+        activeOpacity={0.7}
       >
-        <View style={styles.claimHeader}>
-          <View style={styles.claimIdContainer}>
-            <Text style={styles.claimIdText}>{item.claim_id}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: currentStatus.backgroundColor }]}>
-            <Feather 
-              name={currentStatus.icon} 
-              size={14} 
-              color={currentStatus.textColor} 
-            />
-            <Text style={[styles.statusText, { color: currentStatus.textColor }]}>
-              {statusText}
-            </Text>
-          </View>
-        </View>
-
-        {/* Rest of your card content remains the same */}
-        <View style={styles.claimBody}>
-          <View style={styles.claimRow}>
-            <MaterialIcons name="date-range" size={16} color="#6c5ce7" />
-            <Text style={styles.claimLabel}>Expense Date:</Text>
-            <Text style={styles.claimValue}>{item.expense_date}</Text>
-          </View>
-
-          <View style={styles.claimRow}>
-            <MaterialIcons name="shopping-cart" size={16} color="#6c5ce7" />
-            <Text style={styles.claimLabel}>Item:</Text>
-            <Text style={styles.claimValue} numberOfLines={1} ellipsizeMode="tail">
-              {item.item_name}
-            </Text>
-          </View>
-
-          <View style={styles.claimRow}>
-            <MaterialIcons name="person" size={16} color="#6c5ce7" />
-            <Text style={styles.claimLabel}>Employee:</Text>
-            <Text style={styles.claimValue} numberOfLines={1} ellipsizeMode="tail">
-              {item.employee_name}
-            </Text>
-          </View>
-
-          <View style={styles.amountContainer}>
-            <Text style={styles.amountLabel}>Amount:</Text>
-            <Text style={[styles.amountValue, { color: currentStatus.textColor }]}>
-              ₹{parseFloat(item.expense_amt).toFixed(2)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Rest of your buttons remain the same */}
-        <View style={styles.buttonContainer}>
-          {item.submitted_file_1 && (
-            <TouchableOpacity 
-              style={[styles.buttonBase, styles.viewButton]}
-              onPress={() => handleViewFile(item.submitted_file_1)}
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <GroupTitle 
+              isApproved={isMasterApproved}
+              isForwarded={isMasterForwarded}
+              isRejected={isMasterRejected}
             >
-              <MaterialIcons 
-                name="visibility" 
-                size={18} 
-                color="#495057" 
-                style={styles.buttonIcon}
+              {item.master_claim_id}
+            </GroupTitle>
+            {/* <View style={{ 
+              backgroundColor: `${masterStatusColor}20`, 
+              paddingHorizontal: 8, 
+              paddingVertical: 2, 
+              borderRadius: 10 
+            }}>
+              <Text style={{ 
+                fontSize: 10, 
+                fontWeight: 'bold', 
+                color: masterStatusColor 
+              }}>
+                {masterStatusText}
+              </Text>
+            </View> */}
+          </View>
+          <GroupSubtitle>
+            {item.claim_date}
+          </GroupSubtitle>
+          <GroupSubtitle>
+            {item.employee_name}
+          </GroupSubtitle>
+          <GroupSubtitle>
+            {item.claim_items?.length || 1} item{item.claim_items?.length !== 1 ? 's' : ''}
+          </GroupSubtitle>
+        </View>
+        
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <GroupAmount 
+            isApproved={isMasterApproved}
+            isForwarded={isMasterForwarded}
+            isRejected={isMasterRejected}
+          >
+            ₹{groupTotal.toFixed(2)}
+          </GroupAmount>
+          <Ionicons 
+            name={expandedGroups[item.master_claim_id] ? 'chevron-up' : 'chevron-down'} 
+            size={20} 
+            color={masterStatusColor} 
+          />
+        </View>
+      </GroupHeader>
+      
+      {expandedGroups[item.master_claim_id] && (
+        <View style={{ padding: 12 }}>
+          {item.claim_items && item.claim_items.length > 0 ? (
+              item.claim_items.map((claimItem, index) => (
+                <ClaimCard 
+                  key={`${claimItem.id}-${index}`}
+                  claim={claimItem}
+                  onPress={handleCardPress}
+                  onViewFile={handleViewFile}
+                  getStatusText={getClaimStatus}
+                  style={{ 
+                    marginBottom: index === item.claim_items.length - 1 ? 0 : 8,
+                  }}
+                />
+              ))
+            ) : (
+              <ClaimCard 
+                claim={item}
+                onPress={() => handleApprove(item, 'Item')}
+                onViewFile={handleViewFile}
+                getStatusText={getClaimStatus}
               />
-              <Text style={[styles.buttonText, styles.viewButtonText]}>View File</Text>
-            </TouchableOpacity>
-          )}          
+            )}
+
           
-          {!isApproved && (
-            <TouchableOpacity
-              style={[
-                styles.buttonBase,
-                isSubmitted ? styles.approveButton : styles.disabledButton
-              ]}
-              onPress={() => isSubmitted && handleApprove(item, 'Approve')}
-              disabled={!isSubmitted}
-            >
-              {isSubmitted && (
+          {isMasterSubmitted && (
+            <View style={styles.masterButtonContainer}>
+              
+              {/* <TouchableOpacity
+                style={[styles.masterActionButton, { backgroundColor: '#ffc107' }]}
+                onPress={() => handleApprove(item, 'Return', true)}
+              >
+                <MaterialIcons 
+                  name="undo" 
+                  size={18} 
+                  color="#fff" 
+                  style={styles.buttonIcon}
+                />
+                <Text style={[styles.buttonText, styles.actionButtonText]}>Return All</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity
+                style={[styles.masterActionButton, { backgroundColor: '#a970ff' }]}
+                onPress={() => handleApprove(item, 'Approve', true)}
+              >
                 <MaterialIcons 
                   name="check-circle" 
                   size={18} 
                   color="#fff" 
                   style={styles.buttonIcon}
                 />
-              )}
-              <Text style={[styles.buttonText, styles.actionButtonText]}>
-                {isSubmitted ? 'Approve' : statusText}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {isSubmitted && (
-            <TouchableOpacity 
-              style={[styles.buttonBase, styles.returnButton]}
-              onPress={() => handleApprove(item, 'Return')}
-            >
-              <MaterialIcons 
-                name="undo" 
-                size={18} 
-                color="#fff" 
-                style={styles.buttonIcon}
-              />
-              <Text style={[styles.buttonText, styles.actionButtonText]}>Return</Text>
-            </TouchableOpacity>
+                <Text style={[styles.buttonText, styles.actionButtonText]}>Approve All</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
-      </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -724,85 +592,21 @@ const ApproveClaim = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <HeaderComponent 
-        headerTitle={`Approve Claim List (${filteredData.length})`} 
-        onBackPress={handleBackPress} 
+        headerTitle={`Approve Claim List (${filteredData.length})`}
+        onBackPress={handleBackPress}
+        icon1Name="filter"
+        icon1OnPress={() => setShowFilterModal(true)}
       />
+      
       <View style={styles.container}>
-        <View style={styles.searchContainer}>
-          <MaterialIcons name="search" size={moderateScale(24)} color="#888" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search Employee ID"
-            placeholderTextColor="#888"
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-          <TouchableOpacity 
-            style={styles.filterButton}
-            onPress={toggleFilters}
-          >
-            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-              <FontAwesome name="filter" size={20} color="white" />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-
-        {showFilters && (
-          <View style={styles.filterContainer}>
-            <View style={styles.filterHeader}>
-              <Text style={styles.filterTitle}>Filters</Text>
-              {(selectedClaimId || selectedEmployee || selectedItemName) && (
-                <TouchableOpacity onPress={clearAllFilters}>
-                  <Text style={{ color: '#6c5ce7', fontWeight: '500' }}>Clear All</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            <View style={styles.dropdownContainer}>
-              <DropdownPicker
-                label="Claim ID"
-                data={claimIdItems}
-                value={selectedClaimId}
-                setValue={handleClaimIdSelect}
-              />
-            </View>
-
-            <View style={styles.dropdownContainer}>
-              <DropdownPicker
-                label="Employee"
-                data={employeeItems}
-                value={selectedEmployee}
-                setValue={handleEmployeeSelect}
-              />
-            </View>
-
-            <View style={styles.dropdownContainer}>
-              <DropdownPicker
-                label="Item Name"
-                data={itemNameItems}
-                value={selectedItemName}
-                setValue={handleItemNameSelect}
-              />
-            </View>
-
-            <TouchableOpacity 
-              style={styles.clearFiltersButton}
-              onPress={clearAllFilters}
-            >
-              <FontAwesome name="times" size={16} color="white" />
-              <Text style={styles.clearFiltersText}>Clear Filters</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        
         {isLoading ? (
           <Loader visible={isLoading} />
         ) : (
           <>
             <FlatList
               data={getCurrentPageData()}
-              renderItem={renderClaimItem}
-              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderGroupedClaimItem}
+              keyExtractor={(item) => item.master_claim_id.toString()}
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={<EmptyMessage data="claim" />}
               contentContainerStyle={{ 
@@ -844,6 +648,15 @@ const ApproveClaim = () => {
             onClose={closeModal}
           />
         )}
+        
+        <FilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onClearFilters={handleClearFilters}
+          onApplyFilters={handleApplyFilters}
+          filterConfigs={filterConfigs}
+          modalTitle="Filter Claims"
+        />
       </View>
     </SafeAreaView>
   );

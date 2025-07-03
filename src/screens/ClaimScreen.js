@@ -212,11 +212,8 @@ const ClaimScreen = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedClaimIdFilter, setSelectedClaimIdFilter] = useState(null);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState(null);
-  const [claimToUpdate, setClaimToUpdate] = useState(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('CY'); // Default to Current Year
   const [statusSummary, setStatusSummary] = useState({
@@ -231,7 +228,6 @@ const ClaimScreen = (props) => {
   period: 'CY'
 });
   const navigation = useNavigation();
-  const period = "CY";
 
   const statusOptions = [
   { label: 'Submitted', value: 'S' },
@@ -253,6 +249,18 @@ const periodOptions = [
       updateStatusSummary(allClaims);
     }
   }, [allClaims]);
+
+//   useEffect(() => {
+//   // Check if both sections are empty and data is loaded
+//   if (!isLoading && allClaims.length === 0) {
+//     // Small timeout to ensure UI is ready
+//     const timer = setTimeout(() => {
+//       handlePress('ADD NEW');
+//     }, 100);
+    
+//     return () => clearTimeout(timer);
+//   }
+// }, [allClaims, isLoading]);
 
   const updateStatusSummary = (claims) => {
     const summary = {
@@ -289,31 +297,6 @@ const periodOptions = [
   return uniqueValues.map(value => ({ label: value, value }));
 };
 
-  const filterConfigs = [
-  {
-    label: "Status",
-    options: statusOptions,
-    value: selectedStatus,
-    setValue: setSelectedStatus,
-  },
-  {
-    label: "Claim ID",
-    options: getDropdownOptions('master_claim_id'),
-    value: selectedClaimIdFilter,
-    setValue: setSelectedClaimIdFilter
-  },
-  {
-    label: "Period",
-    options: periodOptions,
-    value: selectedPeriod,
-    setValue: setSelectedPeriod
-  }
-];
-
-  const activeFilterConfigs = filterConfigs.filter(config => config.show !== false);
-
-  const rotateAnim = useState(new Animated.Value(0))[0];
-
   useEffect(() => {
     if (groupedClaims.length > 0 && Object.keys(expandedGroups).length === 0) {
       const initialExpanded = {};
@@ -345,17 +328,9 @@ const periodOptions = [
 
   useEffect(() => {
     filterClaims();
-  }, [allClaims, activeTab, searchQuery, selectedStatus, selectedClaimIdFilter, selectedEmployee, selectedItem]);
+  }, [allClaims, activeTab, searchQuery, selectedStatus, selectedClaimIdFilter]);
 
-  const toggleFilters = () => {
-    Animated.timing(rotateAnim, {
-      toValue: showFilters ? 0 : 1,
-      duration: 300,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-    setShowFilters(!showFilters);
-  };
+  
 
 // Helper function to parse claim dates in "DD-MMM-YYYY" format
 const parseClaimDate = (dateString) => {
@@ -449,23 +424,29 @@ const filterClaims = () => {
   const fetchClaimDetails = () => {
   setIsLoading(true);
   
-  // Pass null for 'ALL' period
   const apiPeriod = selectedPeriod === 'ALL' ? null : selectedPeriod;
   
-  getEmpClaim(requestData, empId, apiPeriod || 'CY').then((res) => {
-    // Filter out claims with empty claim_items arrays right after fetching
-    const validClaims = (res.data || []).filter(claim => 
+  getEmpClaim(requestData, empId, apiPeriod || 'CY')
+    .then((res) => {
+      const claims = res.data || [];
+      const validClaims = (res.data || []).filter(claim => 
       !claim.master_claim_id || // Keep non-grouped claims
       (claim.master_claim_id && claim.claim_items && claim.claim_items.length > 0)
     );
     
     setAllClaims(validClaims);
-    setIsLoading(false);
-  }).catch((error) => {
-    setIsLoading(false);
-    console.error("Error fetching claim data:", error);
-  });
-};
+      setIsLoading(false);
+      
+      // If no claims at all, show add screen
+      if (claims.length === 0) {
+        handlePress('ADD NEW');
+      }
+    })
+    .catch((error) => {
+      setIsLoading(false);
+      console.error("Error fetching claim data:", error);
+    });
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -789,13 +770,6 @@ const filterClaims = () => {
   );
 };
 
-  const clearAllFilters = () => {
-  setSearchQuery('');
-  setSelectedStatus(null);
-  setSelectedClaimIdFilter(null);
-  setSelectedPeriod('CY'); // Reset to Current Year
-  setSelectedItem(null);
-};
 
   if (selectedImageUrl) {
     return (
@@ -824,8 +798,6 @@ const filterClaims = () => {
       />
       
       <Container>
-        {/* Status Summary Section */}
-        {/* {activeTab === 'all' && ( */}
           <StatusContainer>
             <StatusItem>
               <StatusTitle>Total</StatusTitle>
@@ -852,17 +824,6 @@ const filterClaims = () => {
           </StatusContainer>
         {/* )} */}
 
-        {/* {activeTab === 'drafts' && (
-          <StatusContainer>
-            <StatusItem>
-              <StatusTitle>Drafts</StatusTitle>
-              <StatusValue color="#9C27B0">
-                {filteredClaims.filter(claim => claim.expense_status === 'N').length}
-              </StatusValue>
-            </StatusItem>
-          </StatusContainer>
-        )} */}
-
         <TabContainer>
           <TabButton 
             active={activeTab === 'all'} 
@@ -884,19 +845,16 @@ const filterClaims = () => {
           keyExtractor={(item) => item.master_claim_id.toString()}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
-          ListEmptyComponent={<EmptyMessage data={activeTab === 'drafts' ? 'draft claims' : 'claims'} />}
-        />
-
-        {/* {activeTab === 'drafts' && (
-          <ButtonWrapper>
-            <ApplyButton 
-              onPress={() => handlePress('ADD')}
-              buttonText='Create New Claim'
-              icon='add-circle'
+          ListEmptyComponent={
+            <EmptyMessage 
+              data={activeTab === 'drafts' ? 'draft claims' : 'claims'} 
+              action={activeTab === 'drafts' ? () => handlePress('ADD NEW') : null}
+              actionText={activeTab === 'drafts' ? 'Create New Claim' : null}
+              message={activeTab === 'drafts' ? 'Create New Claim' : "No Active Claim"}
+              subMessage={`You don't have any claims to dispaly. Please Click on the above 'PLUS' icon to add a new claim.`}
             />
-          </ButtonWrapper>
-        )} */}
-
+          }
+        />
 
         {selectedClaim && (
           <ModalComponent
@@ -936,27 +894,24 @@ const filterClaims = () => {
               claimId: null,
               period: 'CY'
             });
-            // Clear the actual filters immediately
             setSelectedStatus(null);
             setSelectedClaimIdFilter(null);
             setSelectedPeriod('CY');
           }}
           onApplyFilters={() => {
-            // Apply the pending filters
             setSelectedStatus(pendingFilters.status);
             setSelectedClaimIdFilter(pendingFilters.claimId);
             setSelectedPeriod(pendingFilters.period);
             setShowFilterModal(false);
           }}
           filterConfigs={[
-            {
+            // Only show status filter in "Submitted Claims" tab
+            ...(activeTab === 'all' ? [{
               label: "Status",
-              options: activeTab === 'drafts' 
-                ? statusOptions.filter(opt => opt.value === 'N') // Only show Draft option for drafts tab
-                : statusOptions.filter(opt => opt.value !== 'N'), // Exclude Draft option for submitted tab
+              options: statusOptions.filter(opt => opt.value !== 'N'), // Exclude Draft option
               value: pendingFilters.status,
               setValue: (value) => setPendingFilters(prev => ({...prev, status: value})),
-            },
+            }] : []),
             {
               label: "Claim ID",
               options: getDropdownOptions('master_claim_id'),
