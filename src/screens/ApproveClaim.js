@@ -46,7 +46,8 @@ const GroupHeader = styled.TouchableOpacity`
 const GroupTitle = styled.Text`
   font-size: 16px;
   font-weight: bold;
-  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+  /* color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'}; */
+  color: #000;
   margin-right: 8px;
 `;
 
@@ -442,7 +443,7 @@ const ApproveClaim = () => {
     return parseFloat(claim.expense_amt) || 0;
   };
 
-  console.log("Claim Data==",claimData[1])
+  console.log("Claim Data==",claimData[2])
 
   const renderGroupedClaimItem = ({ item }) => {
   const masterStatus = item.expense_status;
@@ -564,7 +565,7 @@ const ApproveClaim = () => {
                   color="#fff" 
                   style={styles.buttonIcon}
                 />
-                <Text style={[styles.buttonText, styles.actionButtonText]}>Approve All</Text>
+                <Text style={[styles.buttonText, styles.actionButtonText]}>Approve</Text>
               </TouchableOpacity>
             </View>
           )}

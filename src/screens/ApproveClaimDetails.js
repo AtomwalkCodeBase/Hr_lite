@@ -3,19 +3,21 @@ import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, View, StyleSheet, Text, TouchableOpacity, FlatList } from 'react-native';
 import { getClaimApprover, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
-import AmountInput from '../components/AmountInput';
 import RemarksInput from '../components/RemarkInput';
-import DropdownPicker from '../components/DropdownPicker';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ConfirmationModal from '../components/ConfirmationModal';
+import AmountInput from '../components/AmountInput';
+import DropdownPicker from '../components/DropdownPicker';
 
 const ApproveClaimDetails = (props) => {
   const { profile } = useContext(AppContext);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
@@ -45,6 +47,8 @@ const ApproveClaimDetails = (props) => {
           setTotalAmount(sum);
           
           const initialStates = {};
+          const initialSelectedItems = [];
+          
           parsedDetails.claim_items.forEach(item => {
             initialStates[item.id] = {
               action: null,
@@ -52,8 +56,15 @@ const ApproveClaimDetails = (props) => {
               remarks: '',
               forwardManager: null
             };
+
+            // Auto-select items that are not already approved/rejected
+            if (item.expense_status !== 'A' && item.expense_status !== 'R') {
+              initialSelectedItems.push(item.id);
+            }
           });
+          
           setItemActions(initialStates);
+          setSelectedItems(initialSelectedItems);
         }
       } catch (error) {
         console.error("Error parsing claim data:", error);
@@ -113,7 +124,7 @@ const ApproveClaimDetails = (props) => {
     }
   };
 
-  const toggleItemExpand = (itemId) => {
+   const toggleItemExpand = (itemId) => {
     setExpandedItems(prev => ({
       ...prev,
       [itemId]: !prev[itemId]
@@ -121,6 +132,9 @@ const ApproveClaimDetails = (props) => {
   };
 
   const toggleItemSelection = (itemId) => {
+    const item = claim.claim_items?.find(i => i.id === itemId);
+    if (item?.expense_status === 'A' || item?.expense_status === 'R') return;
+    
     setSelectedItems(prev => 
       prev.includes(itemId) 
         ? prev.filter(id => id !== itemId) 
@@ -128,50 +142,45 @@ const ApproveClaimDetails = (props) => {
     );
   };
 
-  const handleItemActionChange = (itemId, action) => {
-  const item = claim.claim_items.find(i => i.id === itemId);
-  setItemActions(prev => ({
-    ...prev,
-    [itemId]: {
-      ...prev[itemId],
-      action,
-      approvedAmount: action === 'REJECT' 
-        ? '0' 
-        : (prev[itemId]?.approvedAmount || item.expense_amt.toString())
+  const toggleSelectAll = () => {
+    if (!claim.claim_items) return;
+    
+    const actionableItems = claim.claim_items
+      .filter(item => item.expense_status !== 'A' && item.expense_status !== 'R')
+      .map(item => item.id);
+    
+    if (selectedItems.length === actionableItems.length) {
+      // Unselect all
+      setSelectedItems([]);
+    } else {
+      // Select all actionable items
+      setSelectedItems([...actionableItems]);
     }
-  }));
-};
+  };
 
-  const handleItemAmountChange = (itemId, amount) => {
-  // Allow empty value (clearing the field)
-  if (amount === '') {
+  const handleItemActionChange = (itemId, action) => {
+    const item = claim.claim_items.find(i => i.id === itemId);
+    if (item?.expense_status === 'A' || item?.expense_status === 'R') return;
+    
     setItemActions(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        approvedAmount: ''
+        action,
+        approvedAmount: action === 'REJECT' 
+          ? '0' 
+          : (prev[itemId]?.approvedAmount || item.expense_amt.toString())
       }
     }));
-    return;
-  }
+  };
 
-  // Basic validation - allow only numbers and decimal point
-  const cleanedAmount = amount.replace(/[^0-9.]/g, '');
-  
-  // Get the original claimed amount for this item
-  const item = claim.claim_items.find(i => i.id === itemId);
-  const originalAmount = parseFloat(item.expense_amt);
-  
-  // Prevent amount from exceeding original claim
-  if (cleanedAmount && parseFloat(cleanedAmount) > originalAmount) {
-    return;
-  }
-  
+  const handleItemAmountChange = (itemId, amount) => {
+  // Simply update the amount without any validation during editing
   setItemActions(prev => ({
     ...prev,
     [itemId]: {
       ...prev[itemId],
-      approvedAmount: cleanedAmount
+      approvedAmount: amount
     }
   }));
 };
@@ -197,59 +206,51 @@ const ApproveClaimDetails = (props) => {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    
-    if (claimRemarks.trim() === '') {
-      newErrors.claimRemarks = 'Claim level remarks are required';
-    }
-    
-    if (selectedItems.length === 0) {
-      newErrors.selectedItems = 'Please select at least one item to take action';
-      return newErrors;
-    }
-    
-    // selectedItems.forEach(itemId => {
-    //   const item = itemActions[itemId];
-      
-    //   if (!item.action) {
-    //     newErrors[`itemAction-${itemId}`] = 'Please select an action for this item';
-    //   }
-      
-    //   if (item.action === 'APPROVE' || item.action === 'FORWARD') {
-    //     if (!item.approvedAmount || isNaN(parseFloat(item.approvedAmount))) {
-    //       newErrors[`itemAmount-${itemId}`] = 'Please enter a valid approved amount';
-    //     } else if (parseFloat(item.approvedAmount) > parseFloat(item.expense_amt)) {
-    //       newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
-    //     }
-    //   }
-      
-    //   if (item.action === 'FORWARD' && !item.forwardManager) {
-    //     newErrors[`itemManager-${itemId}`] = 'Please select a manager to forward';
-    //   }
-      
-    //   if (!item.remarks || item.remarks.trim() === '') {
-    //     newErrors[`itemRemarks-${itemId}`] = 'Remarks are required for this item';
-    //   }
-    // });
+  const newErrors = {};
+  
+  // Claim level remarks validation
+  if (claimRemarks.trim() === '') {
+    newErrors.claimRemarks = 'Claim level remarks are required';
+  }
+  
+  // Selected items validation
+  if (selectedItems.length === 0) {
+    newErrors.selectedItems = 'Please select at least one item to take action';
+    return newErrors;
+  }
 
-    selectedItems.forEach(itemId => {
+  // Item level validations
+  selectedItems.forEach(itemId => {
     const item = itemActions[itemId];
+    const originalItem = claim.claim_items.find(i => i.id === itemId);
     
     if (item.action === 'APPROVE' || item.action === 'FORWARD') {
-      if (!item.approvedAmount || item.approvedAmount === '') {
+      // Validate for empty amount only on submit
+      if (!item.approvedAmount || item.approvedAmount.trim() === '') {
         newErrors[`itemAmount-${itemId}`] = 'Please enter an approved amount';
-      } else if (isNaN(parseFloat(item.approvedAmount))) {
+      }
+      // Validate for invalid number format
+      else if (isNaN(parseFloat(item.approvedAmount))) {
         newErrors[`itemAmount-${itemId}`] = 'Please enter a valid amount';
-      } else if (parseFloat(item.approvedAmount) > parseFloat(item.expense_amt)) {
+      }
+      // Validate against original amount
+      else if (parseFloat(item.approvedAmount) > parseFloat(originalItem.expense_amt)) {
         newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
       }
     }
   });
-    
-    return newErrors;
-  };
+  
+  return newErrors;
+};
 
   const handleSubmit = async () => {
+    // Show confirmation modal first
+    setShowConfirmationModal(true);
+  };
+
+  const confirmSubmit = async () => {
+    setShowConfirmationModal(false);
+    
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -259,218 +260,272 @@ const ApproveClaimDetails = (props) => {
     setIsLoading(true);
     
     try {
-      const itemPayloads = selectedItems.map(itemId => {
+      const claim_list = selectedItems.map(itemId => {
         const item = itemActions[itemId];
-        return {
-          item_id: itemId,
-          action: item.action,
-          approved_amount: item.approvedAmount,
-          remarks: item.remarks,
-          forward_manager_id: item.forwardManager
+        const originalItem = claim.claim_items.find(i => i.id === itemId);
+        
+        const itemPayload = {
+          claim_id: originalItem.claim_id,
+          approve_type: getApproveType(item.action),
+          approved_amt: item.action === 'REJECT' ? '0' : item.approvedAmount,
+          remarks: item.remarks || ''
         };
+
+        if (item.action === 'FORWARD' && item.forwardManager) {
+          itemPayload.forward_manager_id = item.forwardManager;
+        }
+
+        return itemPayload;
       });
-      
-      const claimPayload = {
-        claim_id: isMasterApproval ? claim?.master_claim_id : `${claim?.id}`,
-        claim_remarks: claimRemarks,
-        is_master: isMasterApproval,
-        items: itemPayloads
+
+      const payload = {
+        m_claim_id: claimData?.master_claim_id || claim?.master_claim_id,
+        remarks: claimRemarks,
+        call_mode: 'APPROVE_CLAIM',
+        claim_list: claim_list
       };
+
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
       
-      await postClaimAction(claimPayload);
+      await postClaimAction(payload);
       setShowSuccessModal(true);
     } catch (error) {
-      Alert.alert('Action Failed', `Failed to process claim: ${error.message}`);
+      console.error('Submission error:', error);
+      Alert.alert(
+        'Action Failed', 
+        error.response?.data?.message || error.message || 'Failed to process claim'
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderClaimItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <TouchableOpacity 
-        onPress={() => toggleItemExpand(item.id)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.itemHeader}>
-          <TouchableOpacity 
-            onPress={(e) => {
-              e.stopPropagation();
-              toggleItemSelection(item.id);
-            }}
-            style={styles.checkboxContainer}
-          >
-            <View style={[
-              styles.checkbox, 
-              selectedItems.includes(item.id) && styles.checkboxSelected
-            ]}>
-              {selectedItems.includes(item.id) && (
-                <MaterialIcons name="check" size={16} color="white" />
+  const getApproveType = (action) => {
+    switch (action) {
+      case 'APPROVE': return 'A';
+      case 'REJECT': return 'R';
+      case 'FORWARD': return 'F';
+      case 'Back To Claimant': return 'B';
+    }
+  };
+
+  const renderClaimItem = ({ item }) => {
+    const isDisabled = item.expense_status === 'A' || item.expense_status === 'R';
+    const isSelected = selectedItems.includes(item.id);
+    
+    return (
+      <View style={[
+        styles.itemContainer,
+        isDisabled && styles.disabledItem
+      ]}>
+        <TouchableOpacity 
+          onPress={() => !isDisabled && toggleItemExpand(item.id)}
+          activeOpacity={0.8}
+          style={styles.itemHeaderTouchable}
+          disabled={isDisabled}
+        >
+          <View style={styles.itemHeader}>
+            {!isDisabled ? (
+              <TouchableOpacity 
+                onPress={(e) => {
+                  e.stopPropagation();
+                  toggleItemSelection(item.id);
+                }}
+                style={styles.checkboxContainer}
+              >
+                <View style={[
+                  styles.checkbox, 
+                  isSelected && styles.checkboxSelected
+                ]}>
+                  {isSelected && (
+                    <MaterialIcons name="check" size={16} color="white" />
+                  )}
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.statusIconContainer}>
+                <MaterialIcons 
+                  name={item.expense_status === 'A' ? 'check-circle' : 'cancel'} 
+                  size={22} 
+                  color={item.expense_status === 'A' ? '#27ae60' : '#e74c3c'} 
+                />
+              </View>
+            )}
+            
+            <View style={styles.itemTitleContainer}>
+              <Text style={[
+                styles.itemTitle,
+                isDisabled && styles.disabledText
+              ]} numberOfLines={1} ellipsizeMode="tail">
+                {item.item_name}
+              </Text>
+              {item.project_name && (
+                <Text style={[
+                  styles.itemProject,
+                  isDisabled && styles.disabledText
+                ]} numberOfLines={1}>
+                  {item.project_name}
+                </Text>
               )}
             </View>
-          </TouchableOpacity>
-          
-          <Text style={styles.itemTitle} numberOfLines={1} ellipsizeMode="tail">
-            {item.item_name}
-          </Text>
-          
-          <Text style={styles.itemAmount}>₹{parseFloat(item.expense_amt).toFixed(2)}</Text>
-          
-          <MaterialIcons 
-            name={expandedItems[item.id] ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
-            size={24} 
-            color="#666" 
-          />
-        </View>
-      </TouchableOpacity>
-      
-      {expandedItems[item.id] && (
-        <View style={styles.itemDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Date:</Text>
-            <Text style={styles.detailValue}>{item.expense_date}</Text>
-          </View>
-          
-          {item.project_name && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Project:</Text>
-              <Text style={styles.detailValue}>{item.project_name}</Text>
+            
+            <View style={styles.itemAmountContainer}>
+              <Text style={[
+                styles.itemAmount,
+                isDisabled && styles.disabledText
+              ]}>
+                ₹{parseFloat(item.expense_amt).toFixed(2)}
+              </Text>
+              {!isDisabled && (
+                <MaterialIcons 
+                  name={expandedItems[item.id] ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
+                  size={24} 
+                  color="#666" 
+                />
+              )}
             </View>
-          )}
-          
+          </View>
+        </TouchableOpacity>
+        
+        {expandedItems[item.id] && (
+        <View style={styles.itemDetails}>
+          <View style={styles.detailSection}>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Expense Date:</Text>
+              <Text style={styles.detailValue}>{item.expense_date}</Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Quantity:</Text>
+              <Text style={styles.detailValue}>{item.quantity}</Text>
+            </View>
+            
+            {item.project_name && (
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Project:</Text>
+                <Text style={styles.detailValue}>{item.project_name}</Text>
+              </View>
+            )}
+            
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>Original Remarks:</Text>
+              <Text style={styles.detailValue}>{item.remarks || 'None'}</Text>
+            </View>
+            
+            {item.submitted_file_1 && (
+              <TouchableOpacity 
+                style={styles.viewFileButton}
+                onPress={() => handleViewFile(item.submitted_file_1)}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="attach-file" size={18} color="#1976d2" />
+                <Text style={styles.viewFileText}>View Attachment</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {selectedItems.includes(item.id) && (
-            <>
-              <View style={styles.sectionDivider} />
+            <View style={styles.actionSection}>
+              <Text style={styles.sectionSubtitle}>Action Required</Text>
               
-              <Text style={styles.sectionSubtitle}>Item Action</Text>
-              
-              <View style={styles.actionRow}>
-                <Text style={styles.detailLabel}>Action:</Text>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      itemActions[item.id]?.action === 'APPROVE' && styles.approveButtonActive
-                    ]}
-                    onPress={() => handleItemActionChange(item.id, 'APPROVE')}
-                  >
-                    <Text style={[
-                      styles.actionButtonText,
-                      itemActions[item.id]?.action === 'APPROVE' && styles.actionButtonTextActive
-                    ]}>
-                      Approve
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      itemActions[item.id]?.action === 'REJECT' && styles.rejectButtonActive
-                    ]}
-                    onPress={() => handleItemActionChange(item.id, 'REJECT')}
-                  >
-                    <Text style={[
-                      styles.actionButtonText,
-                      itemActions[item.id]?.action === 'REJECT' && styles.actionButtonTextActive
-                    ]}>
-                      Reject
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      itemActions[item.id]?.action === 'FORWARD' && styles.forwardButtonActive
-                    ]}
-                    onPress={() => handleItemActionChange(item.id, 'FORWARD')}
-                  >
-                    <Text style={[
-                      styles.actionButtonText,
-                      itemActions[item.id]?.action === 'FORWARD' && styles.actionButtonTextActive
-                    ]}>
-                      Forward
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions[item.id]?.action === 'APPROVE' && styles.actionButtonActive,
+                    itemActions[item.id]?.action === 'APPROVE' && styles.approveButtonActive
+                  ]}
+                  onPress={() => handleItemActionChange(item.id, 'APPROVE')}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions[item.id]?.action === 'APPROVE' && styles.actionButtonTextActive
+                  ]}>
+                    Approve
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions[item.id]?.action === 'REJECT' && styles.actionButtonActive,
+                    itemActions[item.id]?.action === 'REJECT' && styles.rejectButtonActive
+                  ]}
+                  onPress={() => handleItemActionChange(item.id, 'REJECT')}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions[item.id]?.action === 'REJECT' && styles.actionButtonTextActive
+                  ]}>
+                    Reject
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions[item.id]?.action === 'FORWARD' && styles.actionButtonActive,
+                    itemActions[item.id]?.action === 'FORWARD' && styles.forwardButtonActive
+                  ]}
+                  onPress={() => handleItemActionChange(item.id, 'FORWARD')}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions[item.id]?.action === 'FORWARD' && styles.actionButtonTextActive
+                  ]}>
+                    Forward
+                  </Text>
+                </TouchableOpacity>
               </View>
               
-              {errors[`itemAction-${item.id}`] && (
-                <Text style={styles.errorText}>{errors[`itemAction-${item.id}`]}</Text>
+              {(itemActions[item.id]?.action === 'APPROVE' || itemActions[item.id]?.action === 'FORWARD') && (
+                <View style={styles.amountInputContainer}>
+                  <Text style={styles.detailLabel}>Approved Amount:</Text>
+                  <AmountInput
+  label=""
+  claimAmount={itemActions[item.id]?.approvedAmount || ''} // Fallback to empty string
+  setClaimAmount={(amount) => handleItemAmountChange(item.id, amount)}
+  error={errors[`itemAmount-${item.id}`]}
+  style={styles.amountInput}
+/>
+                </View>
               )}
               
-              {(itemActions[item.id]?.action === 'APPROVE' || itemActions[item.id]?.action === 'FORWARD') && (
-  <>
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>Approved Amount:</Text>
-      <View style={{flex: 1}}>
-        <AmountInput
-          label=""
-          claimAmount={itemActions[item.id]?.approvedAmount || item.expense_amt.toString()}
-          setClaimAmount={(amount) => handleItemAmountChange(item.id, amount)}
-          error={errors[`itemAmount-${item.id}`]}
-        />
-      </View>
-    </View>
-  </>
-)}
-              
               {itemActions[item.id]?.action === 'FORWARD' && (
-                <>
-                  <View style={styles.detailRow}>
-                    
-                    <View style={styles.dropdownWrapper}>
-                      <Text style={styles.detailLabel}>Forward To Manager</Text>
-                      <View style={styles.managerSelectionContainer}>
-                        <DropdownPicker
-                          data={managers.map(m => ({
-                            label: `${m.name} [${m.emp_id}]`,
-                            value: m.id
-                          }))}
-                          value={itemActions[item.id]?.forwardManager}
-                          setValue={(value) => handleItemForwardManagerChange(item.id, value)}
-                          placeholder="Select manager"
-                          style={styles.itemDropdown}
-                          containerStyle={styles.dropdownContainer}
-                        />
-                      </View>
-                    </View>
-                  </View>
+                <View style={styles.managerDropdownContainer}>
+                  <Text style={styles.detailLabel}>Forward To:</Text>
+                  <DropdownPicker
+                    data={managers.map(m => ({
+                      label: `${m.name} [${m.emp_id}]`,
+                      value: m.id
+                    }))}
+                    value={itemActions[item.id]?.forwardManager}
+                    setValue={(value) => handleItemForwardManagerChange(item.id, value)}
+                    placeholder="Select manager"
+                    style={styles.managerDropdown}
+                    containerStyle={styles.dropdownContainer}
+                  />
                   {errors[`itemManager-${item.id}`] && (
                     <Text style={styles.errorText}>{errors[`itemManager-${item.id}`]}</Text>
                   )}
-                </>
+                </View>
               )}
               
               <RemarksInput
-                label="Item Remarks:"
+                label="Your Remarks:"
                 remark={itemActions[item.id]?.remarks || ''}
                 setRemark={(text) => handleItemRemarksChange(item.id, text)}
                 error={errors[`itemRemarks-${item.id}`]}
                 placeholder="Enter remarks for this item..."
                 style={styles.itemRemarksInput}
               />
-            </>
+            </View>
           )}
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Original Remarks:</Text>
-            <Text style={styles.detailValue}>{item.remarks || 'None'}</Text>
           </View>
-          
-          {item.submitted_file_1 && (
-            <TouchableOpacity 
-              style={styles.viewFileButton}
-              onPress={() => handleViewFile(item.submitted_file_1)}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="attach-file" size={18} color="#1976d2" />
-              <Text style={styles.viewFileText}>View Attachment</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-    </View>
-  );
+        )}
+      </View>
+    );
+  };
 
   if (isLoading) {
     return <Loader visible={isLoading} />;
@@ -498,7 +553,7 @@ const ApproveClaimDetails = (props) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-        headerTitle={`${callType === 'Approve' ? 'Approve' : 'Return'} (${formattedClaimId || 'Claim'})`} 
+        headerTitle={`${callType === 'Approve' ? 'Approve' : 'Return'} Claim ${formattedClaimId || ''}`} 
         onBackPress={handleBackPress} 
       />
       
@@ -508,44 +563,35 @@ const ApproveClaimDetails = (props) => {
       >
         {/* Claim Summary Section */}
         <View style={styles.summaryCard}>
-          <Text style={styles.sectionHeader}>Claim Summary</Text>
+          <View style={styles.summaryHeader}>
+            <Text style={styles.summaryTitle}>Claim Summary</Text>
+            <View style={[styles.statusBadge, getStatusStyle(claim?.expense_status)]}>
+              <Text style={styles.statusBadgeText}>
+                {claim?.status_display || getClaimStatus(claim?.expense_status)}
+              </Text>
+            </View>
+          </View>
           
           <View style={styles.summaryGrid}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Claim ID</Text>
-              <Text style={styles.summaryValue}>{claim?.master_claim_id}</Text>
-            </View>
-            
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Employee</Text>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Claimant</Text>
               <Text style={styles.summaryValue}>{claim?.employee_name}</Text>
             </View>
             
-            <View style={styles.summaryItem}>
+            <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Claim Date</Text>
               <Text style={styles.summaryValue}>{claim?.claim_date}</Text>
             </View>
             
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Status</Text>
-              <Text style={[
-                styles.summaryValue,
-                styles.statusText,
-                getStatusStyle(claim?.expense_status)
-              ]}>
-                {claim?.status_display || getClaimStatus(claim?.expense_status)}
-              </Text>
-            </View>
-            
-            <View style={styles.summaryItem}>
+            <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Amount</Text>
               <Text style={[styles.summaryValue, styles.amountText]}>
                 ₹{totalAmount.toFixed(2)}
               </Text>
             </View>
             
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Items</Text>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Items Count</Text>
               <Text style={styles.summaryValue}>{claim?.claim_items?.length || 0}</Text>
             </View>
           </View>
@@ -553,7 +599,24 @@ const ApproveClaimDetails = (props) => {
 
         {/* Claim Items List */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionHeader}>Claim Items</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Claim Items</Text>
+            <View style={styles.selectAllContainer}>
+              <Text style={styles.selectedCount}>
+                {selectedItems.length} of {claim?.claim_items?.filter(item => 
+                  item.expense_status !== 'A' && item.expense_status !== 'R'
+                ).length || 0} selected
+              </Text>
+              <TouchableOpacity onPress={toggleSelectAll}>
+                <Text style={styles.selectAllText}>
+                  {selectedItems.length === claim?.claim_items?.filter(item => 
+                    item.expense_status !== 'A' && item.expense_status !== 'R'
+                  ).length ? 'Unselect All' : 'Select All'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
           {errors.selectedItems && (
             <Text style={styles.sectionError}>{errors.selectedItems}</Text>
           )}
@@ -580,11 +643,19 @@ const ApproveClaimDetails = (props) => {
 
         {/* Submit Button */}
         <TouchableOpacity 
-          style={styles.submitButton} 
+          style={[
+            styles.submitButton,
+            selectedItems.length === 0 && styles.submitButtonDisabled
+          ]} 
           onPress={handleSubmit}
           activeOpacity={0.8}
+          disabled={selectedItems.length === 0}
         >
-          <Text style={styles.submitButtonText}>Submit Actions</Text>
+          <Text style={styles.submitButtonText}>
+            {selectedItems.length > 0 
+              ? `Submit Actions (${selectedItems.length} items)` 
+              : 'Select items to take action'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
       
@@ -599,6 +670,14 @@ const ApproveClaimDetails = (props) => {
           message="Claim actions submitted successfully."
         />
       )}
+      <ConfirmationModal
+        visible={showConfirmationModal}
+        message={`Are you sure you want to submit actions for ${selectedItems.length} item(s)?`}
+        onConfirm={confirmSubmit}
+        onCancel={() => setShowConfirmationModal(false)}
+        confirmText="Submit"
+        cancelText="Cancel"
+      />
     </SafeAreaView>
   );
 };
@@ -627,7 +706,7 @@ const getClaimStatus = (status) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f7fa',
   },
   scrollContainer: {
     flex: 1,
@@ -640,30 +719,24 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  },
+  selectedCount: {
+    fontSize: 14,
+    color: '#7f8c8d',
   },
   sectionError: {
     color: '#e74c3c',
     fontSize: 14,
     marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#34495e',
-    marginBottom: 10,
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: '#ecf0f1',
-    marginVertical: 12,
   },
   summaryCard: {
     backgroundColor: '#ffffff',
@@ -672,16 +745,52 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 2,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+  },
+  statusApproved: {
+    backgroundColor: '#27ae60',
+  },
+  statusRejected: {
+    backgroundColor: '#e74c3c',
+  },
+  statusForwarded: {
+    backgroundColor: '#3498db',
+  },
+  statusReturned: {
+    backgroundColor: '#f39c12',
+  },
+  statusPending: {
+    backgroundColor: '#7f8c8d',
   },
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  summaryItem: {
+  summaryRow: {
     width: '48%',
     marginBottom: 12,
   },
@@ -699,36 +808,6 @@ const styles = StyleSheet.create({
     color: '#27ae60',
     fontWeight: '600',
   },
-  statusText: {
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  statusApproved: {
-    color: '#27ae60',
-  },
-  statusRejected: {
-    color: '#e74c3c',
-  },
-  statusForwarded: {
-    color: '#3498db',
-  },
-  statusReturned: {
-    color: '#f39c12',
-  },
-  statusPending: {
-    color: '#7f8c8d',
-  },
-  remarksCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
   itemContainer: {
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -736,19 +815,21 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 1,
+  },
+  itemHeaderTouchable: {
+    paddingVertical: 12,
   },
   itemHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 14,
-    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
   },
   checkboxContainer: {
     padding: 4,
+    marginRight: 8,
   },
   checkbox: {
     width: 22,
@@ -758,27 +839,41 @@ const styles = StyleSheet.create({
     borderColor: '#bdc3c7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
   },
   checkboxSelected: {
     backgroundColor: '#3498db',
     borderColor: '#3498db',
   },
-  itemTitle: {
+  itemTitleContainer: {
     flex: 1,
+    marginRight: 10,
+  },
+  itemTitle: {
     fontSize: 15,
     fontWeight: '500',
     color: '#2c3e50',
-    marginRight: 10,
+  },
+  itemProject: {
+    fontSize: 13,
+    color: '#7f8c8d',
+    marginTop: 2,
+  },
+  itemAmountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   itemAmount: {
     fontSize: 15,
     fontWeight: '600',
     color: '#27ae60',
-    marginRight: 10,
+    marginRight: 8,
   },
   itemDetails: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  detailSection: {
+    marginBottom: 16,
   },
   detailRow: {
     flexDirection: 'row',
@@ -786,24 +881,48 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailLabel: {
-  fontSize: 14,
-  color: '#7f8c8d',
-  marginTop: 4,
-},
+    fontSize: 14,
+    color: '#7f8c8d',
+    width: '40%',
+  },
   detailValue: {
     fontSize: 14,
     color: '#34495e',
     fontWeight: '500',
-    flex: 1,
+    width: '60%',
     textAlign: 'right',
   },
-  actionRow: {
+  viewFileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#e8f4fd',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  viewFileText: {
+    color: '#3498db',
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  actionSection: {
+    borderTopWidth: 1,
+    borderTopColor: '#ecf0f1',
+    paddingTop: 16,
+    marginTop: 8,
+  },
+  sectionSubtitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#34495e',
     marginBottom: 12,
   },
-  actionButtons: {
+  actionButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginBottom: 16,
   },
   actionButton: {
     flex: 1,
@@ -814,6 +933,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionButtonActive: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   approveButtonActive: {
     backgroundColor: '#27ae60',
@@ -832,39 +958,34 @@ const styles = StyleSheet.create({
   actionButtonTextActive: {
     color: '#fff',
   },
-  itemAmountInput: {
-  flex: 1,
-  // Ensure this matches your AmountInput component's requirements
-},
-  dropdownWrapper: {
-  flex: 1,
-  minWidth: 250, // Set your desired minimum width
-},
-dropdownContainer: {
-  width: '100%',
-  marginBottom: 4, // Space between dropdown and label
-},
-itemDropdown: {
-  // Your existing dropdown item styles
-  paddingHorizontal: 10, // Ensure proper padding
-},
+  amountInputContainer: {
+    marginBottom: 16,
+  },
+  amountInput: {
+    marginTop: 8,
+  },
+  managerDropdownContainer: {
+    marginBottom: 16,
+  },
+  managerDropdown: {
+    marginTop: 8,
+  },
+  dropdownContainer: {
+    width: '100%',
+  },
   itemRemarksInput: {
-    marginTop: 12,
+    marginTop: 8,
   },
-  viewFileButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    padding: 8,
-    backgroundColor: '#e8f4fd',
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  viewFileText: {
-    color: '#3498db',
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '500',
+  remarksCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   submitButton: {
     backgroundColor: '#3498db',
@@ -878,6 +999,10 @@ itemDropdown: {
     shadowRadius: 4,
     elevation: 5,
   },
+  submitButtonDisabled: {
+    backgroundColor: '#bdc3c7',
+    shadowColor: '#bdc3c7',
+  },
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
@@ -889,9 +1014,33 @@ itemDropdown: {
     marginTop: 4,
     marginBottom: 8,
   },
-  managerSelectionContainer: {
-  marginBottom: 12,
-},
+  listContainer: {
+    paddingBottom: 4,
+  },
+  disabledItem: {
+    opacity: 0.7,
+    backgroundColor: '#f9f9f9',
+  },
+  disabledText: {
+    color: '#95a5a6',
+  },
+  statusIconContainer: {
+    width: 22,
+    height: 22,
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectAllText: {
+    fontSize: 14,
+    color: '#3498db',
+    marginLeft: 10,
+    fontWeight: '500',
+  },
 });
 
 export default ApproveClaimDetails;
