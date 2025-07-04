@@ -661,7 +661,7 @@ const filterClaims = () => {
               <Text style={{ 
                 fontSize: 16, 
                 fontWeight: 'bold', 
-                color: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#ff9800',
+                color: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#454545',
                 marginRight: 8
               }}>
                 {item.master_claim_id}
@@ -686,7 +686,7 @@ const filterClaims = () => {
             <Text style={{ 
               fontSize: 16, 
               fontWeight: 'bold', 
-              color: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#ff9800',
+              color: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#454545',
               marginRight: 8
             }}>
               ₹{groupTotal.toFixed(2)}
@@ -694,7 +694,7 @@ const filterClaims = () => {
             <Ionicons 
               name={expandedGroups[item.master_claim_id] ? 'chevron-up' : 'chevron-down'} 
               size={20} 
-              color={isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#ff9800'} 
+              color={isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#454545'} 
             />
           </View>
         </View>
@@ -850,7 +850,7 @@ const filterClaims = () => {
               data={activeTab === 'drafts' ? 'draft claims' : 'claims'} 
               action={activeTab === 'drafts' ? () => handlePress('ADD NEW') : null}
               actionText={activeTab === 'drafts' ? 'Create New Claim' : null}
-              message={activeTab === 'drafts' ? 'Create New Claim' : "No Active Claim"}
+              message={activeTab === 'drafts' ? 'Create New Claim' : "No Claim Found"}
               subMessage={`You don't have any claims to dispaly. Please Click on the above 'PLUS' icon to add a new claim.`}
             />
           }

@@ -171,4 +171,9 @@ export const addTimesheet = async () => {
   return`${newendpoint}/process_time_sheet/${db_name}/`;
 };
 
+export const validateApproveLimit = async () => {
+  const db_name = await getDbName();
+  return`${newendpoint}/get_claim_approve_limit_data/${db_name}/`;
+};
+
 

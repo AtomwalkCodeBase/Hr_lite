@@ -1,9 +1,8 @@
-import { useNavigation, useRouter } from 'expo-router';
 import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, View, StyleSheet, Text, TouchableOpacity, FlatList } from 'react-native';
-import { getClaimApprover, postClaimAction } from '../services/productServices';
+import { useNavigation, useRouter } from 'expo-router';
+import { getClaimApprover, postClaimAction, validateClaimItem } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
-import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import Loader from '../components/old_components/Loader';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -11,8 +10,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
-import AmountInput from '../components/AmountInput';
-import DropdownPicker from '../components/DropdownPicker';
+import ClaimItemCard from '../components/ClaimItemCard';
+import ClaimItemActions from '../components/ClaimItemActions';
+import RemarksInput from '../components/RemarkInput';
 
 const ApproveClaimDetails = (props) => {
   const { profile } = useContext(AppContext);
@@ -21,64 +21,20 @@ const ApproveClaimDetails = (props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
   const [expandedItems, setExpandedItems] = useState({});
-
-  // Parse claim data
-  const claimData = props?.claim_data;
+  const [validationError, setValidationError] = useState(null);
+  const [managers, setManagers] = useState([]);
   const [claim, setClaim] = useState({});
   const [totalAmount, setTotalAmount] = useState(0);
   const [selectedItems, setSelectedItems] = useState([]);
   const [itemActions, setItemActions] = useState({});
   const [errors, setErrors] = useState({});
+  const [validationResults, setValidationResults] = useState({});
+  const [claimRemarks, setClaimRemarks] = useState('');
 
-  useEffect(() => {
-    if (claimData) {
-      try {
-        const parsedDetails = typeof claimData.claimDetails === 'string' 
-          ? JSON.parse(claimData.claimDetails) 
-          : claimData.claimDetails;
-        
-        setClaim(parsedDetails);
-        
-        if (parsedDetails.claim_items) {
-          const sum = parsedDetails.claim_items.reduce(
-            (total, item) => total + parseFloat(item.expense_amt || 0), 
-            0
-          );
-          setTotalAmount(sum);
-          
-          const initialStates = {};
-          const initialSelectedItems = [];
-          
-          parsedDetails.claim_items.forEach(item => {
-            initialStates[item.id] = {
-              action: null,
-              approvedAmount: item.expense_amt.toString(),
-              remarks: '',
-              forwardManager: null
-            };
-
-            // Auto-select items that are not already approved/rejected
-            if (item.expense_status !== 'A' && item.expense_status !== 'R') {
-              initialSelectedItems.push(item.id);
-            }
-          });
-          
-          setItemActions(initialStates);
-          setSelectedItems(initialSelectedItems);
-        }
-      } catch (error) {
-        console.error("Error parsing claim data:", error);
-      }
-    }
-  }, [claimData]);
-
+  const claimData = props?.claim_data;
   const callType = props?.claim_data?.callType;
-  const isMasterApproval = props?.claim_data?.isMaster === "true";
   const navigation = useNavigation();
   const router = useRouter();
-
-  const [claimRemarks, setClaimRemarks] = useState('');
-  const [managers, setManagers] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,15 +42,73 @@ const ApproveClaimDetails = (props) => {
       try {
         const approversRes = await getClaimApprover();
         setManagers(approversRes.data);
+
+        if (claimData) {
+          const parsedDetails = typeof claimData.claimDetails === 'string' 
+            ? JSON.parse(claimData.claimDetails) 
+            : claimData.claimDetails;
+          
+          setClaim(parsedDetails);
+          
+          if (parsedDetails.claim_items) {
+            const sum = parsedDetails.claim_items.reduce(
+              (total, item) => total + parseFloat(item.expense_amt || 0), 
+              0
+            );
+            setTotalAmount(sum);
+            
+            const initialStates = {};
+            const initialSelectedItems = [];
+            
+            parsedDetails.claim_items.forEach(item => {
+              initialStates[item.id] = {
+                action: null,
+                approvedAmount: item.expense_amt.toString(),
+                remarks: '',
+                forwardManager: null
+              };
+
+              if (item.expense_status !== 'A' && item.expense_status !== 'R') {
+                initialSelectedItems.push(item.id);
+              }
+            });
+            
+            setItemActions(initialStates);
+            setSelectedItems(initialSelectedItems);
+          }
+
+          const validationData = {
+            emp_id: profile?.emp_id,
+            m_claim_id: claimData?.master_claim_id || parsedDetails?.master_claim_id
+          };
+          const validationResponse = await validateClaimItem(validationData);
+
+          if (validationResponse.data) {
+            const results = {};
+            validationResponse.data.forEach(item => {
+              results[item.claim_id] = {
+                limitType: item.limit_type,
+                limitRemarks: item.limit_remarks,
+                forwardManager: item.approved_emp_id,
+                approvalType: item.approval_type
+              };
+            });
+            setValidationResults(results);
+            setValidationError(null);
+          } else if (validationResponse.message) {
+            setValidationError(validationResponse.message);
+          }
+        }
       } catch (error) {
-        console.error('Error fetching approvers:', error);
+        console.error('Error:', error);
+        setValidationError(error?.response?.data?.message || 'Failed to load claim data');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [claimData, profile]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -124,7 +138,7 @@ const ApproveClaimDetails = (props) => {
     }
   };
 
-   const toggleItemExpand = (itemId) => {
+  const toggleItemExpand = (itemId) => {
     setExpandedItems(prev => ({
       ...prev,
       [itemId]: !prev[itemId]
@@ -150,10 +164,8 @@ const ApproveClaimDetails = (props) => {
       .map(item => item.id);
     
     if (selectedItems.length === actionableItems.length) {
-      // Unselect all
       setSelectedItems([]);
     } else {
-      // Select all actionable items
       setSelectedItems([...actionableItems]);
     }
   };
@@ -161,6 +173,9 @@ const ApproveClaimDetails = (props) => {
   const handleItemActionChange = (itemId, action) => {
     const item = claim.claim_items.find(i => i.id === itemId);
     if (item?.expense_status === 'A' || item?.expense_status === 'R') return;
+    
+    const validationResult = validationResults[item.claim_id];
+    if (validationResult && validationResult.limitType !== 'N') return;
     
     setItemActions(prev => ({
       ...prev,
@@ -175,25 +190,25 @@ const ApproveClaimDetails = (props) => {
   };
 
   const handleItemAmountChange = (itemId, amount) => {
-  // Simply update the amount without any validation during editing
-  setItemActions(prev => ({
-    ...prev,
-    [itemId]: {
-      ...prev[itemId],
-      approvedAmount: amount
-    }
-  }));
-};
-
-  const handleItemRemarksChange = (itemId, remarks) => {
     setItemActions(prev => ({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        remarks
+        approvedAmount: amount
       }
     }));
   };
+
+  // In ApproveClaimDetails.js
+const handleItemRemarksChange = React.useCallback((itemId, remarks) => {
+  setItemActions(prev => ({
+    ...prev,
+    [itemId]: {
+      ...prev[itemId],
+      remarks
+    }
+  }));
+}, []);
 
   const handleItemForwardManagerChange = (itemId, managerId) => {
     setItemActions(prev => ({
@@ -206,73 +221,70 @@ const ApproveClaimDetails = (props) => {
   };
 
   const validateForm = () => {
-  const newErrors = {};
-  
-  // Claim level remarks validation
-  if (claimRemarks.trim() === '') {
-    newErrors.claimRemarks = 'Claim level remarks are required';
-  }
-  
-  // Selected items validation
-  if (selectedItems.length === 0) {
-    newErrors.selectedItems = 'Please select at least one item to take action';
-    return newErrors;
-  }
-
-  // Item level validations
-  selectedItems.forEach(itemId => {
-    const item = itemActions[itemId];
-    const originalItem = claim.claim_items.find(i => i.id === itemId);
+    const newErrors = {};
     
-    if (item.action === 'APPROVE' || item.action === 'FORWARD') {
-      // Validate for empty amount only on submit
-      if (!item.approvedAmount || item.approvedAmount.trim() === '') {
-        newErrors[`itemAmount-${itemId}`] = 'Please enter an approved amount';
-      }
-      // Validate for invalid number format
-      else if (isNaN(parseFloat(item.approvedAmount))) {
-        newErrors[`itemAmount-${itemId}`] = 'Please enter a valid amount';
-      }
-      // Validate against original amount
-      else if (parseFloat(item.approvedAmount) > parseFloat(originalItem.expense_amt)) {
-        newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
-      }
+    if (claimRemarks.trim() === '') {
+      newErrors.claimRemarks = 'Claim level remarks are required';
     }
-  });
-  
-  return newErrors;
-};
+    
+    if (selectedItems.length === 0) {
+      newErrors.selectedItems = 'Please select at least one item to take action';
+      return newErrors;
+    }
 
-  const handleSubmit = async () => {
-    // Show confirmation modal first
-    setShowConfirmationModal(true);
+    selectedItems.forEach(itemId => {
+      const item = itemActions[itemId];
+      const originalItem = claim.claim_items.find(i => i.id === itemId);
+      const validationResult = validationResults[originalItem.claim_id];
+      
+      if (!validationResult || validationResult.limitType === 'N') {
+        if (item.action === 'APPROVE' || item.action === 'FORWARD') {
+          if (!item.approvedAmount || item.approvedAmount.trim() === '') {
+            newErrors[`itemAmount-${itemId}`] = 'Please enter an approved amount';
+          }
+          else if (isNaN(parseFloat(item.approvedAmount))) {
+            newErrors[`itemAmount-${itemId}`] = 'Please enter a valid amount';
+          }
+          else if (parseFloat(item.approvedAmount) > parseFloat(originalItem.expense_amt)) {
+            newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
+          }
+        }
+      }
+    });
+    
+    return newErrors;
   };
 
-  const confirmSubmit = async () => {
-    setShowConfirmationModal(false);
-    
+  const handleSubmit = async () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
     
+    setShowConfirmationModal(true);
+  };
+
+  const confirmSubmit = async () => {
+    setShowConfirmationModal(false);
     setIsLoading(true);
     
     try {
       const claim_list = selectedItems.map(itemId => {
         const item = itemActions[itemId];
         const originalItem = claim.claim_items.find(i => i.id === itemId);
+        const validationResult = validationResults[originalItem.claim_id];
         
         const itemPayload = {
           claim_id: originalItem.claim_id,
-          approve_type: getApproveType(item.action),
+          approve_type: validationResult?.approvalType || getApproveType(item.action),
           approved_amt: item.action === 'REJECT' ? '0' : item.approvedAmount,
           remarks: item.remarks || ''
         };
 
-        if (item.action === 'FORWARD' && item.forwardManager) {
-          itemPayload.forward_manager_id = item.forwardManager;
+        if ((item.action === 'FORWARD' || validationResult?.limitType !== 'N') && 
+            (validationResult?.forwardManager || item.forwardManager)) {
+          itemPayload.forward_manager_id = validationResult?.forwardManager || item.forwardManager;
         }
 
         return itemPayload;
@@ -285,8 +297,6 @@ const ApproveClaimDetails = (props) => {
         claim_list: claim_list
       };
 
-      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
-      
       await postClaimAction(payload);
       setShowSuccessModal(true);
     } catch (error) {
@@ -306,88 +316,32 @@ const ApproveClaimDetails = (props) => {
       case 'REJECT': return 'R';
       case 'FORWARD': return 'F';
       case 'Back To Claimant': return 'B';
+      default: return 'A';
     }
   };
 
-  const renderClaimItem = ({ item }) => {
+  const ClaimItem = ({ item }) => {
+    const validationResult = validationResults[item.claim_id];
+    const isLimited = validationResult && validationResult.limitType !== 'N';
     const isDisabled = item.expense_status === 'A' || item.expense_status === 'R';
     const isSelected = selectedItems.includes(item.id);
-    
+
+    const toggleSelection = () => {
+      if (isDisabled || isLimited) return;
+      toggleItemSelection(item.id);
+    };
+
     return (
-      <View style={[
-        styles.itemContainer,
-        isDisabled && styles.disabledItem
-      ]}>
-        <TouchableOpacity 
-          onPress={() => !isDisabled && toggleItemExpand(item.id)}
-          activeOpacity={0.8}
-          style={styles.itemHeaderTouchable}
-          disabled={isDisabled}
-        >
-          <View style={styles.itemHeader}>
-            {!isDisabled ? (
-              <TouchableOpacity 
-                onPress={(e) => {
-                  e.stopPropagation();
-                  toggleItemSelection(item.id);
-                }}
-                style={styles.checkboxContainer}
-              >
-                <View style={[
-                  styles.checkbox, 
-                  isSelected && styles.checkboxSelected
-                ]}>
-                  {isSelected && (
-                    <MaterialIcons name="check" size={16} color="white" />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.statusIconContainer}>
-                <MaterialIcons 
-                  name={item.expense_status === 'A' ? 'check-circle' : 'cancel'} 
-                  size={22} 
-                  color={item.expense_status === 'A' ? '#27ae60' : '#e74c3c'} 
-                />
-              </View>
-            )}
-            
-            <View style={styles.itemTitleContainer}>
-              <Text style={[
-                styles.itemTitle,
-                isDisabled && styles.disabledText
-              ]} numberOfLines={1} ellipsizeMode="tail">
-                {item.item_name}
-              </Text>
-              {item.project_name && (
-                <Text style={[
-                  styles.itemProject,
-                  isDisabled && styles.disabledText
-                ]} numberOfLines={1}>
-                  {item.project_name}
-                </Text>
-              )}
-            </View>
-            
-            <View style={styles.itemAmountContainer}>
-              <Text style={[
-                styles.itemAmount,
-                isDisabled && styles.disabledText
-              ]}>
-                ₹{parseFloat(item.expense_amt).toFixed(2)}
-              </Text>
-              {!isDisabled && (
-                <MaterialIcons 
-                  name={expandedItems[item.id] ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
-                  size={24} 
-                  color="#666" 
-                />
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
-        
-        {expandedItems[item.id] && (
+      <ClaimItemCard
+        item={item}
+        isSelected={isSelected}
+        isDisabled={isDisabled}
+        isLimited={isLimited}
+        expanded={expandedItems[item.id]}
+        onToggleExpand={() => toggleItemExpand(item.id)}
+        onToggleSelect={toggleSelection}
+        validationResult={validationResult}
+      >
         <View style={styles.itemDetails}>
           <View style={styles.detailSection}>
             <View style={styles.detailRow}>
@@ -424,107 +378,28 @@ const ApproveClaimDetails = (props) => {
             )}
           </View>
 
-          {selectedItems.includes(item.id) && (
-            <View style={styles.actionSection}>
-              <Text style={styles.sectionSubtitle}>Action Required</Text>
-              
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    itemActions[item.id]?.action === 'APPROVE' && styles.actionButtonActive,
-                    itemActions[item.id]?.action === 'APPROVE' && styles.approveButtonActive
-                  ]}
-                  onPress={() => handleItemActionChange(item.id, 'APPROVE')}
-                >
-                  <Text style={[
-                    styles.actionButtonText,
-                    itemActions[item.id]?.action === 'APPROVE' && styles.actionButtonTextActive
-                  ]}>
-                    Approve
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    itemActions[item.id]?.action === 'REJECT' && styles.actionButtonActive,
-                    itemActions[item.id]?.action === 'REJECT' && styles.rejectButtonActive
-                  ]}
-                  onPress={() => handleItemActionChange(item.id, 'REJECT')}
-                >
-                  <Text style={[
-                    styles.actionButtonText,
-                    itemActions[item.id]?.action === 'REJECT' && styles.actionButtonTextActive
-                  ]}>
-                    Reject
-                  </Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.actionButton,
-                    itemActions[item.id]?.action === 'FORWARD' && styles.actionButtonActive,
-                    itemActions[item.id]?.action === 'FORWARD' && styles.forwardButtonActive
-                  ]}
-                  onPress={() => handleItemActionChange(item.id, 'FORWARD')}
-                >
-                  <Text style={[
-                    styles.actionButtonText,
-                    itemActions[item.id]?.action === 'FORWARD' && styles.actionButtonTextActive
-                  ]}>
-                    Forward
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              
-              {(itemActions[item.id]?.action === 'APPROVE' || itemActions[item.id]?.action === 'FORWARD') && (
-                <View style={styles.amountInputContainer}>
-                  <Text style={styles.detailLabel}>Approved Amount:</Text>
-                  <AmountInput
-  label=""
-  claimAmount={itemActions[item.id]?.approvedAmount || ''} // Fallback to empty string
-  setClaimAmount={(amount) => handleItemAmountChange(item.id, amount)}
-  error={errors[`itemAmount-${item.id}`]}
-  style={styles.amountInput}
-/>
-                </View>
-              )}
-              
-              {itemActions[item.id]?.action === 'FORWARD' && (
-                <View style={styles.managerDropdownContainer}>
-                  <Text style={styles.detailLabel}>Forward To:</Text>
-                  <DropdownPicker
-                    data={managers.map(m => ({
-                      label: `${m.name} [${m.emp_id}]`,
-                      value: m.id
-                    }))}
-                    value={itemActions[item.id]?.forwardManager}
-                    setValue={(value) => handleItemForwardManagerChange(item.id, value)}
-                    placeholder="Select manager"
-                    style={styles.managerDropdown}
-                    containerStyle={styles.dropdownContainer}
-                  />
-                  {errors[`itemManager-${item.id}`] && (
-                    <Text style={styles.errorText}>{errors[`itemManager-${item.id}`]}</Text>
-                  )}
-                </View>
-              )}
-              
-              <RemarksInput
-                label="Your Remarks:"
-                remark={itemActions[item.id]?.remarks || ''}
-                setRemark={(text) => handleItemRemarksChange(item.id, text)}
-                error={errors[`itemRemarks-${item.id}`]}
-                placeholder="Enter remarks for this item..."
-                style={styles.itemRemarksInput}
-              />
-            </View>
-          )}
-          </View>
-        )}
-      </View>
+          {isSelected && (
+  <ClaimItemActions
+    item={item}
+    itemActions={itemActions[item.id]}
+    isLimited={isLimited}
+    validationResult={validationResult}
+    managers={managers}
+    errors={errors}
+    onActionChange={handleItemActionChange}
+    onAmountChange={handleItemAmountChange}
+    onRemarksChange={handleItemRemarksChange}
+    onForwardManagerChange={handleItemForwardManagerChange}
+    key={`actions-${item.id}`} // Add key to prevent re-mounting
+  />
+)}
+        </View>
+      </ClaimItemCard>
     );
+  };
+
+  const renderClaimItem = ({ item }) => {
+    return <ClaimItem item={item} />;
   };
 
   if (isLoading) {
@@ -565,12 +440,13 @@ const ApproveClaimDetails = (props) => {
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <Text style={styles.summaryTitle}>Claim Summary</Text>
-            <View style={[styles.statusBadge, getStatusStyle(claim?.expense_status)]}>
-              <Text style={styles.statusBadgeText}>
-                {claim?.status_display || getClaimStatus(claim?.expense_status)}
-              </Text>
-            </View>
           </View>
+          
+          {validationError && (
+            <View style={styles.validationErrorContainer}>
+              <Text style={styles.validationErrorText}>{validationError}</Text>
+            </View>
+          )}
           
           <View style={styles.summaryGrid}>
             <View style={styles.summaryRow}>
@@ -682,27 +558,6 @@ const ApproveClaimDetails = (props) => {
   );
 };
 
-const getStatusStyle = (status) => {
-  switch (status) {
-    case 'A': return styles.statusApproved;
-    case 'R': return styles.statusRejected;
-    case 'F': return styles.statusForwarded;
-    case 'B': return styles.statusReturned;
-    default: return styles.statusPending;
-  }
-};
-
-const getClaimStatus = (status) => {
-  switch (status) {
-    case 'S': return 'Submitted';
-    case 'A': return 'Approved';
-    case 'F': return 'Forwarded';
-    case 'R': return 'Rejected';
-    case 'B': return 'Returned';
-    default: return 'Pending';
-  }
-};
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -760,31 +615,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2c3e50',
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  statusBadgeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-  },
-  statusApproved: {
-    backgroundColor: '#27ae60',
-  },
-  statusRejected: {
-    backgroundColor: '#e74c3c',
-  },
-  statusForwarded: {
-    backgroundColor: '#3498db',
-  },
-  statusReturned: {
-    backgroundColor: '#f39c12',
-  },
-  statusPending: {
-    backgroundColor: '#7f8c8d',
-  },
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -808,65 +638,15 @@ const styles = StyleSheet.create({
     color: '#27ae60',
     fontWeight: '600',
   },
-  itemContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 10,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+  validationErrorContainer: {
+    backgroundColor: '#fdecea',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  itemHeaderTouchable: {
-    paddingVertical: 12,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  checkboxContainer: {
-    padding: 4,
-    marginRight: 8,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#bdc3c7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxSelected: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
-  },
-  itemTitleContainer: {
-    flex: 1,
-    marginRight: 10,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#2c3e50',
-  },
-  itemProject: {
-    fontSize: 13,
-    color: '#7f8c8d',
-    marginTop: 2,
-  },
-  itemAmountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemAmount: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#27ae60',
-    marginRight: 8,
+  validationErrorText: {
+    color: '#d32f2f',
+    fontSize: 14,
   },
   itemDetails: {
     paddingHorizontal: 16,
@@ -907,75 +687,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  actionSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
-    paddingTop: 16,
-    marginTop: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#34495e',
-    marginBottom: 12,
-  },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    backgroundColor: '#ecf0f1',
-    marginHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionButtonActive: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  approveButtonActive: {
-    backgroundColor: '#27ae60',
-  },
-  rejectButtonActive: {
-    backgroundColor: '#e74c3c',
-  },
-  forwardButtonActive: {
-    backgroundColor: '#3498db',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#2c3e50',
-  },
-  actionButtonTextActive: {
-    color: '#fff',
-  },
-  amountInputContainer: {
-    marginBottom: 16,
-  },
-  amountInput: {
-    marginTop: 8,
-  },
-  managerDropdownContainer: {
-    marginBottom: 16,
-  },
-  managerDropdown: {
-    marginTop: 8,
-  },
-  dropdownContainer: {
-    width: '100%',
-  },
-  itemRemarksInput: {
-    marginTop: 8,
-  },
   remarksCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -1008,28 +719,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  errorText: {
-    color: '#e74c3c',
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 8,
-  },
   listContainer: {
     paddingBottom: 4,
-  },
-  disabledItem: {
-    opacity: 0.7,
-    backgroundColor: '#f9f9f9',
-  },
-  disabledText: {
-    color: '#95a5a6',
-  },
-  statusIconContainer: {
-    width: 22,
-    height: 22,
-    marginRight: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   selectAllContainer: {
     flexDirection: 'row',

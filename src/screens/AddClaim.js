@@ -236,7 +236,7 @@ const AddClaim = (props) => {
       }
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to submit claim');
-      // console.error("Submission error:", error.response?.data);
+      console.error("Submission error:", error.response?.data);
     } finally {
       setIsLoading(false);
     }
