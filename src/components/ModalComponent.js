@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal } from 'react-native';
+import { Image, Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
@@ -52,28 +52,34 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
         status: getStatusValue(data.status_display) 
       },
       { label: 'Request Details', value: data.request_text },
-      { label: 'Remarks', value: data.remarks, condition: data.remarks }
+      { label: 'Remarks', value: data.remarks, condition: data.remarks },
+      { label: 'Image', value: data.submitted_file_1, type: "image" },
     ]
   };
 
-  return (
-    <DetailContainer>
-      {detailConfigs[type].map((item, index) => (
-        item.condition !== false && (
-          <DetailItem key={index}>
-            <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
-            {item.noWrap ? (
-              <ClaimIDValue>{item.value}</ClaimIDValue>
-            ) : (
-              <DetailValue status={item.status} bold={item.bold}>
-                {item.value}
-              </DetailValue>
-            )}
-          </DetailItem>
-        )
-      ))}
-    </DetailContainer>
-  );
+return (
+  <DetailContainer>
+    {detailConfigs[type].map((item, index) => (
+      item.condition !== false && (
+        <DetailItem key={index}>
+          <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
+          {item.type === "image" && item.value ? (
+            <Image
+              source={{ uri: item.value }}
+              style={{ width: 120, height: 120, borderRadius: 12, resizeMode: "cover", borderWidth: 1, borderColor: "#eee", marginLeft: 8}}
+            />
+          ) : item.noWrap ? (
+            <ClaimIDValue>{item.value}</ClaimIDValue>
+          ) : (
+            <DetailValue status={item.status} bold={item.bold}>
+              {item.value}
+            </DetailValue>
+          )}
+        </DetailItem>
+      )
+    ))}
+  </DetailContainer>
+);
 };
 
 
@@ -172,7 +178,7 @@ const CloseButton = styled.TouchableOpacity`
 
 const ModalBody = styled.View`
   padding: 20px;
-  max-height: 400px;
+  max-height: 500px;
 `;
 
 const DetailContainer = styled.View`

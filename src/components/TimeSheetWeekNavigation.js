@@ -2,6 +2,30 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+// Navigation button for week/month/year navigation
+const WeekNavButton = ({ onPress, icon }) => (
+  <TouchableOpacity style={styles.weekNavButton} onPress={onPress}>
+    <Ionicons name={icon} size={24} color="#a970ff" />
+  </TouchableOpacity>
+);
+
+// Week/month/year info display
+const WeekInfo = ({ text }) => (
+  <View style={styles.weekInfo}>
+    <Text style={styles.weekText}>{text}</Text>
+  </View>
+);
+
+// Helper to get display text for navigation
+function getDisplayText(type, filterRange, year, monthOptions, start, end, formatDisplayDate) {
+  if (type === 'year') return filterRange.year;
+  if (type === 'month') {
+    const label = monthOptions.find((m) => m.value === Number(filterRange.month))?.label;
+    return `${label} ${year}`;
+  }
+  return `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
+}
+
 const TimeSheetWeekNavigation = ({
   currentWeekStart,
   onNavigate,
@@ -19,7 +43,7 @@ const TimeSheetWeekNavigation = ({
       filterRange.setFilters((prev) => ({ ...prev, year: newYear, month: "" }));
     } else if (type === 'month') {
       let newMonth = Number(filterRange.month) + direction;
-      let newYear = Number(year); // Use year from getFilterDateRange (selected or default)
+      let newYear = Number(year);
       if (newMonth > 12) {
         newMonth = 1;
         newYear += 1;
@@ -33,24 +57,13 @@ const TimeSheetWeekNavigation = ({
     }
   };
 
-  const displayText =
-    type === 'year'
-      ? filterRange.year
-      : type === 'month'
-      ? `${monthOptions.find((m) => m.value === Number(filterRange.month))?.label} ${year}`
-      : `${formatDisplayDate(start)} - ${formatDisplayDate(end)}`;
+  const displayText = getDisplayText(type, filterRange, year, monthOptions, start, end, formatDisplayDate);
 
   return (
     <View style={styles.weekNavigation}>
-      <TouchableOpacity style={styles.weekNavButton} onPress={() => handleNavigate(-1)}>
-        <Ionicons name="chevron-back" size={24} color="#a970ff" />
-      </TouchableOpacity>
-      <View style={styles.weekInfo}>
-        <Text style={styles.weekText}>{displayText}</Text>
-      </View>
-      <TouchableOpacity style={styles.weekNavButton} onPress={() => handleNavigate(1)}>
-        <Ionicons name="chevron-forward" size={24} color="#a970ff" />
-      </TouchableOpacity>
+      <WeekNavButton onPress={() => handleNavigate(-1)} icon="chevron-back" />
+      <WeekInfo text={displayText} />
+      <WeekNavButton onPress={() => handleNavigate(1)} icon="chevron-forward" />
     </View>
   );
 };

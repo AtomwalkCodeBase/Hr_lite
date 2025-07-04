@@ -311,7 +311,7 @@ useEffect(() => {
         } catch (error) {
           console.error('Error fetching company info:', error.message);
         }
-        router.push('/home');
+        router.replace('/home');
       } else {
         setErrorMessage('Invalid credentials');
       }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Keyboard, Alert } from 'react-native';
+import { Keyboard, Alert, Image } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { getRequestCategory, postEmpRequest } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -93,20 +93,10 @@ const AddHelp = (props) => {
       });
   };
 
-  const handleBackPress = () => {
-  if (is_shift_request) {
-    router.push({
-      pathname: 'ShiftScr',
-      params: { empId },
-    });
-  } else {
-    router.push({
-      pathname: call_type === 'H' ? 'HelpScr' : 'RequestScr',
-      params: {
-        empId,
-      },
-    });
-  }
+
+const handleBackPress = () => {
+  router.setParams({ empId });
+  router.back();
 };
 
   const handleError = (error, input) => {
@@ -200,6 +190,7 @@ const AddHelp = (props) => {
       <HeaderComponent 
         headerTitle={headerTitle} 
         onBackPress={handleBackPress} 
+        // onBackPress={() => router.back()} 
       />
       {isLoading ? (
         <Loader
@@ -246,10 +237,20 @@ const AddHelp = (props) => {
             label="Attach Supporting Document"
             fileName={fileName}
             setFileName={setFileName}
+            fileUri={fileUri}
             setFileUri={setFileUri}
             setFileMimeType={setFileMimeType}
             error={errors.file}
           />
+
+          {/* <Image source={{uri: fileUri}} style={{
+              width: 120,
+              height: 120,
+              borderRadius: 12,
+              resizeMode: "cover",
+              borderWidth: 1,
+              borderColor: "#eee"
+            }}/> */}
 
           <SubmitButton
             label={is_shift_request ? "Submit Shift Request" : call_type === 'H' ? "Submit Help Request" : "Submit Request"}

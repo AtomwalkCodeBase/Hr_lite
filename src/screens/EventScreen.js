@@ -19,6 +19,7 @@ import ApplyButton from '../components/ApplyButton';
 import ModalComponent from '../components/ModalComponent';
 import EventCard from '../components/EventCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FilterModal from '../components/FilterModal';
 
 const { width } = Dimensions.get('window');
 
@@ -55,7 +56,12 @@ const EventScreen = (props) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [showFilterModal, setShowFilterModal] = useState(false);
   const [dateRange, setDateRange] = useState('D0'); // 'ALL', 'D0' (today), 'D1' (upcoming)
+  const [pendingFilters, setPendingFilters] = useState({
+  dateRange: dateRange,
+  eventType: activeFilter,
+});
 
   const eventTypes = [
     { code: 'All', display: 'My Events' },
@@ -82,7 +88,7 @@ const EventScreen = (props) => {
   
   useEffect(() => {
     fetchEvents();
-  }, [empId, activeFilter, dateRange]);
+  }, [empId, pendingFilters.dateRange, pendingFilters.eventType]);
 
   const handleBackPress = () => {
     router.push('MoreScreen');
@@ -116,7 +122,6 @@ const EventScreen = (props) => {
       });
   };
 
-
   const applyFilter = (typeCode, data) => {
     if (typeCode === 'All') {
       setFilteredEvents(data);
@@ -144,8 +149,6 @@ const EventScreen = (props) => {
     setSelectedEvent(null);
   };
 
-  
-
   const handleFilterPress = (typeCode) => {
     setActiveFilter(typeCode);
   };
@@ -158,46 +161,56 @@ const EventScreen = (props) => {
     fetchEvents();
   };
 
-  const renderHeader = () => (
-    <View style={styles.headerSection}>
-      {/* <Text style={styles.welcomeText}>Upcoming Events</Text> */}
-      
-      <View style={styles.dateRangeContainer}>
-        {dateRangeOptions.map((range) => (
-          <FilterChip 
-            key={range.code}
-            label={range.display}
-            selected={dateRange === range.code}
-            onPress={() => handleDateRangePress(range.code)}
-          />
-        ))}
-      </View>
-      
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterContent}
-      >
-        {eventTypes.map((type) => (
-          <FilterChip 
-            key={type.code}
-            label={type.display}
-            selected={activeFilter === type.code}
-            onPress={() => handleFilterPress(type.code)}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+  const openFilterModal = () => {
+    setPendingFilters({
+      dateRange: dateRange,
+      eventType: activeFilter,
+    });
+    setShowFilterModal(true);
+  };
+
+    const DropdownOptions = (data,labelKey, valueKey) => {
+    return data.map(item => ({
+      label: item[labelKey],
+      value: item[valueKey],
+    }));
+  };
+
+  const filterConfigs = [
+    {
+      label: "Select Time Period",
+      options: DropdownOptions(dateRangeOptions, 'display', 'code'),
+      value: pendingFilters.dateRange,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, dateRange: value })),
+    },
+    {
+      label: "Select Event",
+      options: DropdownOptions(eventTypes, 'display', 'code'),
+      value: pendingFilters.eventType,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, eventType: value })),
+    }
+  ];
+
+  const handleApplyFilters = () => {
+  setDateRange(pendingFilters.dateRange);
+  setActiveFilter(pendingFilters.eventType);
+  setShowFilterModal(false);
+};
+
+const handleClearFilters = () => {
+  setPendingFilters({
+    dateRange: '',
+    eventType: '',
+  });
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle="Event Updates" 
         onBackPress={handleBackPress} 
-        showActionButton={true}
-        actionIcon="search"
-        onActionPress={() => {}}
+        icon1Name="filter"
+        icon1OnPress={openFilterModal}
       />
       
       <View style={styles.container}>
@@ -215,12 +228,11 @@ const EventScreen = (props) => {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            ListHeaderComponent={renderHeader}
             ListEmptyComponent={
               <EmptyMessage 
                 message="No events found"
                 subMessage={`There are no ${activeFilter === 'All' ? '' : activeFilter.toLowerCase() + ' '}events scheduled`}
-                iconName="event-busy"
+                iconName="calendar-remove-outline"
               />
             }
             refreshControl={
@@ -240,6 +252,15 @@ const EventScreen = (props) => {
         helpRequest={selectedEvent}
         onClose={closeModal}
       />
+
+        <FilterModal
+          visible={showFilterModal}
+          onClose={() => setShowFilterModal(false)}
+          onClearFilters={handleClearFilters}
+          onApplyFilters={handleApplyFilters}
+          filterConfigs={filterConfigs}
+          modalTitle="Filter Events"
+        />
     </SafeAreaView>
   );
 };

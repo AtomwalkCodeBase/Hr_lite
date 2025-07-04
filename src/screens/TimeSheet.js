@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, StatusBar, Dimensions, Image, Alert, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, StatusBar, Alert } from "react-native";
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from "../services/productServices";
@@ -17,6 +17,8 @@ import ApplyButton from "../components/ApplyButton";
 import WeeklySummary from "../components/WeeklySummary";
 import FilterModal from "../components/FilterModal";
 import ConfirmationModal from "../components/ConfirmationModal";
+import { EmployeeInfoCard } from '../components/SharedTimesheetComponents';
+import TabNavigation from '../components/TabNavigation';
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
@@ -41,7 +43,7 @@ const TimeSheet = () => {
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showWeeklySummary, setShowWeeklySummary] = useState(true);
-  const [activeTab, setActiveTab] = useState('timesheet'); // New state for active tab
+  const [activeTab, setActiveTab] = useState('summary'); // New state for active tab
   const navigate = useNavigation();
   const route = useRouter();
   const [SubmitConfirmModalVisible, setSubmitConfirmModalVisible] = useState(false);
@@ -76,7 +78,6 @@ const TimeSheet = () => {
 
   // Filter states
   const [filters, setFilters] = useState({
-
     project: "",
     status: "",
     activity: "",
@@ -92,28 +93,27 @@ const TimeSheet = () => {
     return  filters.project || filters.status || filters.activity || filters.month || filters.year;
   };
 
-  const formatDateForAPI = (date) => {
+  // Format date for API (DD-MM-YYYY)
+  function formatDateForAPI(date) {
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
-  };
+  }
 
-  const formatTimeForAPI = (date) => {
+  // Format time for API (hh:mm AM/PM)
+  function formatTimeForAPI(date) {
     if (!(date instanceof Date)) return "";
     let hours = date.getHours();
     const minutes = date.getMinutes();
     const ampm = hours >= 12 ? "PM" : "AM";
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
-    const strTime =
-      `${hours.toString().padStart(2, "0")}:${minutes
-        .toString()
-        .padStart(2, "0")} ${ampm}`;
-    return strTime;
-  };
+    hours = hours ? hours : 12;
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+  }
 
-  const formatDisplayDate = (dateString) => {
+  // Format date for display
+  function formatDisplayDate(dateString) {
     if (dateString instanceof Date) {
       return dateString.toLocaleDateString("en-US", {
         weekday: "short",
@@ -121,7 +121,6 @@ const TimeSheet = () => {
         day: "numeric",
       });
     }
-
     if (typeof dateString === "string" && dateString.includes("-")) {
       const date = new Date(dateString);
       if (!isNaN(date.getTime())) {
@@ -132,21 +131,54 @@ const TimeSheet = () => {
         });
       }
     }
-
     return dateString;
-  };
+  }
 
-  const getCurrentWeekDates = (date) => {
+  // Get dropdown options for projects
+  function getProjectDropdownOptions(projects, labelKey, valueKey) {
+    return projects.map(item => ({
+      label: `${item[labelKey]} (${item[valueKey]})`,
+      value: item[valueKey],
+    }));
+  }
+
+  // Get dropdown options for activities
+  function getActivityDropdownOptions(activities, key) {
+    const uniqueValues = [...new Set(activities.map(item => item[key]))];
+    return uniqueValues.map(value => ({ label: value, value }));
+  }
+
+  // Get current week date range
+  function getCurrentWeekDates(date) {
     const start = new Date(date);
     const day = start.getDay();
     const diff = start.getDate() - day + (day === 0 ? -6 : 1);
     start.setDate(diff);
-
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
-
     return { start, end };
-  };
+  }
+
+  // Get filter date range (week, month, year)
+  function getFilterDateRange(filters, currentWeekStart) {
+    const getLastDayOfMonth = (year, month) => new Date(year, month, 0).getDate();
+    const defaultYear = new Date().getFullYear();
+    if (filters.month) {
+      const year = filters.year ? Number(filters.year) : defaultYear;
+      const month = Number(filters.month);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month - 1, getLastDayOfMonth(year, month));
+      return { start, end, type: 'month', year };
+    } else if (filters.year) {
+      const year = Number(filters.year);
+      const start = new Date(year, 0, 1);
+      const end = new Date(year, 11, 31);
+      return { start, end, type: 'year', year };
+    } else {
+      const { start, end } = getCurrentWeekDates(currentWeekStart);
+      return { start, end, type: 'week', year: defaultYear };
+    }
+  }
 
   useEffect(() => {
     fetchActivityCategories();
@@ -184,7 +216,6 @@ const TimeSheet = () => {
 
     try {
       const res = await getTimesheetData(EmpId, formattedStartDate, formattedEndDate);
-      console.log("dtaadsas", res.data)
       setTasks(res.data.reverse() || []);
     } catch (err) {
       console.error("Error fetching timesheet data:", err);
@@ -276,13 +307,16 @@ const TimeSheet = () => {
     } catch (error) {
       console.error(`Error ${callMode.toLowerCase()}ing timesheet:`, error);
       setIsErrorModalVisible(true);
-       if (
-          error?.response?.data?.message.includes('Invalid request - Project/ Activity already present')
-        ) {
-          setErrorMessage('Project/ Activity already present for date 01-07-2025');
-        } else {
-          setErrorMessage(error?.response?.data?.message || error.message);
-        }
+      if (
+        error?.response?.data?.message.includes('Invalid request - Project/ Activity already present')
+      ) {
+        // Extract the part after "Invalid request -"
+        const msg = error?.response?.data?.message;
+        const afterText = msg.split('Invalid request -')[1]?.trim() || '';
+        setErrorMessage(afterText || 'Project/ Activity already present');
+      } else {
+        setErrorMessage(error?.response?.data?.message || error.message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -409,42 +443,6 @@ const editTask = (task) => {
       remarks: "",
     });
   };
-  
-  const getProjectDropdownOptions = (labelKey, valueKey) => {
-    return projects.map(item => ({
-      label: `${item[labelKey]} (${item[valueKey]})`,
-      value: item[valueKey],
-    }));
-  };
-
-  const getActivityDropdownOptions = (key) => {
-    const uniqueValues = [...new Set(activities.map(item => item[key]))];
-    return uniqueValues.map(value => ({ label: value, value }));
-  };
-
-  const getFilterDateRange = (filters, currentWeekStart) => {
-    const getLastDayOfMonth = (year, month) => new Date(year, month, 0).getDate();
-    const defaultYear = currentYear;
-
-    if (filters.month) {
-      const year = filters.year ? Number(filters.year) : defaultYear;
-      const month = Number(filters.month);
-      const start = new Date(year, month - 1, 1);
-      const end = new Date(year, month - 1, getLastDayOfMonth(year, month));
-      // console.log(`Selected Month Filter: ${month}-${year} (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
-      return { start, end, type: 'month', year }; // Include year for navigation
-    } else if (filters.year) {
-      const year = Number(filters.year);
-      const start = new Date(year, 0, 1);
-      const end = new Date(year, 11, 31);
-      // console.log(`Selected Year Filter: ${year} (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
-      return { start, end, type: 'year', year };
-    } else {
-      const { start, end } = getCurrentWeekDates(currentWeekStart);
-      // console.log(`Default Week Filter: (Start: ${formatDateForAPI(start)}, End: ${formatDateForAPI(end)})`);
-      return { start, end, type: 'week', year: defaultYear };
-    }
-  };
 
   const currentYear = new Date().getFullYear();
     const yearOptions = useMemo(() => {
@@ -473,13 +471,13 @@ const editTask = (task) => {
   const filterConfigs = useMemo(() => [
     {
       label: "Project",
-      options: getProjectDropdownOptions("title", "project_code"),
+      options: getProjectDropdownOptions(projects,"title", "project_code"),
       value: pendingFilters.project,
       setValue: (value) => setPendingFilters((prev) => ({ ...prev, project: value })),
     },
     {
       label: "Activity",
-      options: getActivityDropdownOptions("name"),
+      options: getActivityDropdownOptions(activities, "name"),
       value: pendingFilters.activity,
       setValue: (value) => setPendingFilters((prev) => ({ ...prev, activity: value })),
     },
@@ -528,21 +526,6 @@ useEffect(() => {
 }, [tasks, filters]);
 
   const getTaskStatuses = (tasksArr) => tasksArr.map(task => (task.status || '').toLowerCase());
-  // const statusesInTasks = getTaskStatuses(filteredTasks);
-  // const hasStatus = (status) => statusesInTasks.includes(status);
-  // const allStatus = (status) => filteredTasks.length > 0 && statusesInTasks.every(s => s === status);
-
-  // const showSubmitWeeklyButton = isSelfView &&
-  //   filteredTasks.length > 0 &&
-  //   !allStatus('s') &&
-  //   allStatus('n') &&
-  //   // hasStatus('n') 
-  //   !(hasStatus('r') && hasStatus('a')) &&
-  //   !statusesInTasks.some(s => s === 'r' || s === 'a');
-
-  // const showApproveWeeklyButton = !isSelfView &&
-  //   filteredTasks.length > 0 &&
-  //   allStatus('s');
 
   const taskStatuses = getTaskStatuses(filteredTasks);
   const showSubmitWeeklyButton = isSelfView && filteredTasks.length > 0 && taskStatuses.every(status => status === 'n');
@@ -553,6 +536,15 @@ useEffect(() => {
     setPendingFilters(filters);
     setShowFilterModal(true);
   };
+
+  // Empty state for summary/timesheet
+  const EmptyState = ({ icon, text, subText }) => (
+    <View style={styles.emptyState}>
+      <Ionicons name={icon || "calendar-outline"} size={64} color="#ccc" />
+      <Text style={styles.emptyText}>{text}</Text>
+      {subText ? <Text style={styles.emptySubText}>{subText}</Text> : null}
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -568,31 +560,9 @@ useEffect(() => {
       />
 
       {/* Tab Navigation  */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'timesheet' && styles.activeTab]}
-            onPress={() => setActiveTab('timesheet')}
-          >
-            <Text style={[styles.tabText, activeTab === 'timesheet' && styles.activeTabText]}>
-          Timesheet
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'summary' && styles.activeTab]}
-            onPress={() => setActiveTab('summary')}
-          >
-            <Text style={[styles.tabText, activeTab === 'summary' && styles.activeTabText]}>
-          Summary
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TabNavigation tabs={[{label: 'Summary', value: 'summary'}, {label: 'Timesheet', value: 'timesheet'}]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {activeTab === 'timesheet' && (
-          <ScrollView
-            style={styles.taskList}
-            showsVerticalScrollIndicator={false}
-          >
-            <TimeSheetWeekNavigation
+        <TimeSheetWeekNavigation
           currentWeekStart={currentWeekStart}
           onNavigate={navigateWeek}
           formatDisplayDate={formatDisplayDate}
@@ -602,48 +572,44 @@ useEffect(() => {
           monthOptions={monthOptions}
             />
 
-            {employee && (
-          <View style={styles.employeeContainer}>
-            <View style={styles.avatarContainer}>
-              {employee.image && (
-            <Image
-              source={{ uri: employee.image }}
-              style={styles.avatar}
-            />
-              )}
-              {employee.is_manager && (
-            <View style={styles.managerBadge}>
-              <Feather name="award" size={12} color="#fff" />
-            </View>
-              )}
-            </View>
-
-            <View style={styles.employeeInfo}>
-              <Text style={styles.employeeName}>{employee.name}</Text>
-              <Text style={styles.employeeId}>{employee.emp_id}</Text>
-            </View>
-          </View>
+        {activeTab === 'summary' && (
+          <ScrollView
+            style={styles.taskList}
+            showsVerticalScrollIndicator={false}
+          >
+          
+            {showWeeklySummary && filteredTasks.length > 0 ? (
+          <WeeklySummary
+            tasks={filteredTasks}
+            formatDisplayDate={formatDisplayDate}
+            getCurrentWeekDates={getCurrentWeekDates}
+            currentWeekStart={currentWeekStart}
+            isSelfView={isSelfView}
+            onEdit={editTask}
+            onToggleSummary={() => setShowWeeklySummary(!showWeeklySummary)}
+          />
+            ) : (
+          <EmptyState icon="calendar-outline" text="No summary available for this period" />
             )}
+          </ScrollView>
+        )}
+
+        {activeTab === 'timesheet' && (
+          <ScrollView
+            style={styles.taskList}
+            showsVerticalScrollIndicator={false}
+          >
+            {employee && <EmployeeInfoCard employee={employee} /> }
 
             {filteredTasks.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>
-              {employee
+          <EmptyState icon="calendar-outline" text={employee
             ? hasActiveFilters()
               ? "No timesheet entries match your current filters for this employee"
               : "No Timesheet found for this employee"
             : hasActiveFilters()
               ? "No timesheet entries match your current filters"
               : "No Timesheet found for this period"
-              }
-            </Text>
-            {hasActiveFilters() && (
-              <Text style={styles.emptySubText}>
-            Try adjusting your filters to see more results
-              </Text>
-            )}
-          </View>
+              } />
             ) : (
           filteredTasks.map((task) => (
             <TimeSheetCard
@@ -660,49 +626,15 @@ useEffect(() => {
           </ScrollView>
         )}
 
-        {activeTab === 'summary' && (
-          <ScrollView
-            style={styles.taskList}
-            showsVerticalScrollIndicator={false}
-          >
-            {showWeeklySummary && filteredTasks.length > 0 ? (
-          <WeeklySummary
-            tasks={filteredTasks}
-            formatDisplayDate={formatDisplayDate}
-            getCurrentWeekDates={getCurrentWeekDates}
-            currentWeekStart={currentWeekStart}
-            isSelfView={isSelfView}
-            onToggleSummary={() => setShowWeeklySummary(!showWeeklySummary)}
-          />
-            ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="calendar-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>
-              No summary available for this period
-            </Text>
-          </View>
-            )}
-          </ScrollView>
-        )}
-
         {showApproveWeeklyButton && (
           <View style={styles.actionButtonContainer}>
-            <ApplyButton 
-          // onPress={() => handleWeeklySubmit("WEEKLY_APPROVE")}
-          onPress={() => setApproveConfirmModalVisible(true)}
-          buttonText="Approve Weekly TimeSheet"
-          // icon='add-circle'
-            />
+            <ApplyButton onPress={() => setApproveConfirmModalVisible(true)} buttonText="Approve Weekly TimeSheet" />
           </View>
         )}
         
         {showSubmitWeeklyButton && (
           <View style={styles.actionButtonContainer}>
-            <ApplyButton 
-          // onPress={() => handleWeeklySubmit("WEEKLY_SUBMIT")}
-          onPress={() => setSubmitConfirmModalVisible(true)}
-          buttonText="Submit Weekly TimeSheet"
-            />
+            <ApplyButton onPress={() => setSubmitConfirmModalVisible(true)} buttonText="Submit Weekly TimeSheet" />
           </View>
         )}
 
@@ -821,89 +753,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: 20,
   },
-  employeeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    shadowColor: "#a970ff",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: "#a970ff",
-    marginBottom: 10,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginRight: 12,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#f5f5f5",
-    borderWidth: 2,
-    borderColor: "#a970ff",
-  },
-  managerBadge: {
-    position: "absolute",
-    bottom: -2,
-    right: -2,
-    backgroundColor: "#a970ff",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  employeeInfo: {
-    flex: 1,
-  },
-  employeeName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 2,
-  },
-  employeeId: {
-    fontSize: 14,
-    color: "#a970ff",
-    fontWeight: "600",
-  },
+
   actionButtonContainer: {
     paddingHorizontal: 10,
     paddingVertical: 5,
     backgroundColor: "#fff",
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 15,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: '#a970ff',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#888',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#a970ff',
   },
 });
 
