@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, StyleSheet } from 'react-native';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
-import SelectedDayDetail from './SelectedDayDetail';
+// import SelectedDayDetail from './SelectedDayDetail';
 
 // Employee info card for timesheet view
 export const EmployeeInfoCard = ({ employee }) => (
@@ -73,7 +73,7 @@ export const ExceedModal = ({ visible, exceedingDays, formatDisplayDate, onUnder
 );
 
 // Modal for day detail weekly summary
-export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfView, onEdit, onClose }) => (
+export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfView, onEdit, onClose, SelectedDayDetail }) => (
   <Modal visible={visible} transparent animationType="slide">
     <View style={styles.modalOverlay}>
       <View style={styles.detailModal}>

@@ -826,17 +826,19 @@ const filterClaims = () => {
 
         <TabContainer>
           <TabButton 
-            active={activeTab === 'all'} 
-            onPress={() => setActiveTab('all')}
-          >
-            <TabText active={activeTab === 'all'}>Submitted Claims</TabText>
-          </TabButton>
-          <TabButton 
             active={activeTab === 'drafts'} 
             onPress={() => setActiveTab('drafts')}
           >
             <TabText active={activeTab === 'drafts'}>Draft Claims</TabText>
           </TabButton>
+          
+          <TabButton 
+            active={activeTab === 'all'} 
+            onPress={() => setActiveTab('all')}
+          >
+            <TabText active={activeTab === 'all'}>Submitted Claims</TabText>
+          </TabButton>
+
         </TabContainer>
 
         <FlatList

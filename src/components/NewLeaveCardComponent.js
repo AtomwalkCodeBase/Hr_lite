@@ -100,7 +100,7 @@ const getStatusStyles = (status) => {
         color: '#0D47A1',
         icon: 'schedule'
       };
-    case 'C':
+    case 'X':
       return { 
         bgColor: '#FFEBEE', 
         color: '#C62828', 

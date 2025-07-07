@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import md5 from 'md5';
 // import ProjectTimeDistribution from './ProjectTimeDistribution';
 import { DailyTableRow, ExceedModal, DetailModal } from './SharedTimesheetComponents';
+import SelectedDayDetail from "./SelectedDayDetail"
 
 const MAX_DAILY_HOURS = 9;
 
@@ -331,6 +332,7 @@ const WeeklySummary = ({
         isSelfView={isSelfView}
         onEdit={onEdit}
         onClose={() => setShowDetailModal(false)}
+        SelectedDayDetail={SelectedDayDetail}
       />
     </View>
   );

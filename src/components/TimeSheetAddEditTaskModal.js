@@ -10,83 +10,77 @@ import ErrorModal from "./ErrorModal";
 
 const { height } = Dimensions.get("window");
 
-
-const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, setFormData, editingTask, projects, activities}) => {
-
+const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, setFormData, editingTask, projects, activities }) => {
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
 
-
-useEffect(() => {
+  useEffect(() => {
     if (formData.hours && parseFloat(formData.hours) > 24) {
-    setFormData((prev) => ({ ...prev, hours: "24" }));
-  }
-  if (formData.startTime instanceof Date && formData.endTime instanceof Date) {
-    const diffMs = formData.endTime - formData.startTime;
-    if (diffMs > 0) {
-      const hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
-      setFormData((prev) => ({ ...prev, hours }));
-      setErrorMessage(""); // Clear if times are valid
+      setFormData((prev) => ({ ...prev, hours: "24" }));
     }
-  }
-}, [formData.startTime, formData.endTime]);
-
-useEffect(() => {
-  const isValidTimeRange =
-    formData.startTime instanceof Date && formData.endTime instanceof Date;
-  if (formData.hours) {
-    const hoursNum = parseFloat(formData.hours);
-    if (hoursNum > 24) {
-      setErrorMessage("Hours cannot exceed 24.");
-    } else if (isValidTimeRange) {
-      const expectedHours = ((formData.endTime - formData.startTime) / (1000 * 60 * 60)).toFixed(2);
-      if (hoursNum.toFixed(2) !== expectedHours) {
-        setErrorMessage("Entered hours do not match Start and End time.");
-      } else {
-        setErrorMessage("");
+    if (formData.startTime instanceof Date && formData.endTime instanceof Date) {
+      const diffMs = formData.endTime - formData.startTime;
+      if (diffMs > 0) {
+        const hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
+        setFormData((prev) => ({ ...prev, hours }));
+        setErrorMessage(""); // Clear if times are valid
       }
-    } else {
-      setErrorMessage(""); // No time selected, allow hours freely (under 24)
     }
-  }
-}, [parseFloat(formData.hours)]);
+  }, [formData.startTime, formData.endTime]);
 
-  return(
-  <Modal visible={visible} transparent animationType="slide">
-    <TouchableOpacity
-      activeOpacity={1}
-      style={styles.modalOverlay}
-      onPress={onClose}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        style={styles.modalContent}
-        onPress={() => {}}
-      >
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>
-            {editingTask ? "Edit Task" : "Add New Task"}
-          </Text>
-          <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={24} color="#666" />
-          </TouchableOpacity>
-        </View>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {/* <View style={styles.formGroup}> */}
-          {projects.length > 0 && 
-            <DropdownPicker
-              label="Project "
-              data={projects.map((project) => ({
-                label: `${project.title} (${project.project_code})`,
-                value: project.project_code,
-              }))}
-              value={formData.project}
-              setValue={(value) => setFormData((prev) => ({ ...prev, project: value }))}
-            />
+  useEffect(() => {
+    const isValidTimeRange = formData.startTime instanceof Date && formData.endTime instanceof Date;
+    if (formData.hours) {
+      const hoursNum = parseFloat(formData.hours);
+      if (hoursNum > 24) {
+        setErrorMessage("Hours cannot exceed 24.");
+      } else if (isValidTimeRange) {
+        const expectedHours = ((formData.endTime - formData.startTime) / (1000 * 60 * 60)).toFixed(2);
+        if (hoursNum.toFixed(2) !== expectedHours) {
+          setErrorMessage("Entered hours do not match Start and End time.");
+        } else {
+          setErrorMessage("");
         }
-          {/* </View> */}
-          {/* <View style={styles.formGroup}> */}
+      } else {
+        setErrorMessage(""); // No time selected, allow hours freely (under 24)
+      }
+    }
+  }, [formData.hours]);
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        {/* TouchableOpacity for the overlay area outside modalContent */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {editingTask ? "Edit Task" : "Add New Task"}
+            </Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {projects.length > 0 && (
+              <DropdownPicker
+                label="Project "
+                data={projects.map((project) => ({
+                  label: `${project.title} (${project.project_code})`,
+                  value: project.project_code,
+                }))}
+                value={formData.project}
+                setValue={(value) => setFormData((prev) => ({ ...prev, project: value }))}
+              />
+            )}
             <DropdownPicker
               label="Activity *"
               data={activities.map((activity) => ({
@@ -96,134 +90,101 @@ useEffect(() => {
               value={formData.activity}
               setValue={(value) => setFormData((prev) => ({ ...prev, activity: value }))}
             />
-          {/* </View> */}
-          {/* <View style={styles.formGroup}> */}
-           <DatePicker
-            cDate={formData.date}
-            label="Date *"
-            setCDate={(date) => setFormData((prev) => ({ ...prev, date }))}
-            minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
-            maximumDate={new Date()}
-          />
-          {/* </View> */}
-
-          <View style={styles.formGroup}>
-            <TimePicker
-              label="Start Time"
-              cDate={formData.startTime}
-              setCDate={(value) => setFormData((prev) => ({ ...prev, startTime: value }))}
+            <DatePicker
+              cDate={formData.date}
+              label="Date *"
+              setCDate={(date) => setFormData((prev) => ({ ...prev, date }))}
+              minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
+              maximumDate={new Date()}
             />
-          </View>
-          <View style={styles.formGroup}>
-            <TimePicker
-              label="End Time"
-              cDate={formData.endTime}
-              setCDate={(value) => setFormData((prev) => ({ ...prev, endTime: value }))}
-            />
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Efforts </Text>
-            <TextInput
-              style={styles.input}
-              value={formData.hours}
-               onChangeText={(value) => {
+            <View style={styles.formGroup}>
+              <TimePicker
+                label="Start Time"
+                cDate={formData.startTime}
+                setCDate={(value) => setFormData((prev) => ({ ...prev, startTime: value }))}
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <TimePicker
+                label="End Time"
+                cDate={formData.endTime}
+                setCDate={(value) => setFormData((prev) => ({ ...prev, endTime: value }))}
+              />
+            </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Efforts </Text>
+              <TextInput
+                style={styles.input}
+                value={formData.hours}
+                onChangeText={(value) => {
                   if (!isNaN(value) && parseFloat(value) <= 24) {
                     setFormData((prev) => ({ ...prev, hours: value }));
                   }
                 }}
-              placeholder="Enter hours"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-          </View>
-          {errorMessage ? (<Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>) : null}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Remarks</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.remarks}
-              onChangeText={(value) => setFormData((prev) => ({ ...prev, remarks: value }))}
-              placeholder="Add remarks..."
-              multiline
-              numberOfLines={3}
-              placeholderTextColor="#999"
-            />
-          </View>
-          {editingTask ? (
-            <View style={{flexDirection: "row", gap: 10}}>
-            <TouchableOpacity
-              style={[styles.addButton, styles.addOnlyButton]}
-              onPress={() => onSubmit("UPDATE")}
-              disabled={isLoading}
-            >
-              <Text style={styles.addButtonText}>
-                {/* {isLoading ? "UPDATING..." : "UPDATE"} */}
-                Update
-              </Text>
-            </TouchableOpacity>
-
-            {/* <TouchableOpacity
-              style={[styles.addButton, styles.addOnlyButton]}
-              onPress={() => onSubmit("SUBMIT")}
-              disabled={isLoading}
-            >
-              <Text style={styles.addButtonText}>
-                {isLoading ? "UPDATING..." : "UPDATE"}
-                Submit and Update
-              </Text>
-            </TouchableOpacity> */}
+                placeholder="Enter hours"
+                keyboardType="numeric"
+                placeholderTextColor="#999"
+              />
             </View>
-          ) : (
-            <View style={styles.addButtonsContainer}>
-              <TouchableOpacity
-                style={[styles.addButton, styles.addOnlyButton]}
-                // onPress={() => onSubmit("ADD_AND_SAVE")}
-                onPress={() => setIsConfirmModalVisible(true)}
-                disabled={isLoading}
-              >
-                <Text style={styles.addButtonText}>
-                  {/* {isLoading ? "SAVING..." : "SAVE"} */}
-                   Save
-                </Text>
-              </TouchableOpacity>
-              {/* <TouchableOpacity
-                style={[styles.addButton, styles.addAndSaveButton]}
-                onPress={() => onSubmit("SUBMIT")}
-                disabled={isLoading}
-              >
-                <Text style={styles.addButtonText}>
-                  {isLoading ? "SUBMITTING..." : "SUBMIT"}
-                  SUBMIT
-                </Text>
-              </TouchableOpacity> */}
+            {errorMessage ? (
+              <Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>
+            ) : null}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Remarks</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={formData.remarks}
+                onChangeText={(value) => setFormData((prev) => ({ ...prev, remarks: value }))}
+                placeholder="Add remarks..."
+                multiline
+                numberOfLines={3}
+                placeholderTextColor="#999"
+              />
             </View>
-          )}
-        </ScrollView>
-      </TouchableOpacity>
-    </TouchableOpacity>
-
+            {editingTask ? (
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  style={[styles.addButton, styles.addOnlyButton]}
+                  onPress={() => onSubmit("UPDATE")}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.addButtonText}>Update</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.addButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.addButton, styles.addOnlyButton]}
+                  onPress={() => setIsConfirmModalVisible(true)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.addButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your task will be in Draft move. You can edit or submit it later."
+        message="Your task will be in Draft mode. You can edit or submit it later."
         onConfirm={() => {
-          onSubmit("ADD_AND_SAVE")
+          onSubmit("ADD_AND_SAVE");
           setIsConfirmModalVisible(false);
         }}
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Save"
         cancelText="Cancel"
       />
-
       <ErrorModal
-        // label="Duplicate Entry Detected"
         visible={isErrorModalVisible}
         message={errorMessage}
         onClose={() => setIsErrorModalVisible(false)}
       />
-    <Loader visible={isLoading} />
-  </Modal>
-)}
+      <Loader visible={isLoading} />
+    </Modal>
+  );
+};
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -239,6 +200,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
     maxHeight: height * 0.9,
+  },
+  scrollContent: {
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: "row",
@@ -288,9 +252,6 @@ const styles = StyleSheet.create({
   addOnlyButton: {
     backgroundColor: "#8B5CF6",
   },
-  addAndSaveButton: {
-    backgroundColor: "#a970ff",
-  },
   addButtonText: {
     color: "white",
     fontSize: 16,
@@ -298,4 +259,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddEditTaskModal; 
+export default AddEditTaskModal;

@@ -23,7 +23,8 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
       { 
         label: 'Status', 
         value: data.status_display, 
-        status: getStatusValue(data.status_display) 
+        status: getStatusValue(data.status_display) ,
+        bold: true
       },
       { label: 'Submitted', value: data.submit_date },
       { label: 'Remarks', value: data.remarks, condition: data.remarks }
@@ -59,16 +60,26 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
 
 return (
   <DetailContainer>
-    {detailConfigs[type].map((item, index) => (
-      item.condition !== false && (
-        <DetailItem key={index}>
-          <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
-          {item.type === "image" && item.value ? (
+    {detailConfigs[type].map((item, index) => {
+      // If item is image type, only show if value exists
+      if (item.type === "image") {
+        if (!item.value) return null;
+        return (
+          <DetailItem key={index}>
+            <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
             <Image
               source={{ uri: item.value }}
-              style={{ width: 120, height: 120, borderRadius: 12, resizeMode: "cover", borderWidth: 1, borderColor: "#eee", marginLeft: 8}}
+              style={{ width: 120, height: 120, borderRadius: 12, resizeMode: "cover", borderWidth: 1, borderColor: "#eee", marginLeft: 8 }}
             />
-          ) : item.noWrap ? (
+          </DetailItem>
+        );
+      }
+      // For other types, show if condition is not false
+      if (item.condition === false) return null;
+      return (
+        <DetailItem key={index}>
+          <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
+          {item.noWrap ? (
             <ClaimIDValue>{item.value}</ClaimIDValue>
           ) : (
             <DetailValue status={item.status} bold={item.bold}>
@@ -76,8 +87,8 @@ return (
             </DetailValue>
           )}
         </DetailItem>
-      )
-    ))}
+      );
+    })}
   </DetailContainer>
 );
 };
@@ -203,7 +214,9 @@ const DetailLabel = styled.Text`
 
 const DetailValue = styled.Text`
   font-size: 14px;
-  color: ${props => props.status === 'approved' ? '#10B981' : 
+  color: ${props => props.status === 'approved' ? '#2E7D32' : 
+                   props.status === 'submitted' ? '#0D47A1' : 
+                   props.status === 'cancelled' ? '#C62828' : 
                    props.status === 'rejected' ? '#EF4444' : 
                    props.status === 'pending' ? '#F59E0B' : '#111827'};
   font-weight: ${props => props.bold ? '600' : '400'};

@@ -7,34 +7,34 @@ const FilterModal = ({
   visible,
   onClose,
   onClearFilters,
-  onApplyFilters, // New prop for applying filters
+  onApplyFilters,
   filterConfigs = [],
   modalTitle = "Filters",
   applyButtonText = "Apply Filters",
-  clearButtonText = "Clear Filters"
+  clearButtonText = "Clear Filters",
 }) => {
   // Check if any filter has a selected value
-  const hasSelectedFilters = filterConfigs.some(filter => filter.value !== null && filter.value !== undefined && filter.value !== '');
+  const hasSelectedFilters = filterConfigs.some(
+    (filter) => filter.value !== null && filter.value !== undefined && filter.value !== ""
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <TouchableOpacity
-        activeOpacity={1}
-        style={styles.modalOverlay}
-        onPress={onClose}
-      >
+      <View style={styles.modalOverlay}>
+        {/* TouchableOpacity only for the overlay area outside modalContent */}
         <TouchableOpacity
+          style={StyleSheet.absoluteFill}
           activeOpacity={1}
-          style={styles.modalContent}
-          onPress={(e) => e.stopPropagation()}
-        >
+          onPress={onClose}
+        />
+        <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{modalTitle}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
@@ -54,26 +54,30 @@ const FilterModal = ({
                 onPress={onClearFilters}
                 disabled={!hasSelectedFilters}
               >
-                <Text style={[styles.clearButtonText, !hasSelectedFilters && styles.disabledButtonText]}>
+                <Text
+                  style={[styles.clearButtonText, !hasSelectedFilters && styles.disabledButtonText]}
+                >
                   {clearButtonText}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.applyButton, !hasSelectedFilters && styles.disabledButton]}
                 onPress={() => {
-                  onApplyFilters(); // Call the apply filters function
-                  onClose(); // Close the modal
+                  onApplyFilters();
+                  onClose();
                 }}
                 disabled={!hasSelectedFilters}
               >
-                <Text style={[styles.applyButtonText, !hasSelectedFilters && styles.disabledButtonText]}>
+                <Text
+                  style={[styles.applyButtonText, !hasSelectedFilters && styles.disabledButtonText]}
+                >
                   {applyButtonText}
                 </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };

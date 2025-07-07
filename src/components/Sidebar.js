@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AppContext } from '../../context/AppContext';
+import ConfirmationModal from './ConfirmationModal';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -171,9 +172,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderRadius: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    // backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: '#rgba(255, 227, 227, 0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
+    // borderColor: 'rgba(239, 68, 68, 0.2)',
+    borderColor: 'red',
   },
   logoutIcon: {
     marginRight: 12,
@@ -206,6 +209,7 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
   const [empShift, setEmpShift] = useState({});
   const [isShift, setIsShift] = useState(false);
   const [slideAnim] = useState(new Animated.Value(-screenWidth));
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -406,6 +410,7 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
           {/* Header with Profile */}
           <View style={styles.header}>
             <View style={styles.profileSection}>
+              <MaterialIcons style={{position: "absolute", right: -8, top: -10}} name="clear" size={24} color="black" />
               <View style={styles.avatar}>
                 {profile.image ? (
                   <Image source={{ uri: profile.image }} style={{ width: 56, height: 56, borderRadius: 28 }} />
@@ -443,17 +448,28 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
           <View style={styles.footer}>
             <TouchableOpacity 
               style={styles.logoutButton} 
-              onPress={() => handleMenuPress(logout)}
+              onPress={() => setIsLogoutModalVisible(true)}
               activeOpacity={0.8}
             >
               <View style={styles.logoutIcon}>
                 <Feather name="log-out" size={20} color={colors.error} />
               </View>
-              <Text style={styles.logoutText}>Logout</Text>
+              <Text style={styles.logoutText}>LOGOUT</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
       </Animated.View>
+      <ConfirmationModal
+            visible={isLogoutModalVisible}
+            message="Are you sure you want to logout?"
+            onConfirm={() => {
+              setIsLogoutModalVisible(false);
+              logout();
+            }}
+            onCancel={() => setIsLogoutModalVisible(false)}
+            confirmText="Logout"
+            cancelText="Cancel"
+          />
     </View>
   );
 };

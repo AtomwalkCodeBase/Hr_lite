@@ -113,7 +113,7 @@ const AddAttendance = () => {
     };
 
     loadData();
-  }, [refreshKey]);
+  }, [profile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -125,7 +125,7 @@ const AddAttendance = () => {
         };
         fetchAttendanceDetails(data);
       }
-    }, [employeeData, refreshKey])
+    }, [employeeData])
   );
 
   const fetchAttendanceDetails = (data) => {
@@ -337,9 +337,9 @@ const submitCheckout = async (payload) => {
                         (attendance && attendance.start_time && !attendance.end_time) || 
                         (attendance && attendance.geo_status === 'O');
                           
- const isCheckOutDisabled = !dataLoaded || 
+const isCheckOutDisabled = !dataLoaded || 
                          !employeeData || 
-                         (!previousDayUnchecked && (!attendance || attendance.end_time));
+                         (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
 
 
   if (!dataLoaded && isLoading) {
@@ -408,73 +408,71 @@ const submitCheckout = async (payload) => {
 
         {/* Attendance Action Card */}
         <View style={styles.actionCard}>
-          <Text style={styles.cardTitle}>Today's Attendance</Text>
-          
-          {attendance && attendance.start_time === null ? (
-            <View style={styles.leaveBadge}>
-              <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
-            </View>
-          ) : (
-            <View style={[
-              styles.actionButtons,
-              (!attendance?.start_time && !previousDayUnchecked) && styles.singleButtonContainer
+    <Text style={styles.cardTitle}>Today's Attendance</Text>
+    
+    {attendance && attendance.start_time === null ? (
+      <View style={styles.leaveBadge}>
+        <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
+      </View>
+    ) : (
+      <View style={[
+        styles.actionButtons,
+        (!attendance?.start_time && !previousDayUnchecked) && styles.singleButtonContainer
+      ]}>
+        {/* Check In Button */}
+        <TouchableOpacity
+          onPress={() => handleCheck('ADD')}
+          disabled={isCheckInDisabled}
+          style={[
+            styles.attendanceButton,
+            styles.checkInButton,
+            isCheckInDisabled && styles.disabledButton,
+            (!attendance?.start_time && !previousDayUnchecked) && { width: '70%' }
+          ]}
+        >
+          <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
+          <Text style={[
+            styles.buttonText,
+            isCheckInDisabled && styles.disabledButtonText
+          ]}>
+            {attendance?.start_time 
+              ? `Checked In • ${attendance.start_time}`
+              : 'Check In'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Check Out Button - show if start_time exists or previous day is unchecked */}
+        {(previousDayUnchecked || (attendance && attendance.start_time)) && (
+          <TouchableOpacity
+            onPress={() => {
+              if (previousDayUnchecked) {
+                // Show confirmation for yesterday's checkout
+                setIsConfirmModalVisible(true);
+              } else {
+                // Handle today's checkout
+                setIsYesterdayCheckout(false);
+                setIsRemarkModalVisible(true);
+              }
+            }}
+            disabled={isCheckOutDisabled}
+            style={[
+              styles.attendanceButton,
+              styles.checkOutButton,
+              isCheckOutDisabled && styles.disabledButton
+            ]}
+          >
+            <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
+            <Text style={[
+              styles.buttonText,
+              isCheckOutDisabled && styles.disabledButtonText
             ]}>
-              {/* Check In Button */}
-              <TouchableOpacity
-                onPress={() => handleCheck('ADD')}
-                disabled={isCheckInDisabled}
-                style={[
-                  styles.attendanceButton,
-                  styles.checkInButton,
-                  isCheckInDisabled && styles.disabledButton,
-                  (!attendance?.start_time && !previousDayUnchecked) && { width: '70%' } // Narrower when alone
-                ]}
-              >
-                <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
-                <Text style={[
-                  styles.buttonText,
-                  isCheckInDisabled && styles.disabledButtonText
-                ]}>
-                  {attendance?.start_time 
-                    ? `Checked In • ${attendance.start_time}`
-                    : 'Check In'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Check Out Button - only show if start_time exists */}
-              {(previousDayUnchecked || (attendance && (!attendance.end_time || attendance.end_time === "" || attendance.end_time === null))) && (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (previousDayUnchecked) {
-                      // Show confirmation for yesterday's checkout
-                      setIsConfirmModalVisible(true);
-                    } else {
-                      // Handle today's checkout
-                      setIsYesterdayCheckout(false);
-                      setIsRemarkModalVisible(true);
-                    }
-                  }}
-                  disabled={isCheckOutDisabled}
-                  style={[
-                    styles.attendanceButton,
-                    styles.checkOutButton,
-                    isCheckOutDisabled && styles.disabledButton
-                  ]}
-                >
-                  <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
-                  <Text style={[
-                    styles.buttonText,
-                    isCheckOutDisabled && styles.disabledButtonText
-                  ]}>
-                    {previousDayUnchecked ? 'Complete Yesterday' : 'Check Out'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-
-            </View>
-          )}
-        </View>
+              {previousDayUnchecked ? 'Complete Yesterday' : attendance?.end_time ? `Checked Out • ${attendance.end_time}` : 'Check Out'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    )}
+  </View>
 
         {/* Attendance History Button */}
         <TouchableOpacity 

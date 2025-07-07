@@ -119,7 +119,7 @@ const LeaveCardComponent = ({ leave, statusStyles, onPress, onCancelPress, showC
     return dateString;
   };
 
-  console.log("Leave----",leave)
+  // console.log("Leave----",leave)
   return (
     <ApplicationCard onPress={() => onPress(leave)} borderColor={borderColor}>
       <CardHeader>

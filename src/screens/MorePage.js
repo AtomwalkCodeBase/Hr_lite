@@ -187,7 +187,7 @@ const handlePressProfile = () => {
     {
       title: "Request Desk",
       subTitle: "Add your request in Request",
-      icon: <Ionicons name="settings-outline" size={24} color="#7e57c2" />,
+      icon: <FontAwesome6 name="headset" size={24} color="#7e57c2" />,
       action: handlePressRequest,
       show: true
     },
