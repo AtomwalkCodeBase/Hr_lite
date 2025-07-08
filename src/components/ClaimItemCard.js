@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import RemarksInput from './RemarkInput';
+import DropdownPicker from './DropdownPicker';
+import AmountInput from './AmountInput';
 
 const ClaimItemCard = ({ 
   item, 
@@ -8,11 +11,36 @@ const ClaimItemCard = ({
   isDisabled, 
   isLimited,
   expanded,
+  validationResult,
+  managers,
   onToggleExpand,
   onToggleSelect,
-  validationResult,
-  children 
+  onActionChange,
+  onAmountChange,
+  onForwardManagerChange,
+  onRemarkChange,
+  itemActions,
+  errors
 }) => {
+  const [itemRemark, setItemRemark] = useState('');
+
+  const handleActionChange = (action) => {
+    onActionChange(item.id, action);
+  };
+
+  const handleAmountChange = (amount) => {
+    onAmountChange(item.id, amount);
+  };
+
+  const handleForwardManagerChange = (managerId) => {
+    onForwardManagerChange(item.id, managerId);
+  };
+
+  const handleRemarkChange = (text) => {
+    setItemRemark(text);
+    onRemarkChange(item.id, text);
+  };
+
   return (
     <View style={[
       styles.itemContainer, 
@@ -97,12 +125,127 @@ const ClaimItemCard = ({
           </View>
         </View>
       </TouchableOpacity>
-      
-      {expanded && children}
+      {expanded && (
+        <View style={styles.actionSection}>
+          <Text style={styles.sectionSubtitle}>Action Required</Text>
+          
+          {isLimited ? (
+            <View style={styles.limitedActionContainer}>
+              <Text style={styles.limitedActionText}>
+                This item requires forwarding due to: {validationResult.limitRemarks}
+              </Text>
+              
+              <View style={styles.managerDropdownContainer}>
+                <Text style={styles.detailLabel}>Forward To:</Text>
+                <View style={styles.managerDisplay}>
+                  <Text style={styles.managerDisplayText}>
+                    {managers.find(m => m.emp_id === validationResult.forwardManager)?.name || 
+                     validationResult.forwardManager}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions?.action === 'APPROVE' && styles.actionButtonActive,
+                    itemActions?.action === 'APPROVE' && styles.approveButtonActive
+                  ]}
+                  onPress={() => handleActionChange('APPROVE')}
+                  disabled={isDisabled}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions?.action === 'APPROVE' && styles.actionButtonTextActive
+                  ]}>
+                    Approve
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions?.action === 'REJECT' && styles.actionButtonActive,
+                    itemActions?.action === 'REJECT' && styles.rejectButtonActive
+                  ]}
+                  onPress={() => handleActionChange('REJECT')}
+                  disabled={isDisabled}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions?.action === 'REJECT' && styles.actionButtonTextActive
+                  ]}>
+                    Reject
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    itemActions?.action === 'FORWARD' && styles.actionButtonActive,
+                    itemActions?.action === 'FORWARD' && styles.forwardButtonActive
+                  ]}
+                  onPress={() => handleActionChange('FORWARD')}
+                  disabled={isDisabled}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions?.action === 'FORWARD' && styles.actionButtonTextActive
+                  ]}>
+                    Forward
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {(itemActions?.action === 'APPROVE' || itemActions?.action === 'FORWARD') && (
+                <View style={styles.amountInputContainer}>
+                  <Text style={styles.detailLabel}>Approved Amount:</Text>
+                  <AmountInput
+                    label=""
+                    claimAmount={itemActions?.approvedAmount || ''}
+                    setClaimAmount={handleAmountChange}
+                    error={errors[`itemAmount-${item.id}`]}
+                    style={styles.amountInput}
+                    disabled={isDisabled}
+                  />
+                </View>
+              )}
+              
+              {itemActions?.action === 'FORWARD' && (
+                <View style={styles.managerDropdownContainer}>
+                  <Text style={styles.detailLabel}>Forward To:</Text>
+                  <DropdownPicker
+                    data={managers.map(m => ({
+                      label: `${m.name} [${m.emp_id}]`,
+                      value: m.emp_id
+                    }))}
+                    value={itemActions?.forwardManager}
+                    setValue={handleForwardManagerChange}
+                    placeholder="Select manager"
+                    style={styles.managerDropdown}
+                    containerStyle={styles.dropdownContainer}
+                    disabled={isDisabled}
+                  />
+                </View>
+              )}
+            </>
+          )}
+          
+          <RemarksInput
+            remark={itemActions?.remarks || ''}
+            setRemark={handleRemarkChange}
+            error={errors[`itemRemarks-${item.id}`]}
+            placeholder="Enter remarks for this item..."
+            disabled={isDisabled}
+          />
+        </View>
+      )}
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   itemContainer: {
     backgroundColor: '#fff',
@@ -193,6 +336,90 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#27ae60',
     marginRight: 8,
+  },
+   actionSection: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    backgroundColor: '#f9f9f9',
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  limitedActionContainer: {
+    backgroundColor: '#fff8e1',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  limitedActionText: {
+    color: '#e65100',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  actionButtonActive: {
+    borderWidth: 2,
+  },
+  approveButtonActive: {
+    borderColor: '#2e7d32',
+    backgroundColor: '#e8f5e9',
+  },
+  rejectButtonActive: {
+    borderColor: '#c62828',
+    backgroundColor: '#ffebee',
+  },
+  forwardButtonActive: {
+    borderColor: '#1565c0',
+    backgroundColor: '#e3f2fd',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#424242',
+  },
+  actionButtonTextActive: {
+    fontWeight: '600',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#616161',
+    marginBottom: 6,
+  },
+  amountInputContainer: {
+    marginBottom: 16,
+  },
+  managerDropdownContainer: {
+    marginBottom: 16,
+  },
+  managerDisplay: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 6,
+  },
+  managerDisplayText: {
+    fontSize: 14,
+    color: '#212121',
+  },
+  dropdownContainer: {
+    marginTop: 6,
   },
 });
 
