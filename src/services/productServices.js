@@ -32,6 +32,7 @@ export async function postEmpLeave(leave_type) {
     if (claim_type) {
       data['claim_data'] = claim_type;
     }
+    console.log("Response Data to be pass--",data)
     const url = await processClaim();
     return authAxiosPost(url, data);
   

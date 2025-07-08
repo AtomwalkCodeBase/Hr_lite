@@ -1,11 +1,11 @@
-import React, { useRef } from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import RemarksInput from './RemarkInput';
 import AmountInput from './AmountInput';
 import DropdownPicker from './DropdownPicker';
 
-const ClaimItemActions = ({
+const ClaimItemActions = React.memo(({
   item,
   itemActions,
   isLimited,
@@ -17,14 +17,21 @@ const ClaimItemActions = ({
   onRemarksChange,
   onForwardManagerChange
 }) => {
-  // 1. Remove unused state and refs
-  const remarksRef = useRef(itemActions?.remarks || '');
+  const handleActionChange = useCallback((action) => {
+    onActionChange(item.id, action);
+  }, [item.id, onActionChange]);
 
-  // 2. Simplified handler
-  const handleRemarksChange = (text) => {
-    remarksRef.current = text;
+  const handleAmountChange = useCallback((amount) => {
+    onAmountChange(item.id, amount);
+  }, [item.id, onAmountChange]);
+
+  const handleRemarksChange = useCallback((text) => {
     onRemarksChange(item.id, text);
-  };
+  }, [item.id, onRemarksChange]);
+
+  const handleForwardManagerChange = useCallback((managerId) => {
+    onForwardManagerChange(item.id, managerId);
+  }, [item.id, onForwardManagerChange]);
 
   return (
     <View style={styles.actionSection}>
@@ -55,7 +62,7 @@ const ClaimItemActions = ({
                 itemActions?.action === 'APPROVE' && styles.actionButtonActive,
                 itemActions?.action === 'APPROVE' && styles.approveButtonActive
               ]}
-              onPress={() => onActionChange(item.id, 'APPROVE')}
+              onPress={() => handleActionChange('APPROVE')}
             >
               <Text style={[
                 styles.actionButtonText,
@@ -71,7 +78,7 @@ const ClaimItemActions = ({
                 itemActions?.action === 'REJECT' && styles.actionButtonActive,
                 itemActions?.action === 'REJECT' && styles.rejectButtonActive
               ]}
-              onPress={() => onActionChange(item.id, 'REJECT')}
+              onPress={() => handleActionChange('REJECT')}
             >
               <Text style={[
                 styles.actionButtonText,
@@ -87,7 +94,7 @@ const ClaimItemActions = ({
                 itemActions?.action === 'FORWARD' && styles.actionButtonActive,
                 itemActions?.action === 'FORWARD' && styles.forwardButtonActive
               ]}
-              onPress={() => onActionChange(item.id, 'FORWARD')}
+              onPress={() => handleActionChange('FORWARD')}
             >
               <Text style={[
                 styles.actionButtonText,
@@ -104,7 +111,7 @@ const ClaimItemActions = ({
               <AmountInput
                 label=""
                 claimAmount={itemActions?.approvedAmount || ''}
-                setClaimAmount={(amount) => onAmountChange(item.id, amount)}
+                setClaimAmount={handleAmountChange}
                 error={errors[`itemAmount-${item.id}`]}
                 style={styles.amountInput}
               />
@@ -120,7 +127,7 @@ const ClaimItemActions = ({
                   value: m.emp_id
                 }))}
                 value={itemActions?.forwardManager}
-                setValue={(value) => onForwardManagerChange(item.id, value)}
+                setValue={handleForwardManagerChange}
                 placeholder="Select manager"
                 style={styles.managerDropdown}
                 containerStyle={styles.dropdownContainer}
@@ -129,15 +136,16 @@ const ClaimItemActions = ({
           )}
         </>
       )}
-<RemarksInput
-        remark={itemActions?.remarks || ''} // Use parent's value
+      
+      <RemarksInput
+        remark={itemActions?.remarks || ''}
         setRemark={handleRemarksChange}
         error={errors[`itemRemarks-${item.id}`]}
         placeholder="Enter remarks for this item..."
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   actionSection: {

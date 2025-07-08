@@ -1,98 +1,116 @@
 import React from 'react';
-import { Image, Modal } from 'react-native';
+import { Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
 
 const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCancelLeave, showCancelButton }) => {
-  const renderDetails = () => {
-  const data = leave || claim || helpRequest;
-  const type = leave ? 'leave' : claim ? 'claim' : helpRequest ? 'helpRequest' : null;
+  const formatIndianCurrency = (num) => {
+  if (!num && num !== 0) return null; // handles null, undefined, empty string
+  
+  // Convert to number to handle cases like "12.00"
+  const numberValue = Number(num);
+  if (isNaN(numberValue)) return null;
 
-  if (!data || !type) return null; // 👈 Prevents crashes when no valid data
+  // Check if it's an integer (has no decimal or decimal is .00)
+  const isInteger = Number.isInteger(numberValue);
+  
+  // Format the number based on whether it's an integer
+  const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+  const parts = numStr.split('.');
+  let integerPart = parts[0];
+  const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
 
-  const getStatusValue = (status) => {
-    if (!status) return undefined;
-    return status.toLowerCase();
-  };
+  // Format the integer part with Indian comma separators
+  const lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  
+  if (otherNumbers !== '') {
+    integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+  } else {
+    integerPart = lastThree;
+  }
 
-  const detailConfigs = {
-    leave: [
-      { label: 'Leave Type', value: data.leave_type_display, bold: true },
-      { label: 'Duration', value: `${data.from_date} to ${data.to_date} (${data.no_leave_count} days)` },
-      { 
-        label: 'Status', 
-        value: data.status_display, 
-        status: getStatusValue(data.status_display) ,
-        bold: true
-      },
-      { label: 'Submitted', value: data.submit_date },
-      { label: 'Remarks', value: data.remarks, condition: data.remarks }
-    ],
-    claim: [
-      { label: 'Item Name', value: data.item_name, bold: true, condition: data.item_name },
-      { label: 'Amount', value: `₹${data.expense_amt}`, bold: true },
-      { label: 'Claim ID', value: data.claim_id, noWrap: true },
-      { label: 'Submitted', value: data.submitted_date },
-      { label: 'Expense Date', value: data.expense_date, condition: data.expense_date },
-      { label: 'Project', value: data.project_name, condition: data.project_name },
-      { label: 'Remarks', value: data.remarks, condition: data.remarks },
-      { 
-        label: 'Manager Remarks', 
-        value: data.approval_remarks, 
-        condition: data.approval_remarks 
-      }
-    ],
-    helpRequest: [
-      { label: 'Request ID', value: data.request_id, bold: true },
-      { label: 'Category', value: data.request_sub_type },
-      { label: 'Date', value: data.created_date },
-      { 
-        label: 'Status', 
-        value: data.status_display, 
-        status: getStatusValue(data.status_display) 
-      },
-      { label: 'Request Details', value: data.request_text },
-      { label: 'Remarks', value: data.remarks, condition: data.remarks },
-      { label: 'Image', value: data.submitted_file_1, type: "image" },
-    ]
-  };
-
-return (
-  <DetailContainer>
-    {detailConfigs[type].map((item, index) => {
-      // If item is image type, only show if value exists
-      if (item.type === "image") {
-        if (!item.value) return null;
-        return (
-          <DetailItem key={index}>
-            <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
-            <Image
-              source={{ uri: item.value }}
-              style={{ width: 120, height: 120, borderRadius: 12, resizeMode: "cover", borderWidth: 1, borderColor: "#eee", marginLeft: 8 }}
-            />
-          </DetailItem>
-        );
-      }
-      // For other types, show if condition is not false
-      if (item.condition === false) return null;
-      return (
-        <DetailItem key={index}>
-          <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
-          {item.noWrap ? (
-            <ClaimIDValue>{item.value}</ClaimIDValue>
-          ) : (
-            <DetailValue status={item.status} bold={item.bold}>
-              {item.value}
-            </DetailValue>
-          )}
-        </DetailItem>
-      );
-    })}
-  </DetailContainer>
-);
+  return `₹${integerPart}${decimalPart}`;
 };
 
+  const shouldDisplayField = (value) => {
+    return value !== null && value !== undefined && value !== '';
+  };
+
+  const renderDetails = () => {
+    const data = leave || claim || helpRequest;
+    const type = leave ? 'leave' : claim ? 'claim' : helpRequest ? 'helpRequest' : null;
+
+    if (!data || !type) return null;
+
+    const getStatusValue = (status) => {
+      if (!status) return undefined;
+      return status.toLowerCase();
+    };
+
+    const detailConfigs = {
+      leave: [
+        { label: 'Leave Type', value: data.leave_type_display, bold: true },
+        { label: 'Duration', value: `${data.from_date} to ${data.to_date} (${data.no_leave_count} days)` },
+        { 
+          label: 'Status', 
+          value: data.status_display, 
+          status: getStatusValue(data.status_display) 
+        },
+        { label: 'Submitted', value: data.submit_date },
+        { label: 'Remarks', value: data.remarks }
+      ],
+      claim: [
+        { label: 'Item Name', value: data.item_name, bold: true },
+        { 
+          label: 'Amount', 
+          value: data.expense_amt ? `${formatIndianCurrency(data.expense_amt)}` : null,
+          bold: true,
+          isCurrency: true
+        },
+        { label: 'Claim ID', value: data.claim_id, noWrap: true },
+        { label: 'Submitted', value: data.submitted_date },
+        { label: 'Expense Date', value: data.expense_date },
+        { label: 'Project', value: data.project_name },
+        { label: 'Remarks', value: data.remarks },
+        { label: 'Manager Remarks', value: data.approval_remarks }
+      ],
+      helpRequest: [
+        { label: 'Request ID', value: data.request_id, bold: true },
+        { label: 'Category', value: data.request_sub_type },
+        { label: 'Date', value: data.created_date },
+        { 
+          label: 'Status', 
+          value: data.status_display, 
+          status: getStatusValue(data.status_display) 
+        },
+        { label: 'Request Details', value: data.request_text },
+        { label: 'Remarks', value: data.remarks }
+      ]
+    };
+
+    return (
+      <DetailContainer>
+        {detailConfigs[type].map((item, index) => (
+          shouldDisplayField(item.value) && (
+            <DetailItem key={index}>
+              <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
+              {item.noWrap ? (
+                <ClaimIDValue>{item.value}</ClaimIDValue>
+              ) : item.isCurrency ? (
+                <CurrencyValue bold={item.bold}>{item.value}</CurrencyValue>
+              ) : (
+                <DetailValue status={item.status} bold={item.bold}>
+                  {item.value}
+                </DetailValue>
+              )}
+            </DetailItem>
+          )
+        ))}
+      </DetailContainer>
+    );
+  };
 
   const getTitle = () => {
     if (leave) return 'Leave Details';
@@ -144,6 +162,17 @@ return (
     </Modal>
   );
 };
+
+const CurrencyValue = styled.Text`
+  font-size: 14px;
+  color: #111827;
+  font-weight: ${props => props.bold ? '600' : '400'};
+  flex: 1;
+  text-align: right;
+  padding-left: 8px;
+  line-height: 20px;
+  font-family: monospace; /* Makes currency numbers align better */
+`;
 
 const ModalOverlay = styled.View`
   flex: 1;
@@ -233,8 +262,8 @@ const ClaimIDValue = styled.Text`
   border-radius: 4px;
   overflow: hidden;
   line-height: 20px;
-  min-width: 60%;  /* Increased minimum width */
-  margin-left: auto; /* Push to right side */
+  min-width: 60%;
+  margin-left: auto;
   text-align: right;
 `;
 

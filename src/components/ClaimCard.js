@@ -199,6 +199,34 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
   const statusText = getStatusText(status);
 
   // const handleDelete = () => onDelete(claim.id);
+  const formatIndianCurrency = (num) => {
+  if (!num && num !== 0) return null; // handles null, undefined, empty string
+  
+  // Convert to number to handle cases like "12.00"
+  const numberValue = Number(num);
+  if (isNaN(numberValue)) return null;
+
+  // Check if it's an integer (has no decimal or decimal is .00)
+  const isInteger = Number.isInteger(numberValue);
+  
+  // Format the number based on whether it's an integer
+  const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+  const parts = numStr.split('.');
+  let integerPart = parts[0];
+  const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+
+  // Format the integer part with Indian comma separators
+  const lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  
+  if (otherNumbers !== '') {
+    integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+  } else {
+    integerPart = lastThree;
+  }
+
+  return `₹ ${integerPart}${decimalPart}`;
+};
   const handleUpdate = () => onUpdate(claim);
 
   return (
@@ -263,7 +291,9 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
       </View>
 
       <AmountContainer status={status}>
-        <AmountText status={status}>₹ {claim.expense_amt}</AmountText>
+        <AmountText status={status}>
+          {formatIndianCurrency(claim.expense_amt)}
+        </AmountText>
       </AmountContainer>
 
       {/* {claim.submitted_file_1 && (

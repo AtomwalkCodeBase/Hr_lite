@@ -30,9 +30,10 @@ const ClaimItemCard = ({
             <TouchableOpacity 
               onPress={(e) => {
                 e.stopPropagation();
-                if (!isLimited) onToggleSelect();
+                onToggleSelect(); // Removed the isLimited check here
               }}
               style={styles.checkboxContainer}
+              disabled={isDisabled} // Only disable if item is already approved/rejected
             >
               <View style={[
                 styles.checkbox, 

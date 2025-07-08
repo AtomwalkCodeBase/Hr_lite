@@ -313,6 +313,35 @@ const ApproveClaim = () => {
     return filteredData.slice(startIndex, endIndex);
   };
 
+  const formatIndianCurrency = (num) => {
+  if (!num && num !== 0) return null; // handles null, undefined, empty string
+  
+  // Convert to number to handle cases like "12.00"
+  const numberValue = Number(num);
+  if (isNaN(numberValue)) return null;
+
+  // Check if it's an integer (has no decimal or decimal is .00)
+  const isInteger = Number.isInteger(numberValue);
+  
+  // Format the number based on whether it's an integer
+  const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+  const parts = numStr.split('.');
+  let integerPart = parts[0];
+  const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+
+  // Format the integer part with Indian comma separators
+  const lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  
+  if (otherNumbers !== '') {
+    integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+  } else {
+    integerPart = lastThree;
+  }
+
+  return `₹ ${integerPart}${decimalPart}`;
+};
+
   useEffect(() => {
     let filtered = [...claimData];
     
@@ -505,7 +534,8 @@ const ApproveClaim = () => {
             isForwarded={isMasterForwarded}
             isRejected={isMasterRejected}
           >
-            ₹{groupTotal.toFixed(2)}
+            {/* ₹{groupTotal.toFixed(2)} */}
+            {formatIndianCurrency(groupTotal.toFixed(2))}
           </GroupAmount>
           <Ionicons 
             name={expandedGroups[item.master_claim_id] ? 'chevron-up' : 'chevron-down'} 
@@ -540,7 +570,7 @@ const ApproveClaim = () => {
             )}
 
           
-          {isMasterSubmitted && (
+          {(isMasterSubmitted || isMasterForwarded) && (
             <View style={styles.masterButtonContainer}>
               
               {/* <TouchableOpacity

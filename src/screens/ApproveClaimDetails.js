@@ -157,18 +157,18 @@ const ApproveClaimDetails = (props) => {
   };
 
   const toggleSelectAll = () => {
-    if (!claim.claim_items) return;
-    
-    const actionableItems = claim.claim_items
-      .filter(item => item.expense_status !== 'A' && item.expense_status !== 'R')
-      .map(item => item.id);
-    
-    if (selectedItems.length === actionableItems.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems([...actionableItems]);
-    }
-  };
+  if (!claim.claim_items) return;
+  
+  const actionableItems = claim.claim_items
+    .filter(item => item.expense_status !== 'A' && item.expense_status !== 'R')
+    .map(item => item.id);
+  
+  if (selectedItems.length === actionableItems.length) {
+    setSelectedItems([]);
+  } else {
+    setSelectedItems([...actionableItems]);
+  }
+};
 
   const handleItemActionChange = (itemId, action) => {
     const item = claim.claim_items.find(i => i.id === itemId);
@@ -255,6 +255,35 @@ const handleItemRemarksChange = React.useCallback((itemId, remarks) => {
     return newErrors;
   };
 
+  const formatIndianCurrency = (num) => {
+  if (!num && num !== 0) return null; // handles null, undefined, empty string
+  
+  // Convert to number to handle cases like "12.00"
+  const numberValue = Number(num);
+  if (isNaN(numberValue)) return null;
+
+  // Check if it's an integer (has no decimal or decimal is .00)
+  const isInteger = Number.isInteger(numberValue);
+  
+  // Format the number based on whether it's an integer
+  const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+  const parts = numStr.split('.');
+  let integerPart = parts[0];
+  const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+
+  // Format the integer part with Indian comma separators
+  const lastThree = integerPart.substring(integerPart.length - 3);
+  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+  
+  if (otherNumbers !== '') {
+    integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+  } else {
+    integerPart = lastThree;
+  }
+
+  return `₹${integerPart}${decimalPart}`;
+};
+
   const handleSubmit = async () => {
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
@@ -284,7 +313,7 @@ const handleItemRemarksChange = React.useCallback((itemId, remarks) => {
 
         if ((item.action === 'FORWARD' || validationResult?.limitType !== 'N') && 
             (validationResult?.forwardManager || item.forwardManager)) {
-          itemPayload.forward_manager_id = validationResult?.forwardManager || item.forwardManager;
+          itemPayload.a_emp_id = validationResult?.forwardManager || item.forwardManager;
         }
 
         return itemPayload;
@@ -327,33 +356,27 @@ const handleItemRemarksChange = React.useCallback((itemId, remarks) => {
     const isSelected = selectedItems.includes(item.id);
 
     const toggleSelection = () => {
-      if (isDisabled || isLimited) return;
+      if (isDisabled) return;  // Only check for disabled status (approved/rejected items)
       toggleItemSelection(item.id);
     };
 
     return (
       <ClaimItemCard
-        item={item}
-        isSelected={isSelected}
-        isDisabled={isDisabled}
-        isLimited={isLimited}
-        expanded={expandedItems[item.id]}
-        onToggleExpand={() => toggleItemExpand(item.id)}
-        onToggleSelect={toggleSelection}
-        validationResult={validationResult}
-      >
+  item={item}
+  isSelected={isSelected}
+  isDisabled={isDisabled}
+  isLimited={isLimited}  // Still pass the limit status for display purposes
+  expanded={expandedItems[item.id]}
+  onToggleExpand={() => toggleItemExpand(item.id)}
+  onToggleSelect={toggleSelection}
+  validationResult={validationResult}
+>
         <View style={styles.itemDetails}>
           <View style={styles.detailSection}>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Expense Date:</Text>
               <Text style={styles.detailValue}>{item.expense_date}</Text>
             </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Quantity:</Text>
-              <Text style={styles.detailValue}>{item.quantity}</Text>
-            </View>
-            
             {item.project_name && (
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Project:</Text>
@@ -462,7 +485,8 @@ const handleItemRemarksChange = React.useCallback((itemId, remarks) => {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Amount</Text>
               <Text style={[styles.summaryValue, styles.amountText]}>
-                ₹{totalAmount.toFixed(2)}
+                ${formatIndianCurrency(totalAmount.toFixed(2))}
+                {/* ₹{totalAmount.toFixed(2)} */}
               </Text>
             </View>
             
