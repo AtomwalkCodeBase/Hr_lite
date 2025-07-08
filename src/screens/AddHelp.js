@@ -133,7 +133,7 @@ const handleBackPress = () => {
     const formData = new FormData();
     formData.append('emp_id', empId);
     formData.append('request_category_id', selectedCategory);
-    formData.append('call_mode', itemdata.request_id?"UPDATE":'ADD');
+    formData.append('call_mode', props?.data?.headerTitle === "Resolve Request" ? "RESOLVED" : itemdata.request_id ? "UPDATE" : "ADD");
     formData.append('request_type',itemdata.request_id?itemdata.request_type: call_type);
     formData.append('request_id', itemdata.request_id?itemdata.request_id:'0');
     formData.append('request_text', requestText);
@@ -146,6 +146,8 @@ const handleBackPress = () => {
         type: fileMimeType || 'image/jpeg',
       });
     }
+
+    console.log("data of submit", formData)
 
     try {
       const res = await postEmpRequest(formData);

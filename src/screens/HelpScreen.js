@@ -110,14 +110,26 @@ const HelpScreen = (props) => {
     });
   };
 
-  const handleUpdateRequest = (item) => {
+  const handleUpdateHelp = (item) => {
     router.push({
       pathname: 'AddHelp',
       params: {
         empId,
         call_type,
         item: JSON.stringify(item),
-        headerTitle: "Update Request",
+        headerTitle: "Update Help",
+      },
+    });
+  };
+
+  const handleResolveHelp = (item) => {
+    router.push({
+      pathname: 'AddHelp',
+      params: {
+        empId,
+        call_type,
+        item: JSON.stringify(item),
+        headerTitle: "Resolve Help",
       },
     });
   };
@@ -151,7 +163,8 @@ const HelpScreen = (props) => {
                   <RequestCard 
                     item={item}
                     onPress={() => handleCardPress(item)}
-                    onUpdate={() => handleUpdateRequest(item)}
+                    onUpdate={() => handleUpdateHelp(item)}
+                    onResolve={() => handleResolveHelp(item)}
                   />
                 )}
                 keyExtractor={(item) => item.id.toString()}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../Styles/appStyle';
 
@@ -8,21 +8,23 @@ const { width } = Dimensions.get('window');
 
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const RequestCard = ({ item, onPress, onUpdate }) => {
+const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
   // Status configuration with colors and icons
   const statusConfig = {
-    approved: { color: '#4CAF50', icon: 'checkmark-circle' },
-    rejected: { color: '#F44336', icon: 'close-circle' },
-    pending: { color: '#FF9800', icon: 'time' },
-    default: { color: '#2196F3', icon: 'information-circle' }
+    approved: { color: '#4CAF50', icon: 'check-circle', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
+    rejected: { color: '#f44336', icon: 'cancel', bgColor: '#FFEBEE', borderColor: '#f44336' },
+    pending: { bgColor: '#FFF3E0', color: '#EF6C00', borderColor: '#FF9800', icon: 'schedule' },
+    submitted: { color: '#2196F3', icon: 'schedule', bgColor: '#E3F2FD', borderColor: '#2196F3' },
+    default: { color: '#9E9E9E', icon: 'help-outline', bgColor: '#F5F5F5', borderColor: '#9E9E9E' }
   };
 
   // Determine status configuration based on item status
-  const { color: statusColor, icon: statusIcon } = (() => {
+  const { bgColor, borderColor, color: textColor, icon: statusIcon } = (() => {
     const status = item.status_display?.toLowerCase();
     if (status?.includes('approved')) return statusConfig.approved;
     if (status?.includes('rejected') || status?.includes('denied')) return statusConfig.rejected;
     if (status?.includes('pending')) return statusConfig.pending;
+    if (status?.includes('submitted')) return statusConfig.submitted;
     return statusConfig.default;
   })();
 
@@ -40,9 +42,9 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
             </Text>
           </View>
           
-          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Ionicons name={statusIcon} size={16} color="white" />
-            <Text style={styles.statusBadgeText}>{item.status_display}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: bgColor, borderColor: borderColor }]}>
+            <MaterialIcons name={statusIcon} size={16} color={textColor} />
+            <Text style={[styles.statusBadgeText, { color: textColor }]}>{item.status_display}</Text>
           </View>
         </View>
 
@@ -91,14 +93,29 @@ const RequestCard = ({ item, onPress, onUpdate }) => {
         {/* View Details button */}
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={onPress}
+          onPress={onUpdate}
           activeOpacity={0.8}
         >
           <View
             style={styles.button}
           >
-            <Text style={styles.buttonText}>View Details</Text>
-            <Ionicons name="arrow-forward" size={18} color="white" />
+             <Ionicons name="create-outline" size={18} color="#fff" />
+            <Text style={styles.buttonText}>Update</Text>
+            {/* <Ionicons name="arrow-forward" size={18} color="white" /> */}
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onResolve}
+          activeOpacity={0.8}
+        >
+          <View
+            style={styles.button}
+          >
+            <MaterialCommunityIcons name="checkbox-marked-outline" size={18} color="white" />
+            <Text style={styles.buttonText}>Resolve</Text>
+            {/* <Ionicons name="arrow-forward" size={18} color="white" /> */}
           </View>
         </TouchableOpacity>
       </View>
@@ -180,11 +197,14 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#ECEFF1',
+    gap: 10,
+    margin: 5,
+    // borderTopWidth: 1,
+    // borderTopColor: '#ECEFF1',
   },
   actionButton: {
     flex: 1,
+    paddingBottom: 5
   },
   updateButton: {
     borderRightWidth: 1,
@@ -197,6 +217,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 6
   },
   buttonText: {
     color: 'white',

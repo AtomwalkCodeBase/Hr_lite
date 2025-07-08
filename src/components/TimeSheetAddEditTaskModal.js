@@ -15,41 +15,116 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
   const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
 
-  useEffect(() => {
-    if (formData.hours && parseFloat(formData.hours) > 24) {
-      setFormData((prev) => ({ ...prev, hours: "24" }));
+  // Helper: parse time string (e.g., '10:23 AM') to Date or null
+  const parseTimeToDate = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+    const [time, period] = timeStr.split(' ');
+    let [hours, minutes] = time ? time.split(':').map(Number) : [0, 0];
+    if (period) {
+      if (period.toUpperCase() === 'PM' && hours < 12) hours += 12;
+      if (period.toUpperCase() === 'AM' && hours === 12) hours = 0;
     }
-    if (formData.startTime instanceof Date && formData.endTime instanceof Date) {
+    const date = new Date();
+    date.setHours(hours || 0, minutes || 0, 0, 0);
+    return isNaN(date.getTime()) ? null : date;
+  };
+  // On mount or when editingTask changes, initialize formData
+  useEffect(() => {
+    if (editingTask) {
+      const parseTaskDate = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return new Date();
+        const regex = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/;
+        const match = dateStr.match(regex);
+        if (!match) return new Date();
+        const [, day, mon, year] = match;
+        const monthMap = {
+          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+        };
+        const month = monthMap[mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase()];
+        if (month === undefined) return new Date();
+        const parsedDate = new Date(Number(year), month, Number(day));
+        return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        project: editingTask.project_code || "",
+        activity: editingTask.activity_id || "",
+        date: editingTask.a_date ? parseTaskDate(editingTask.a_date) : new Date(),
+        startTime: editingTask.start_time ? parseTimeToDate(editingTask.start_time) : null,
+        endTime: editingTask.end_time ? parseTimeToDate(editingTask.end_time) : null,
+        hours: editingTask.effort ? editingTask.effort.toString() : "",
+        remarks: editingTask.remarks || "",
+      }));
+    } else {
+      setFormData({
+        project: "",
+        activity: "",
+        date: new Date(),
+        startTime: null,
+        endTime: null,
+        hours: "",
+        remarks: "",
+      });
+    }
+  }, [editingTask]);
+
+  // Auto-calculate effort if both times are selected
+  useEffect(() => {
+    const hasStart = formData.startTime instanceof Date && !isNaN(formData.startTime);
+    const hasEnd = formData.endTime instanceof Date && !isNaN(formData.endTime);
+    if (hasStart && hasEnd) {
       const diffMs = formData.endTime - formData.startTime;
       if (diffMs > 0) {
         const hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
         setFormData((prev) => ({ ...prev, hours }));
-        setErrorMessage(""); // Clear if times are valid
+        setErrorMessage("");
+      } else {
+        setErrorMessage("End time cannot be before or equal to start time.");
       }
+    } else {
+      setErrorMessage("");
     }
   }, [formData.startTime, formData.endTime]);
 
-  useEffect(() => {
-    const isValidTimeRange = formData.startTime instanceof Date && formData.endTime instanceof Date;
-    if (formData.hours) {
-      const hoursNum = parseFloat(formData.hours);
-      if (hoursNum > 24) {
-        setErrorMessage("Hours cannot exceed 24.");
-      } else if (isValidTimeRange) {
-        const expectedHours = ((formData.endTime - formData.startTime) / (1000 * 60 * 60)).toFixed(2);
-        if (hoursNum.toFixed(2) !== expectedHours) {
-          setErrorMessage("Entered hours do not match Start and End time.");
-        } else {
-          setErrorMessage("");
-        }
-      } else {
-        setErrorMessage(""); // No time selected, allow hours freely (under 24)
-      }
+  // Validation: effort vs. time
+  const validateAndSubmit = (mode) => {
+    const hasEffort = formData.hours && parseFloat(formData.hours) > 0;
+    const hasStart = formData.startTime instanceof Date && !isNaN(formData.startTime);
+    const hasEnd = formData.endTime instanceof Date && !isNaN(formData.endTime);
+    if (hasEffort && parseFloat(formData.hours) > 24) {
+      setErrorMessage("Effort cannot be more than 24 hours.");
+      setIsErrorModalVisible(true);
+      return;
     }
-  }, [formData.hours]);
+    if (!hasEffort && !(hasStart && hasEnd)) {
+      setErrorMessage("Please provide either Effort or Start and End time.");
+      setIsErrorModalVisible(true);
+      return;
+    }
+    if (hasStart && hasEnd && formData.endTime <= formData.startTime) {
+      setErrorMessage("End time cannot be before or equal to start time.");
+      setIsErrorModalVisible(true);
+      return;
+    }
+    onSubmit(mode, { hasStart, hasEnd });
+  };
+
+  // Helper to check if all required fields are filled
+  const isFormValid = () => {
+    const hasProject = !!formData.project;
+    const hasActivity = !!formData.activity;
+    const hasDate = formData.date instanceof Date && !isNaN(formData.date);
+    const hasEffort = formData.hours && parseFloat(formData.hours) > 0;
+    const hasStart = formData.startTime instanceof Date && !isNaN(formData.startTime);
+    const hasEnd = formData.endTime instanceof Date && !isNaN(formData.endTime);
+    // Must have project, activity, date, and (effort or both times)
+    return hasProject && hasActivity && hasDate && (hasEffort || (hasStart && hasEnd));
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         {/* TouchableOpacity for the overlay area outside modalContent */}
         <TouchableOpacity
@@ -94,7 +169,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               cDate={formData.date}
               label="Date *"
               setCDate={(date) => setFormData((prev) => ({ ...prev, date }))}
-              minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
+              // minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
               maximumDate={new Date()}
             />
             <View style={styles.formGroup}>
@@ -117,9 +192,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
                 style={styles.input}
                 value={formData.hours}
                 onChangeText={(value) => {
-                  if (!isNaN(value) && parseFloat(value) <= 24) {
-                    setFormData((prev) => ({ ...prev, hours: value }));
-                  }
+                  setFormData((prev) => ({ ...prev, hours: value }));
                 }}
                 placeholder="Enter hours"
                 keyboardType="numeric"
@@ -141,12 +214,13 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
                 placeholderTextColor="#999"
               />
             </View>
+          </ScrollView>
             {editingTask ? (
-              <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={styles.addButtonsContainer}>
                 <TouchableOpacity
-                  style={[styles.addButton, styles.addOnlyButton]}
-                  onPress={() => onSubmit("UPDATE")}
-                  disabled={isLoading}
+                  style={[styles.addButton, styles.addOnlyButton, !isFormValid() && { opacity: 0.5 }]}
+                  onPress={() => validateAndSubmit("UPDATE")}
+                  disabled={isLoading || !isFormValid()}
                 >
                   <Text style={styles.addButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -154,22 +228,21 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             ) : (
               <View style={styles.addButtonsContainer}>
                 <TouchableOpacity
-                  style={[styles.addButton, styles.addOnlyButton]}
+                  style={[styles.addButton, styles.addOnlyButton, !isFormValid() && { opacity: 0.5 }]}
                   onPress={() => setIsConfirmModalVisible(true)}
-                  disabled={isLoading}
+                  disabled={isLoading || !isFormValid()}
                 >
                   <Text style={styles.addButtonText}>Save</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </ScrollView>
         </View>
       </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
         message="Your task will be in Draft mode. You can edit or submit it later."
         onConfirm={() => {
-          onSubmit("ADD_AND_SAVE");
+          validateAndSubmit("ADD_AND_SAVE");
           setIsConfirmModalVisible(false);
         }}
         onCancel={() => setIsConfirmModalVisible(false)}
@@ -198,8 +271,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 20,
-    maxHeight: height * 0.9,
+    // paddingBottom: 20,
+    maxHeight: height * 0.95,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -247,7 +320,7 @@ const styles = StyleSheet.create({
   addButtonsContainer: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 20,
+    marginVertical: 10,
   },
   addOnlyButton: {
     backgroundColor: "#8B5CF6",

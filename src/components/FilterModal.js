@@ -19,7 +19,7 @@ const FilterModal = ({
   );
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         {/* TouchableOpacity only for the overlay area outside modalContent */}
         <TouchableOpacity
@@ -51,7 +51,10 @@ const FilterModal = ({
             <View style={styles.filterButtons}>
               <TouchableOpacity
                 style={[styles.clearButton, !hasSelectedFilters && styles.disabledButton]}
-                onPress={onClearFilters}
+                onPress={()=> {
+                  onClearFilters()
+                  onClose()
+                }}
                 disabled={!hasSelectedFilters}
               >
                 <Text
@@ -94,8 +97,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: "80%",
+    paddingBottom: 10,
+    maxHeight: "90%",
   },
   scrollContent: {
     paddingBottom: 20,
@@ -112,7 +115,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   formGroup: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   filterButtons: {
     flexDirection: "row",

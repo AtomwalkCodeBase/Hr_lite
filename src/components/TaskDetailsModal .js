@@ -81,7 +81,7 @@ const TaskDetailsModal = ({ visible, onClose, task, status }) => {
           )}
 
           {/* Approval/Rejection Date */}
-          {task.a_date && ['A', 'R'].includes((task.status || '').toUpperCase()) && (
+          {/* {task.a_date && ['A', 'R'].includes((task.status || '').toUpperCase()) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>
                 {task.status.toUpperCase() === 'A' ? 'Approved Date' : 'Rejected Date'}
@@ -104,7 +104,7 @@ const TaskDetailsModal = ({ visible, onClose, task, status }) => {
                 </View>
               </View>
             </View>
-          )}
+          )} */}
         </ScrollView>
       </View>
     </View>

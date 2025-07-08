@@ -124,6 +124,18 @@ const RequestScreen = (props) => {
     });
   };
 
+  const handleResolveRequest = (item) => {
+    router.push({
+      pathname: 'AddHelp',
+      params: {
+        empId,
+        call_type,
+        item: JSON.stringify(item),
+        headerTitle: "Resolve Request",
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
@@ -154,6 +166,7 @@ const RequestScreen = (props) => {
                     item={item}
                     onPress={() => handleCardPress(item)}
                     onUpdate={() => handleUpdateRequest(item)}
+                    onResolve={() => handleResolveRequest(item)}
                   />
                 )}
                 keyExtractor={(item) => item.id.toString()}

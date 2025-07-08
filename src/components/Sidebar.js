@@ -1,4 +1,4 @@
-import { Feather, MaterialIcons, Ionicons, FontAwesome6 } from '@expo/vector-icons';
+import { Feather, MaterialIcons, Ionicons, FontAwesome6, AntDesign } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import React, { useState, useContext, useEffect } from 'react';
 import { 
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 20
   },
   avatar: {
     width: 56,
@@ -409,8 +410,8 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
         <SafeAreaView style={styles.sidebarContent}>
           {/* Header with Profile */}
           <View style={styles.header}>
+              <AntDesign name="leftcircle" size={24} style={{position: "absolute", right: 20, top: 10}} color="black"  onPress={handleOverlayPress} />
             <View style={styles.profileSection}>
-              <MaterialIcons style={{position: "absolute", right: -8, top: -10}} name="clear" size={24} color="black" />
               <View style={styles.avatar}>
                 {profile.image ? (
                   <Image source={{ uri: profile.image }} style={{ width: 56, height: 56, borderRadius: 28 }} />

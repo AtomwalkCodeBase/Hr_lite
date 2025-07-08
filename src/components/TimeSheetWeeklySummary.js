@@ -9,13 +9,15 @@ import SelectedDayDetail from "./SelectedDayDetail"
 
 const MAX_DAILY_HOURS = 9;
 
-const WeeklySummary = ({
+const TimeSheetWeeklySummary = ({
   tasks,
   formatDisplayDate,
   getCurrentWeekDates,
   currentWeekStart,
   isSelfView,
-  onEdit
+  onEdit,
+  monthFilter,
+  currentMonthStart,
 }) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
@@ -31,7 +33,6 @@ const WeeklySummary = ({
     default: { color: '#9E9E9E', icon: 'help-outline', label: 'UNKNOWN', bgColor: '#F5F5F5', borderColor: '#9E9E9E' },
   };
 
-  // Updated parseTaskDate for DD-MMM-YYYY format (e.g., 30-Jun-2025)
   const parseTaskDate = useCallback((dateStr) => {
     if (!dateStr || typeof dateStr !== 'string') {
       console.warn(`Invalid date string: ${dateStr}`);
@@ -71,7 +72,6 @@ const WeeklySummary = ({
       return null;
     }
 
-    // console.log(`Parsed ${dateStr} to ${date.toISOString()}`);
     return date;
   }, []);
 
@@ -86,28 +86,59 @@ const WeeklySummary = ({
     return `${year}-${month}-${day}`;
   }, []);
 
-  // Calculate weekly data with memoization
-  const weeklyData = useMemo(() => {
-    if (!currentWeekStart || isNaN(new Date(currentWeekStart).getTime())) {
-      console.error('Invalid currentWeekStart:', currentWeekStart);
-      return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
+  const summaryData = useMemo(() => {
+    const isMonthly = !!monthFilter;
+    let startDate, endDate, periodDays;
+
+    if (isMonthly) {
+      if (!currentMonthStart || isNaN(new Date(currentMonthStart).getTime())) {
+        console.error('Invalid currentMonthStart:', currentMonthStart);
+        return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
+      }
+      startDate = new Date(currentMonthStart);
+      const currentDate = new Date();
+      const isCurrentMonth =
+        startDate.getFullYear() === currentDate.getFullYear() &&
+        startDate.getMonth() === currentDate.getMonth();
+
+      if (isCurrentMonth) {
+        // Find the latest task date
+        const taskDates = tasks
+          .map(task => parseTaskDate(task.a_date))
+          .filter(date => date && !isNaN(date.getTime()));
+        if (taskDates.length === 0) {
+          console.warn('No valid task dates found for current month, using current date as end date.');
+          endDate = new Date(Math.max(currentDate.getTime(), startDate.getTime())); // Ensure endDate >= startDate
+        } else {
+          endDate = new Date(Math.max(Math.max(...taskDates), startDate.getTime())); // Ensure endDate >= startDate
+        }
+      } else {
+        endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // Last day of the month
+      }
+
+      periodDays = [];
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        periodDays.push(new Date(d));
+      }
+    } else {
+      if (!currentWeekStart || isNaN(new Date(currentWeekStart).getTime())) {
+        console.error('Invalid currentWeekStart:', currentWeekStart);
+        return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
+      }
+      const { start } = getCurrentWeekDates(currentWeekStart);
+      if (!start || isNaN(start.getTime())) {
+        console.error('Invalid start date:', start);
+        return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
+      }
+      periodDays = Array.from({ length: 7 }, (_, i) => {
+        const day = new Date(start);
+        day.setDate(start.getDate() + i);
+        return isNaN(day.getTime()) ? null : day;
+      }).filter(Boolean);
     }
 
-    const { start } = getCurrentWeekDates(currentWeekStart);
-    if (!start || isNaN(start.getTime())) {
-      console.error('Invalid start date:', start);
-      return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
-    }
-
-    // Generate week days
-    const weekDays = Array.from({ length: 7 }, (_, i) => {
-      const day = new Date(start);
-      day.setDate(start.getDate() + i);
-      return isNaN(day.getTime()) ? null : day;
-    }).filter(Boolean);
-
-    if (weekDays.length === 0) {
-      console.error('No valid week days generated.');
+    if (periodDays.length === 0) {
+      console.error(`No valid ${isMonthly ? 'month' : 'week'} days generated.`);
       return { days: {}, projects: {}, totalHours: 0, maxDayHours: 0, exceedsLimit: false, exceedingDays: [] };
     }
 
@@ -120,8 +151,7 @@ const WeeklySummary = ({
       exceedingDays: [],
     };
 
-    // Initialize days
-    weekDays.forEach((day) => {
+    periodDays.forEach((day) => {
       const dayStr = formatDateForComparison(day);
       stats.days[dayStr] = {
         date: day,
@@ -132,7 +162,6 @@ const WeeklySummary = ({
       };
     });
 
-    // Process tasks
     tasks.forEach((task, index) => {
       const taskDate = parseTaskDate(task.a_date);
       if (!taskDate) {
@@ -143,8 +172,6 @@ const WeeklySummary = ({
       if (stats.days[taskDateStr]) {
         const hours = parseFloat(task.effort) || 0;
         const status = (task.status || 'n').toLowerCase();
-
-        // console.log(`Processing task ${index} on ${task.a_date} (${taskDateStr}): ${hours}h, Project: ${task.project_code}, Status: ${status}`);
 
         stats.days[taskDateStr].tasks.push(task);
         stats.days[taskDateStr].totalHours += hours;
@@ -187,34 +214,37 @@ const WeeklySummary = ({
 
     stats.exceedsLimit = stats.exceedingDays.length > 0;
     return stats;
-  }, [tasks, currentWeekStart, parseTaskDate, formatDateForComparison, getCurrentWeekDates]);
+  }, [tasks, currentWeekStart, currentMonthStart, monthFilter, parseTaskDate, formatDateForComparison, getCurrentWeekDates]);
 
-  // Async storage operations for exceed modal
   useEffect(() => {
     const updateExceedModal = async () => {
-      const weekKey = formatDateForComparison(new Date(currentWeekStart));
+      const key = monthFilter
+        ? `${currentMonthStart.getFullYear()}-${currentMonthStart.getMonth() + 1}`
+        : formatDateForComparison(new Date(currentWeekStart));
       const newTaskHash = md5(JSON.stringify(tasks));
-      const storedTaskHash = await AsyncStorage.getItem(`taskHash_${weekKey}`);
+      const storedTaskHash = await AsyncStorage.getItem(`taskHash_${key}`);
 
       if (newTaskHash !== storedTaskHash) {
-        await AsyncStorage.removeItem(`dismissedExceedModal_${weekKey}`);
-        await AsyncStorage.setItem(`taskHash_${weekKey}`, newTaskHash);
+        await AsyncStorage.removeItem(`dismissedExceedModal_${key}`);
+        await AsyncStorage.setItem(`taskHash_${key}`, newTaskHash);
       }
 
-      const isDismissed = await AsyncStorage.getItem(`dismissedExceedModal_${weekKey}`);
+      const isDismissed = await AsyncStorage.getItem(`dismissedExceedModal_${key}`);
       setTaskHash(newTaskHash);
-      setExceedingDays(weeklyData.exceedingDays);
-      setShowExceedModal(weeklyData.exceedsLimit && !isDismissed);
+      setExceedingDays(summaryData.exceedingDays);
+      setShowExceedModal(summaryData.exceedsLimit && !isDismissed);
     };
 
     updateExceedModal();
-  }, [weeklyData, tasks, currentWeekStart, formatDateForComparison]);
+  }, [summaryData, tasks, currentWeekStart, currentMonthStart, monthFilter, formatDateForComparison]);
 
   const handleUnderstand = useCallback(async () => {
-    const weekKey = formatDateForComparison(new Date(currentWeekStart));
-    await AsyncStorage.setItem(`dismissedExceedModal_${weekKey}`, 'true');
+    const key = monthFilter
+      ? `${currentMonthStart.getFullYear()}-${currentMonthStart.getMonth() + 1}`
+      : formatDateForComparison(new Date(currentWeekStart));
+    await AsyncStorage.setItem(`dismissedExceedModal_${key}`, 'true');
     setShowExceedModal(false);
-  }, [currentWeekStart, formatDateForComparison]);
+  }, [currentWeekStart, currentMonthStart, monthFilter, formatDateForComparison]);
 
   const getDayName = useCallback((date) => {
     if (!date || isNaN(date.getTime())) return 'Invalid';
@@ -257,13 +287,13 @@ const WeeklySummary = ({
       <View style={styles.summaryHeader}>
         <View style={styles.headerLeft}>
           <MaterialIcons name="analytics" size={24} color="#a970ff" />
-          <Text style={styles.summaryTitle}>Weekly Overview</Text>
+          <Text style={styles.summaryTitle}>{monthFilter ? 'Monthly Overview' : 'Weekly Overview'}</Text>
         </View>
         <View style={styles.totalHours}>
-          <Text style={[styles.totalHoursText, { color: weeklyData.exceedsLimit ? '#f44336' : '#a970ff' }]}>
-            {weeklyData.totalHours.toFixed(1)}h
+          <Text style={[styles.totalHoursText, { color: summaryData.exceedsLimit ? '#f44336' : '#a970ff' }]}>
+            {summaryData.totalHours.toFixed(1)}h
           </Text>
-          <Text style={styles.totalLabel}>Weekly Total Hours</Text>
+          <Text style={styles.totalLabel}>{monthFilter ? 'Monthly Total Hours' : 'Weekly Total Hours'}</Text>
         </View>
       </View>
 
@@ -271,11 +301,11 @@ const WeeklySummary = ({
         <View style={styles.tableHeader}>
           <Text style={styles.tableHeaderText}>Day</Text>
           <Text style={styles.tableHeaderText}>Hours</Text>
-          <Text style={styles.tableHeaderText}>Projects</Text>
-          {/* <Text style={styles.tableHeaderText}>Status</Text> */}
+          {/* <Text style={styles.tableHeaderText}>Projects</Text> */}
+          <Text style={styles.tableHeaderText}>Action</Text>
         </View>
         <ScrollView style={styles.tableBody} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-          {Object.entries(weeklyData.days).map(([dateStr, dayData]) => (
+          {Object.entries(summaryData.days).map(([dateStr, dayData]) => (
             <DailyTableRow
               key={dateStr}
               dayData={dayData}
@@ -289,41 +319,12 @@ const WeeklySummary = ({
         </ScrollView>
       </View>
 
-      {/* {Object.keys(weeklyData.projects).length > 0 && (
-        <View style={styles.projectSection}>
-          <Text style={styles.sectionTitle}>Project Time Distribution</Text>
-          <View style={styles.projectGrid}>
-            {Object.entries(weeklyData.projects).map(([project, data]) => (
-              <View key={project} style={styles.projectCard}>
-                <View style={styles.projectHeader}>
-                  <Text style={styles.projectCode}>{project.trim()}</Text>
-                  <Text style={styles.projectHours}>{data.hours.toFixed(1)}h</Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: weeklyData.totalHours ? `${(data.hours / weeklyData.totalHours) * 100}%` : '0%' },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.projectTasks}>{data.tasks} tasks</Text>
-                <Text style={styles.projectPercentage}>
-                  {weeklyData.totalHours ? ((data.hours / weeklyData.totalHours) * 100).toFixed(0) : 0}%
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )} */}
-      {/* <ProjectTimeDistribution weeklyData={weeklyData} formatDisplayDate={formatDisplayDate} /> */}
-
-      <ExceedModal
+      {isSelfView && <ExceedModal
         visible={showExceedModal}
         exceedingDays={exceedingDays}
         formatDisplayDate={formatDisplayDate}
         onUnderstand={handleUnderstand}
-      />
+      />}
 
       <DetailModal
         visible={showDetailModal}
@@ -401,4 +402,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default WeeklySummary;
+export default TimeSheetWeeklySummary;

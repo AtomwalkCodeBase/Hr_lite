@@ -2,7 +2,7 @@ import React from 'react';
 import {  Text, Dimensions, Platform, StatusBar, StyleSheet, View, TouchableOpacity, SafeAreaView} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const HeaderComponent = ({ headerTitle,  onBackPress, icon1Name, icon1OnPress, icon2Name, icon2OnPress }) => {
+const HeaderComponent = ({ headerTitle,  onBackPress, icon1Name, icon1OnPress, icon2Name, icon2OnPress, filterCount }) => {
   return (
     <>
       {/* Handle status bar separately for Android */}
@@ -31,6 +31,7 @@ const HeaderComponent = ({ headerTitle,  onBackPress, icon1Name, icon1OnPress, i
                 activeOpacity={0.6}
               >
                 <Ionicons name={icon1Name} size={24} color="#fff" />
+                <Text style={styles.filterBadgeText}>{filterCount}</Text>
               </TouchableOpacity>
             )}
             
@@ -89,9 +90,30 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 8,
     marginLeft: 8,
+    flexDirection: "row"
   },
   spacer: {
     width: 40,
+  },
+  filterBadge: {
+    backgroundColor: "#ff5252",
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: -8,
+    marginTop: -8,
+    position: "absolute",
+    right: 2,
+    top: 2,
+    zIndex: 1,
+    paddingHorizontal: 3,
+  },
+  filterBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
   },
 });
 

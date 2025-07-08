@@ -41,19 +41,28 @@ const DatePicker = ({ error, label, cDate, setCDate, minimumDate, maximumDate })
     <FieldContainer>
       <Label>{label}</Label>
       <DatePickerButton onPress={() => setShowDatePicker(true)}>
-        <DateText>{cDate.toDateString()}</DateText>
+        <DateText>{cDate instanceof Date && !isNaN(cDate) ? cDate.toDateString() : '--:--:----'}</DateText>
         <Icon source={require('../../assets/images/c-icon.png')} />
       </DatePickerButton>
 
       {showDatePicker && (
         <DateTimePicker
-          value={cDate}
+          value={cDate instanceof Date && !isNaN(cDate) ? cDate : new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={(event, selectedDate) => {
-            const currentDate = selectedDate || cDate;
-            setShowDatePicker(Platform.OS === 'ios');
-            setCDate(currentDate);
+            // Only update if user confirms (not cancel)
+            if (Platform.OS === 'android') {
+              if (event.type === 'set' && selectedDate) {
+                setCDate(selectedDate);
+              }
+              setShowDatePicker(false);
+            } else {
+              // iOS: selectedDate is undefined if cancelled
+              if (selectedDate) {
+                setCDate(selectedDate);
+              }
+            }
           }}
           {...(minimumDate ? { minimumDate } : {})}
           {...(maximumDate ? { maximumDate } : {})}

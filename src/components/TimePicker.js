@@ -54,7 +54,7 @@ const TimePicker = ({ error, label, cDate, setCDate }) => {
     <FieldContainer>
       <Label>{label}</Label>
       <DatePickerButton onPress={() => setShowDatePicker(true)}>
-        <DateText>{formatTime(cDate)}</DateText>
+        <DateText>{isValidDate ? formatTime(cDate) : '--:--'}</DateText>
         <Ionicons name="time-outline" size={22} color="black" />
       </DatePickerButton>
 
@@ -64,10 +64,18 @@ const TimePicker = ({ error, label, cDate, setCDate }) => {
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={(event, selectedDate) => {
-            if (selectedDate) {
-              setShowDatePicker(Platform.OS === 'ios'); // Stay open on iOS
-              setCDate(selectedDate);
-              console.log('Selected time:', selectedDate);
+            if (Platform.OS === 'android') {
+              if (event.type === 'set' && selectedDate) {
+                setCDate(selectedDate);
+              }
+              setShowDatePicker(false);
+            } else {
+              // iOS: selectedDate is undefined if cancelled
+              if (typeof event === 'object' && event.type === 'dismissed') {
+                // do nothing
+              } else if (selectedDate) {
+                setCDate(selectedDate);
+              }
             }
           }}
         />

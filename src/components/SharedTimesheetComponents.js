@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, StyleSheet } from 'react-native';
-import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, Feather, AntDesign } from '@expo/vector-icons';
 // import SelectedDayDetail from './SelectedDayDetail';
 
 // Employee info card for timesheet view
@@ -41,8 +41,10 @@ export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusTe
         <Text style={styles.hoursStatus}>{getStatusText(dayData.totalHours)}</Text>
       </View>
       <View style={styles.projectsColumn}>
-        <Text style={styles.projectCount}>{dayData.projects.size}</Text>
-        <Text style={styles.projectLabel}>{dayData.projects.size === 1 ? 'project' : 'projects'}</Text>
+        {/* <Text style={styles.projectCount}>{dayData.projects.size}</Text>
+        <Text style={styles.projectLabel}>{dayData.projects.size === 1 ? 'project' : 'projects'}</Text> */}
+        <AntDesign name="eyeo" size={20} color="#a970ff" />
+        <Text style={styles.projectLabel}>View</Text>
       </View>
     </TouchableOpacity>
   );
