@@ -74,6 +74,7 @@ const SelectedDayDetail = ({
   return (
     <>
       <ScrollView style={styles.container}>
+
         <View style={styles.statsCard}>
           <Text style={styles.statsTitle}>Daily Summary</Text>
           <View style={styles.statsGrid}>
@@ -87,7 +88,11 @@ const SelectedDayDetail = ({
             ))}
           </View>
         </View>
+
+        {/* Project Hour */}
         <ProjectHoursBreakdown selectedDay={selectedDay} progressColor={dominantStatusColor} />
+
+        {/* Detail task card */}
         <View style={styles.tasksSection}>
           <Text style={styles.tasksTitle}>Task Details</Text>
           {tasks.map((task, index) => (
