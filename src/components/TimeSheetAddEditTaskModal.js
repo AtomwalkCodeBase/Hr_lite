@@ -270,8 +270,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 20,
-    // paddingBottom: 20,
+    paddingTop: 50,
+    // paddingBottom: 30,
     maxHeight: height * 0.95,
   },
   scrollContent: {

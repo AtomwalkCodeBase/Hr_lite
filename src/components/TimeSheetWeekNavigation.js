@@ -30,7 +30,6 @@ const TimeSheetWeekNavigation = ({
   currentWeekStart,
   onNavigate,
   formatDisplayDate,
-  getCurrentWeekDates,
   filterRange,
   getFilterDateRange,
   monthOptions,

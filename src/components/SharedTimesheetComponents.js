@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, StyleSheet } from 'react-native';
 import { MaterialIcons, Ionicons, Feather, AntDesign } from '@expo/vector-icons';
+import ConfirmationModal from './ConfirmationModal';
 // import SelectedDayDetail from './SelectedDayDetail';
 
 // Employee info card for timesheet view
@@ -24,8 +25,7 @@ export const EmployeeInfoCard = ({ employee }) => (
 );
 
 // Table row for each day in the weekly summary
-export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusText, getDominantStatus, openDayDetail }) => {
-  const statusInfo = getDominantStatus(dayData.statusCounts);
+export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusText, openDayDetail }) => {
   const isExceeding = dayData.totalHours > 9;
   return (
     <TouchableOpacity
@@ -53,7 +53,7 @@ export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusTe
 // Modal for exceeding daily hours in weekly summary
 export const ExceedModal = ({ visible, exceedingDays, formatDisplayDate, onUnderstand }) => (
   <Modal visible={visible} transparent animationType="fade">
-    <View style={styles.modalOverlay}>
+    <TouchableOpacity style={styles.modalOverlay} activeOpacity={1}>
       <View style={styles.exceedModal}>
         <MaterialIcons name="warning" size={48} color="#f44336" />
         <Text style={styles.exceedTitle}>Daily Hour Limit Exceeded</Text>
@@ -70,14 +70,14 @@ export const ExceedModal = ({ visible, exceedingDays, formatDisplayDate, onUnder
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   </Modal>
 );
 
 // Modal for day detail weekly summary
-export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfView, onEdit, onClose, SelectedDayDetail }) => (
-  <Modal visible={visible} transparent animationType="slide">
-    <View style={styles.modalOverlay}>
+export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfView, onEdit, onDelete, onClose, SelectedDayDetail, showAddModal, showAddIcon }) => (
+  <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <View style={styles.modalOverlay} >
       <View style={styles.detailModal}>
         <View style={styles.detailHeader}>
           <Text style={styles.detailTitle}>
@@ -89,7 +89,7 @@ export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfVie
         </View>
         {/* Pass SelectedDayDetail as a prop for flexibility */}
         {SelectedDayDetail && (
-          <SelectedDayDetail selectedDay={selectedDay} formatDisplayDate={formatDisplayDate} isSelfView={isSelfView} onEdit={onEdit} />
+          <SelectedDayDetail selectedDay={selectedDay} formatDisplayDate={formatDisplayDate} isSelfView={isSelfView} onEdit={onEdit} onDelete={onDelete} showAddModal={showAddModal} showAddIcon={showAddIcon} />
         )}
       </View>
     </View>
@@ -97,46 +97,128 @@ export const DetailModal = ({ visible, selectedDay, formatDisplayDate, isSelfVie
 );
 
 // Project hours breakdown section weekly summary
-export const ProjectHoursBreakdown = ({ selectedDay }) => (
-  selectedDay.projects.size === 0 ? (
+export const ProjectHoursBreakdown = ({ selectedDay, progressColor }) => {
+  const statusConfig = {
+    s: { color: '#2196F3', icon: 'schedule', label: 'SUBMITTED', bgColor: '#E3F2FD', borderColor: '#2196F3' },
+    a: { color: '#4CAF50', icon: 'check-circle', label: 'APPROVED', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
+    r: { color: '#f44336', icon: 'cancel', label: 'REJECTED', bgColor: '#FFEBEE', borderColor: '#f44336' },
+    n: { color: '#FF9800', icon: 'schedule', label: 'DRAFT', bgColor: '#FFF3E0', borderColor: '#FF9800' },
+    default: { color: '#9E9E9E', icon: 'help-outline', label: 'UNKNOWN', bgColor: '#F5F5F5', borderColor: '#9E9E9E' },
+  };
+
+  if (selectedDay.projects.size === 0) {
+    return (
+      <View style={styles.projectHoursCard}>
+        <Text style={styles.projectHoursTitle}>Project Hours</Text>
+        <Text style={{ color: '#999', fontSize: 13, marginTop: 8 }}>No project data available.</Text>
+      </View>
+    );
+  }
+
+  return (
     <View style={styles.projectHoursCard}>
       <Text style={styles.projectHoursTitle}>Project Hours</Text>
-      <Text style={{ color: '#999', fontSize: 13, marginTop: 8 }}>No project data available.</Text>
-    </View>
-  ) : (
-    <View style={styles.projectHoursCard}>
-      <Text style={styles.projectHoursTitle}>Project Hours</Text>
-      {Array.from(selectedDay.projects).map(project => {
-        const projectHours = selectedDay.tasks
-          .filter(task => task.project_code.trim() === project)
-          .reduce((sum, task) => sum + (parseFloat(task.effort) || 0), 0);
+      {Array.from(selectedDay.projects).map(projectCode => {
+        // Find the first task with this project code to get the project name
+        const firstTask = selectedDay.tasks.find(task => task.project_code.trim() === projectCode.trim());
+        const projectName = firstTask ? firstTask.project_name : '';
+        const displayName = projectName
+          ? `${projectName} (${projectCode})`
+          : projectCode;
+
+        // Sum hours for this project code
+        const projectTasks = selectedDay.tasks.filter(task => task.project_code.trim() === projectCode.trim());
+        const projectHours = projectTasks.reduce((sum, task) => sum + (parseFloat(task.effort) || 0), 0);
+
+        // Group activities by activity_id and status
+        const activities = projectTasks.map(task => ({
+          activityName: task.activity_name,
+          status: (task.status || 'n').toLowerCase(),
+          effort: task.effort,
+        }));
+
+        // Determine color for projectHourValue
+        let projectHourValueColor = progressColor;
+        if (activities.length === 1) {
+          const status = statusConfig[activities[0].status] || statusConfig.default;
+          projectHourValueColor = status.color;
+        } else if (activities.length > 1) {
+          const allSameStatus = activities.every(a => a.status === activities[0].status);
+          if (allSameStatus) {
+            const status = statusConfig[activities[0].status] || statusConfig.default;
+            projectHourValueColor = status.color;
+          }
+        }
+
         return (
-          <View key={project} style={styles.projectHourItem}>
+          <View key={projectCode} style={styles.projectHourItem}>
             <View style={styles.projectHourInfo}>
-              <Text style={styles.projectHourName}>{project}</Text>
-              <Text style={styles.projectHourValue}>{projectHours.toFixed(1)}h</Text>
+              <Text style={[styles.projectHourName]}>{displayName}</Text>
+              <Text style={[styles.projectHourValue, {color: projectHourValueColor}]}>{projectHours.toFixed(1)}h</Text>
             </View>
             <View style={styles.projectHourBar}>
-              <View
-                style={[
-                  styles.projectHourFill,
-                  {
-                    width: `${(projectHours / selectedDay.totalHours) * 100}%`
-                  }
-                ]}
-              />
+              {/* Segmented bar for each activity by status */}
+              {activities.length > 0 ? (
+                <View style={{flexDirection: 'row', height: '100%', width: '100%'}}>
+                  {activities.map((activity, idx) => {
+                    const status = statusConfig[activity.status] || statusConfig.default;
+                    const widthPercent = projectHours > 0 ? ((parseFloat(activity.effort) || 0) / projectHours) * 100 : 0;
+                    return (
+                      <View
+                        key={idx}
+                        style={{
+                          height: '100%',
+                          width: `${widthPercent}%`,
+                          backgroundColor: status.color,
+                          borderTopLeftRadius: idx === 0 ? 3 : 0,
+                          borderBottomLeftRadius: idx === 0 ? 3 : 0,
+                          borderTopRightRadius: idx === activities.length - 1 ? 3 : 0,
+                          borderBottomRightRadius: idx === activities.length - 1 ? 3 : 0,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.projectHourFill,
+                    {
+                      width: `${(projectHours / selectedDay.totalHours) * 100}%`,
+                      backgroundColor: progressColor
+                    }
+                  ]}
+                />
+              )}
+            </View>
+            {/* Activity breakdown */}
+            <View style={{marginTop: 6, marginLeft: 4}}>
+              {activities.map((activity, idx) => {
+                const status = statusConfig[activity.status] || statusConfig.default;
+                return (
+                  <View key={idx} style={{flexDirection: 'row', alignItems: 'center', marginBottom: 10}}>
+                    <MaterialIcons name={status.icon} size={14} color={status.color} style={{marginRight: 4}} />
+                    <Text style={{fontSize: 13, color: status.color, fontWeight: '600'}}>{activity.activityName}</Text>
+                    <Text style={{fontSize: 12, color: '#555', marginLeft: 4}}>
+                      ({parseFloat(activity.effort) || 0}h)
+                    </Text>
+                    <Text style={{fontSize: 12, color: '#888', marginLeft: 6}}>{status.label}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         );
       })}
     </View>
-  )
-);
+  );
+};
 
 // Task detail card for each task
-export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, statusConfig }) => {
+export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, onDelete, statusConfig }) => {
   const taskStatusKey = (task.status || 'n').toLowerCase();
   const taskStatus = statusConfig[taskStatusKey] || statusConfig.default;
+  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   return (
     <View style={styles.taskCard}>
       <View style={styles.taskHeader}>
@@ -168,12 +250,31 @@ export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, statusCo
           </Text>
         </View>
         {isSelfView && (String(task.status || 'n').toLowerCase() === 'n') && (
+          <View style={{flexDirection: "row", gap: 8}}>
+          <TouchableOpacity style={[styles.editButton, {backgroundColor: "#FFEBEE"}]} onPress={() => setIsConfirmModalVisible(true)}>
+            <MaterialIcons name="delete-outline" size={16} color="#f44336" />
+            <Text style={[styles.editButtonText, {color: "#f44336"}]}>Delete</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
             <Ionicons name="create-outline" size={16} color="#a970ff" />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
+          </View>
         )}
       </View>
+
+      <ConfirmationModal
+        visible={isConfirmModalVisible}
+        message="Your task will be Deleted. Are you sure ?"
+       onConfirm={() => {
+          onDelete(task);
+          setIsConfirmModalVisible(false);
+        }}
+        onCancel={() => setIsConfirmModalVisible(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </View>
   );
 };
@@ -336,7 +437,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: "70%",
+    height: "80%",
     width: "100%",
     position: "absolute",
     bottom: 0,
@@ -385,6 +486,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+    maxWidth: 300
   },
   projectHourValue: {
     fontSize: 14,
@@ -398,7 +500,7 @@ const styles = StyleSheet.create({
   },
   projectHourFill: {
     height: '100%',
-    backgroundColor: '#a970ff',
+    // backgroundColor: '#a970ff',
     borderRadius: 3,
   },
   taskCard: {
@@ -490,7 +592,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   editButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#a970ff',
     fontWeight: '600',
   },

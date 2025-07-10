@@ -123,7 +123,7 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
 
           {isSelfView && ['n'].includes(statusKey) && 
           <TouchableOpacity style={[styles.editButton, {backgroundColor: "#f44336"}]} onPress={() => setIsConfirmModalVisible(true)}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
+            <MaterialIcons name="delete-outline" size={20} color="#fff" />
             <Text style={styles.editButtonText}>Delete</Text>
           </TouchableOpacity>}
          </View>

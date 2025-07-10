@@ -16,22 +16,17 @@ const TimeSheetWeeklySummary = ({
   currentWeekStart,
   isSelfView,
   onEdit,
+  onDelete,
   monthFilter,
   currentMonthStart,
+  showAddModal,
+  showAddIcon
 }) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [showExceedModal, setShowExceedModal] = useState(false);
   const [exceedingDays, setExceedingDays] = useState([]);
   const [taskHash, setTaskHash] = useState('');
-
-  const statusConfig = {
-    s: { color: '#2196F3', icon: 'schedule', label: 'SUBMITTED', bgColor: '#E3F2FD', borderColor: '#2196F3' },
-    a: { color: '#4CAF50', icon: 'check-circle', label: 'APPROVED', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
-    r: { color: '#f44336', icon: 'cancel', label: 'REJECTED', bgColor: '#FFEBEE', borderColor: '#f44336' },
-    n: { color: '#FF9800', icon: 'schedule', label: 'DRAFT', bgColor: '#FFF3E0', borderColor: '#FF9800' },
-    default: { color: '#9E9E9E', icon: 'help-outline', label: 'UNKNOWN', bgColor: '#F5F5F5', borderColor: '#9E9E9E' },
-  };
 
   const parseTaskDate = useCallback((dateStr) => {
     if (!dateStr || typeof dateStr !== 'string') {
@@ -265,18 +260,6 @@ const TimeSheetWeeklySummary = ({
     return 'Exceeded';
   }, []);
 
-  const getDominantStatus = useCallback((statusCounts) => {
-    const { approved, submitted, rejected, notSubmitted } = statusCounts;
-    if (approved > 0 && submitted === 0 && rejected === 0)
-      return { status: 'approved', color: '#4CAF50', icon: 'check-circle' };
-    if (submitted > 0 && approved === 0 && rejected === 0)
-      return { status: 'submitted', color: '#2196F3', icon: 'schedule' };
-    if (rejected > 0) return { status: 'rejected', color: '#f44336', icon: 'cancel' };
-    if (approved > 0 || submitted > 0)
-      return { status: 'mixed', color: '#FF9800', icon: 'warning' };
-    return { status: 'not-submitted', color: '#888888', icon: 'schedule' };
-  }, []);
-
   const openDayDetail = useCallback((dayData) => {
     setSelectedDay(dayData);
     setShowDetailModal(true);
@@ -312,14 +295,14 @@ const TimeSheetWeeklySummary = ({
               getDayName={getDayName}
               getStatusColor={getStatusColor}
               getStatusText={getStatusText}
-              getDominantStatus={getDominantStatus}
               openDayDetail={openDayDetail}
             />
           ))}
         </ScrollView>
       </View>
 
-      {isSelfView && <ExceedModal
+      {isSelfView && 
+      <ExceedModal
         visible={showExceedModal}
         exceedingDays={exceedingDays}
         formatDisplayDate={formatDisplayDate}
@@ -332,8 +315,11 @@ const TimeSheetWeeklySummary = ({
         formatDisplayDate={formatDisplayDate}
         isSelfView={isSelfView}
         onEdit={onEdit}
+        onDelete={onDelete}
         onClose={() => setShowDetailModal(false)}
         SelectedDayDetail={SelectedDayDetail}
+        showAddModal={(date) => showAddModal(date)}
+        showAddIcon={showAddIcon}
       />
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, StatusBar, Alert } from "react-native";
-import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from "../services/productServices";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -545,16 +545,10 @@ const TimeSheet = () => {
 
       <TabNavigation tabs={[{label: 'Summary', value: 'summary'}, {label: 'Timesheet', value: 'timesheet'}]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <TimeSheetWeekNavigation
-        currentWeekStart={currentWeekStart}
-        onNavigate={navigateWeek}
-        formatDisplayDate={formatDisplayDate}
-        getCurrentWeekDates={getCurrentWeekDates}
-        filterRange={{ year: filters.year, month: filters.month, setFilters }}
-        getFilterDateRange={getFilterDateRange}
-        monthOptions={monthOptions}
-      />
+      <TimeSheetWeekNavigation currentWeekStart={currentWeekStart} onNavigate={navigateWeek} formatDisplayDate={formatDisplayDate} getCurrentWeekDates={getCurrentWeekDates} filterRange={{ year: filters.year, month: filters.month, setFilters }} getFilterDateRange={getFilterDateRange} monthOptions={monthOptions} />
 
+      {employee && <EmployeeInfoCard employee={employee} />}
+      
       {activeTab === 'summary' && (
         <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
           {filteredTasks.length > 0 ? (
@@ -567,6 +561,15 @@ const TimeSheet = () => {
               monthFilter={filters.month}
               isSelfView={isSelfView}
               onEdit={editTask}
+              onDelete={handleDelete}
+              showAddModal={(date) => {
+                setFormData(prev => ({
+                  ...prev,
+                  date: date instanceof Date ? date : new Date(date)
+                }));
+                setShowAddModal(true);
+              }}
+              showAddIcon={showAddIcon}
             />
           ) : (
             <EmptyState icon="calendar-outline" text="No summary available for this period" />
@@ -576,8 +579,6 @@ const TimeSheet = () => {
 
       {activeTab === 'timesheet' && (
         <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
-          {employee && <EmployeeInfoCard employee={employee} />}
-
           {filteredTasks.length === 0 ? (
             <EmptyState
               icon="calendar-outline"
@@ -593,15 +594,7 @@ const TimeSheet = () => {
             />
           ) : (
             filteredTasks.map((task) => (
-              <TimeSheetCard
-                key={task.id}
-                task={task}
-                onEdit={editTask}
-                isSelfView={isSelfView}
-                onApprove={handleApproveReject}
-                onReject={handleApproveReject}
-                onDelete={handleDelete}
-              />
+              <TimeSheetCard key={task.id} task={task} onEdit={editTask} isSelfView={isSelfView} onApprove={handleApproveReject} onReject={handleApproveReject} onDelete={handleDelete} />
             ))
           )}
         </ScrollView>
@@ -619,21 +612,9 @@ const TimeSheet = () => {
         </View>
       )}
 
-      <AddEditTaskModal
-        visible={showAddModal}
-        onClose={closeAddModal}
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        formData={formData}
-        setFormData={setFormData}
-        editingTask={editingTask}
-        projects={projects}
-        activities={activities}
-      />
+      <AddEditTaskModal visible={showAddModal} onClose={closeAddModal} onSubmit={handleSubmit} isLoading={isLoading} formData={formData} setFormData={setFormData} editingTask={editingTask} projects={projects} activities={activities} />
 
-      <FilterModal
-        visible={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
+      <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
         onClearFilters={() => {
           setPendingFilters({
             project: "",
@@ -659,15 +640,7 @@ const TimeSheet = () => {
         }}
       />
 
-      <RemarkModal
-        visible={showRemarkModal}
-        onClose={() => setShowRemarkModal(false)}
-        remark={remark}
-        setRemark={setRemark}
-        isLoading={isLoading}
-        selectedAction={selectedAction}
-        onSubmit={handleSubmit}
-      />
+      <RemarkModal visible={showRemarkModal} onClose={() => setShowRemarkModal(false)} remark={remark} setRemark={setRemark} isLoading={isLoading} selectedAction={selectedAction} onSubmit={handleSubmit} />
 
       <SuccessModal
         visible={isSuccessModalVisible}
