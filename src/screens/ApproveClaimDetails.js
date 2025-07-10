@@ -346,6 +346,7 @@ const validateForm = useCallback(() => {
     .filter(item => item.expense_status !== 'A' && item.expense_status !== 'R')
     .map(item => item.id) || [];
 
+
   // If all selectable items are selected, set selectAll to true, else false
   if (selectableIds.length > 0) {
     setSelectAll(
@@ -354,7 +355,14 @@ const validateForm = useCallback(() => {
   } else {
     setSelectAll(false);
   }
-}, [selectedItems, claim]);
+}, [selectedItems, claim ]);
+
+useEffect(() => {
+  if (validationError) {
+    setSelectAll(false);
+    setSelectedItems([]);
+  }
+}, [validationError]);
 
   // Render item row
   const renderItem = useCallback(({ item }) => {
@@ -434,8 +442,8 @@ const validateForm = useCallback(() => {
           <Text style={styles.claimDate}>Claim Date: {claim.claim_date}</Text>
           <Text style={styles.totalAmount}>Total Amount: {formatIndianCurrency(totalAmount.toFixed(2))}</Text>
           {validationError && (
-          <Text style={styles.validationErrorText}>{validationError}</Text>
-        )}
+           <Text style={styles.validationErrorText}>{validationError}</Text>
+          )}
         </View>
         
         <View style={styles.selectAllContainer}>
@@ -620,6 +628,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
     paddingHorizontal: 16,
+    marginTop: 10
   },
   submitButton: {
     backgroundColor: '#3498db',

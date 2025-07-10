@@ -19,8 +19,6 @@ const ApplyButton = ({ onPress, buttonText, icon, currentPath }) => {
   const iconSize = width > 400 ? 26 : 24;
   const textFontSize = width > 400 ? 18 : 16;
 
-  console.log("currentPath", currentPath)
-
   return (
     <TouchableOpacity 
       style={[
