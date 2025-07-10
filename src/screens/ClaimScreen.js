@@ -15,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Ionicons } from '@expo/vector-icons';
 import FilterModal from '../components/FilterModal';
+import SuccessModal from '../components/SuccessModal';
+import ErrorModal from '../components/ErrorModal';
 
 const { width } = Dimensions.get('window');
 
@@ -227,6 +229,11 @@ const ClaimScreen = (props) => {
   claimId: null,
   period: 'CY'
 });
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
   const navigation = useNavigation();
 
   const statusOptions = [
@@ -483,10 +490,14 @@ const filterClaims = () => {
 
     try {
       await postClaimAction(claimPayload);
-      Alert.alert('Success', 'Claim deleted successfully!');
+      // Alert.alert('Success', 'Claim deleted successfully!');
+      setSuccessMessage("Claim deleted successfully!")
+      setShowSuccessModal(true)
       fetchClaimDetails();
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete claim.');
+      // Alert.alert('Error', 'Failed to delete claim.');
+      setErrorMessage("Failed to delete claim.");
+      setShowErrorModal(true);
       console.error('Error deleting claim:', error);
     } finally {
       setIsLoading(false);
@@ -549,7 +560,9 @@ const filterClaims = () => {
     setSelectedClaimId(masterClaimId);
     setShowConfirmModal(true);
   } else {
-    Alert.alert('Error', 'Only draft claims can be submitted');
+    // Alert.alert('Error', 'Only draft claims can be submitted');
+    setErrorMessage("Only draft claims can be submitted");
+    setShowErrorModal(true);
   }
 };
 
@@ -566,10 +579,14 @@ const filterClaims = () => {
 
   try {
     await postClaimAction(claimPayload);
-    Alert.alert('Success', 'Claim submitted successfully!');
+    // Alert.alert('Success', 'Claim submitted successfully!');
+    setSuccessMessage("Claim submitted successfully!");
+    setShowSuccessModal(true)
     fetchClaimDetails(); // Refresh the claims list
   } catch (error) {
-    Alert.alert('Action Failed', 'Failed to submit claim.');
+    setErrorMessage("Failed to submit claim.");
+    setShowErrorModal(true)
+    // Alert.alert('Action Failed', 'Failed to submit claim.');
     console.error('Error submitting claim:', error);
   } finally {
     setIsLoading(false);
@@ -931,6 +948,17 @@ const filterClaims = () => {
         />
       </Container>
       <Loader visible={isLoading} />
+
+      <SuccessModal
+        visible={showSuccessModal}
+        message={successMessage}
+        onClose={() => setShowSuccessModal(false)}
+      />
+      <ErrorModal
+        visible={showErrorModal}
+        message={errorMessage}
+        onClose={() => setShowErrorModal(false)}
+      />
     </SafeAreaView>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal } from 'react-native';
+import { Image, Modal } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
@@ -39,29 +39,30 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
   };
 
   const renderDetails = () => {
-    const data = leave || claim || helpRequest;
-    const type = leave ? 'leave' : claim ? 'claim' : helpRequest ? 'helpRequest' : null;
+  const data = leave || claim || helpRequest;
+  const type = leave ? 'leave' : claim ? 'claim' : helpRequest ? 'helpRequest' : null;
 
     if (!data || !type) return null;
 
-    const getStatusValue = (status) => {
-      if (!status) return undefined;
-      return status.toLowerCase();
-    };
+  const getStatusValue = (status) => {
+    if (!status) return undefined;
+    return status.toLowerCase();
+  };
 
-    const detailConfigs = {
-      leave: [
-        { label: 'Leave Type', value: data.leave_type_display, bold: true },
-        { label: 'Duration', value: `${data.from_date} to ${data.to_date} (${data.no_leave_count} days)` },
-        { 
-          label: 'Status', 
-          value: data.status_display, 
-          status: getStatusValue(data.status_display) 
-        },
-        { label: 'Submitted', value: data.submit_date },
+  const detailConfigs = {
+    leave: [
+      { label: 'Leave Type', value: data.leave_type_display, bold: true },
+      { label: 'Duration', value: `${data.from_date} to ${data.to_date} (${data.no_leave_count} days)` },
+      { 
+        label: 'Status', 
+        value: data.status_display, 
+        status: getStatusValue(data.status_display) ,
+        bold: true
+      },
+      { label: 'Submitted', value: data.submit_date },
         { label: 'Remarks', value: data.remarks }
-      ],
-      claim: [
+    ],
+    claim: [
         { label: 'Item Name', value: data.item_name, bold: true },
         { 
           label: 'Amount', 
@@ -69,48 +70,64 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
           bold: true,
           isCurrency: true
         },
-        { label: 'Claim ID', value: data.claim_id, noWrap: true },
-        { label: 'Submitted', value: data.submitted_date },
+      { label: 'Claim ID', value: data.claim_id, noWrap: true },
+      { label: 'Submitted', value: data.submitted_date },
         { label: 'Expense Date', value: data.expense_date },
         { label: 'Project', value: data.project_name },
         { label: 'Remarks', value: data.remarks },
         { label: 'Manager Remarks', value: data.approval_remarks }
-      ],
-      helpRequest: [
-        { label: 'Request ID', value: data.request_id, bold: true },
-        { label: 'Category', value: data.request_sub_type },
-        { label: 'Date', value: data.created_date },
-        { 
-          label: 'Status', 
-          value: data.status_display, 
-          status: getStatusValue(data.status_display) 
-        },
-        { label: 'Request Details', value: data.request_text },
-        { label: 'Remarks', value: data.remarks }
-      ]
-    };
+    ],
+    helpRequest: [
+      { label: 'Request ID', value: data.request_id, bold: true },
+      { label: 'Category', value: data.request_sub_type },
+      { label: 'Date', value: data.created_date },
+      { 
+        label: 'Status', 
+        value: data.status_display, 
+        status: getStatusValue(data.status_display) 
+      },
+      { label: 'Request Details', value: data.request_text },
+      { label: 'Remarks', value: data.remarks},
+      { label: 'Image', value: data.submitted_file_1, type: "image" },
+    ]
+  };
 
-    return (
-      <DetailContainer>
-        {detailConfigs[type].map((item, index) => (
-          shouldDisplayField(item.value) && (
-            <DetailItem key={index}>
-              <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
-              {item.noWrap ? (
-                <ClaimIDValue>{item.value}</ClaimIDValue>
+return (
+  <DetailContainer>
+    {detailConfigs[type].map((item, index) => {
+      // If item is image type, only show if value exists
+      if (item.type === "image") {
+        if (!item.value) return null;
+        return (
+          <DetailItem key={index}>
+            <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
+            <Image
+              source={{ uri: item.value }}
+              style={{ width: 120, height: 120, borderRadius: 12, resizeMode: "cover", borderWidth: 1, borderColor: "#eee", marginLeft: 8 }}
+            />
+          </DetailItem>
+        );
+      }
+      // For other types, show if condition is not false
+      if (item.condition === false) return null;
+      return (
+        <DetailItem key={index}>
+          <DetailLabel bold={item.bold}>{item.label}:</DetailLabel>
+          {item.noWrap ? (
+            <ClaimIDValue>{item.value}</ClaimIDValue>
               ) : item.isCurrency ? (
                 <CurrencyValue bold={item.bold}>{item.value}</CurrencyValue>
-              ) : (
-                <DetailValue status={item.status} bold={item.bold}>
-                  {item.value}
-                </DetailValue>
-              )}
-            </DetailItem>
-          )
-        ))}
-      </DetailContainer>
-    );
-  };
+          ) : (
+            <DetailValue status={item.status} bold={item.bold}>
+              {item.value}
+            </DetailValue>
+          )}
+        </DetailItem>
+      );
+    })}
+  </DetailContainer>
+);
+};
 
   const getTitle = () => {
     if (leave) return 'Leave Details';

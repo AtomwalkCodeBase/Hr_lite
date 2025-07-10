@@ -243,7 +243,7 @@ const AddClaim = (props) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1}}>
       <HeaderComponent 
         headerTitle={
           isViewMode ? "View Claim" : 
@@ -262,7 +262,7 @@ const AddClaim = (props) => {
           }}
         />
       ) : (
-        <Container>
+        <Container showsVerticalScrollIndicator={false}>
           {isEditMode && (
             <View style={{ 
               padding: 15,
@@ -342,9 +342,11 @@ const AddClaim = (props) => {
             label="Attach File"
             fileName={fileName}
             setFileName={setFileName}
+            fileUri={fileUri}
             setFileUri={setFileUri}
             setFileMimeType={setFileMimeType}
             error={errors.file}
+            existingImgUri={parsedClaimData?.submitted_file_1}
             existingFileName={parsedClaimData?.submitted_file_1 ? 
               parsedClaimData.submitted_file_1.split('/').pop().split('?')[0] : 
               null

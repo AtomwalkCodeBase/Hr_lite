@@ -8,6 +8,7 @@ const ButtonContainer = styled(TouchableOpacity)`
   border-radius: 5px;
   align-items: center;
   margin-top: 20px;
+  margin-bottom: 20px;
 `;
 
 const ButtonText = styled(Text)`

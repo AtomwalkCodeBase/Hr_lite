@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { FlatList,Dimensions } from 'react-native';
 import styled from 'styled-components/native';
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
@@ -97,6 +97,7 @@ const LeaveScreen = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false); // Loader state
   const [totalLeaveSum, setTotalLeaveSum] = useState(0);
+  const pathname = usePathname();
 
   const generateRandomValue = () => {
     return Math.floor(Math.random() * 100);
@@ -265,7 +266,7 @@ const LeaveScreen = () => {
           />
         )}
         <ApplyButton onPress={() => handlePress(leaveData && leaveData[0]?.emp_data)} buttonText="Apply Leave" 
-          icon='send'/>
+          icon='send' currentPath={pathname} />
 
         {selectedLeave && (
           <ModalComponent

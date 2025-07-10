@@ -20,7 +20,8 @@ const ClaimItemCard = ({
   onForwardManagerChange,
   onRemarkChange,
   itemActions,
-  errors
+  errors,
+  formatIndianCurrency
 }) => {
   const [itemRemark, setItemRemark] = useState('');
 
@@ -41,6 +42,8 @@ const ClaimItemCard = ({
     onRemarkChange(item.id, text);
   };
 
+  console.log("data", item)
+
   return (
     <View style={[
       styles.itemContainer, 
@@ -48,7 +51,11 @@ const ClaimItemCard = ({
       isLimited && styles.limitedItem
     ]}>
       <TouchableOpacity 
-        onPress={onToggleExpand}
+          onPress={() => {
+          if (isSelected && !isDisabled) {
+            onToggleExpand();
+          }
+        }}
         activeOpacity={0.8}
         style={styles.itemHeaderTouchable}
         disabled={isDisabled}
@@ -100,6 +107,24 @@ const ClaimItemCard = ({
                 {item.project_name}
               </Text>
             )}
+            {item.claim_id && (
+              <Text style={[
+                styles.itemProject,
+                isDisabled && styles.disabledText,
+                isLimited && styles.limitedText
+              ]} numberOfLines={1}>
+                {item.claim_id}
+              </Text>
+            )}
+            {item.expense_date && (
+              <Text style={[
+                styles.itemProject,
+                isDisabled && styles.disabledText,
+                isLimited && styles.limitedText
+              ]} numberOfLines={1}>
+                Expense Date: {item.expense_date}
+              </Text>
+            )}
             {isLimited && validationResult?.limitRemarks && (
               <Text style={styles.limitRemarksText}>
                 {validationResult.limitRemarks}
@@ -113,9 +138,9 @@ const ClaimItemCard = ({
               isDisabled && styles.disabledText,
               isLimited && styles.limitedText
             ]}>
-              ₹{parseFloat(item.expense_amt).toFixed(2)}
+              {formatIndianCurrency(parseFloat(item.expense_amt).toFixed(2))}
             </Text>
-            {!isDisabled && (
+            {(isSelected && !isDisabled) && (
               <MaterialIcons 
                 name={expanded ? 'keyboard-arrow-up' : 'keyboard-arrow-down'} 
                 size={24} 

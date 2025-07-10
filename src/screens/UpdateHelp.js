@@ -209,6 +209,7 @@ const UpdateHelp = (props) => {
           <FilePicker 
             label="Attach Supporting Document"
             fileName={fileName}
+            fileUri={fileUri}
             setFileName={setFileName}
             setFileUri={setFileUri}
             setFileMimeType={setFileMimeType}

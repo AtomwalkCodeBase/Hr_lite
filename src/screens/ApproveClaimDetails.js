@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
 import ClaimItemCard from '../components/ClaimItemCard';
 import RemarksInput from '../components/RemarkInput';
+import ErrorModal from '../components/ErrorModal';
 // import AmountInput from '../components/AmountInput';
 // import DropdownPicker from '../components/DropdownPicker';
 
@@ -38,6 +39,8 @@ const ApproveClaimDetails = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [managers, setManagers] = useState([]);
   const [validationResults, setValidationResults] = useState({});
   const [validationError, setValidationError] = useState(null);
@@ -109,6 +112,7 @@ const ApproveClaimDetails = () => {
           };
           const validationResponse = await validateClaimItem(validationData);
 
+
           if (isMounted) {
             if (validationResponse.data) {
               const results = {};
@@ -120,6 +124,7 @@ const ApproveClaimDetails = () => {
                   approvalType: item.approval_type
                 };
               });
+              // console.log("uycsadcgbhjdk",validationResponse.data)
               setValidationResults(results);
               setValidationError(null);
             } else if (validationResponse.message) {
@@ -128,10 +133,17 @@ const ApproveClaimDetails = () => {
           }
         }
       } catch (error) {
+        console.log("uycsadcgbhjdk",error)
         if (isMounted) {
           console.error('Error:', error);
+          if (error?.response?.data?.message.includes('Invalid request - ')) {
+          const msg = error?.response?.data?.message;
+          const afterText = msg.split('Invalid request -')[1]?.trim() || '';
+          setValidationError(afterText || 'Error Employee Grade structure is not configured properly. Please check for Employee manager/ HR manager setup at Grade level.');
+        } else {
           setValidationError(error?.response?.data?.message || 'Failed to load claim data');
         }
+      }
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -277,11 +289,13 @@ const validateForm = useCallback(() => {
       await postClaimAction(payload);
       setShowSuccessModal(true);
     } catch (error) {
-      console.error('Submission error:', error);
-      Alert.alert(
-        'Action Failed', 
-        error.response?.data?.message || error.message || 'Failed to process claim'
-      );
+      // console.error('Submission error:', error);
+      setErrorMessage( error.response?.data?.message || error.message || 'Failed to process claim');
+      setShowErrorModal(true)
+      // Alert.alert(
+      //   'Action Failed', 
+      //   error.response?.data?.message || error.message || 'Failed to process claim'
+      // );
     } finally {
       setIsLoading(false);
     }
@@ -296,6 +310,51 @@ const validateForm = useCallback(() => {
       default: return 'A';
     }
   };
+
+  const formatIndianCurrency = (num) => {
+    if (!num && num !== 0) return null; // handles null, undefined, empty string
+    
+    // Convert to number to handle cases like "12.00"
+    const numberValue = Number(num);
+    if (isNaN(numberValue)) return null;
+
+    // Check if it's an integer (has no decimal or decimal is .00)
+    const isInteger = Number.isInteger(numberValue);
+    
+    // Format the number based on whether it's an integer
+    const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+    const parts = numStr.split('.');
+    let integerPart = parts[0];
+    const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+
+    // Format the integer part with Indian comma separators
+    const lastThree = integerPart.substring(integerPart.length - 3);
+    const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+    
+    if (otherNumbers !== '') {
+      integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+    } else {
+      integerPart = lastThree;
+    }
+
+    return `₹ ${integerPart}${decimalPart}`;
+  };
+
+  useEffect(() => {
+  // Get all selectable item IDs (not approved/rejected)
+  const selectableIds = claim?.claim_items
+    .filter(item => item.expense_status !== 'A' && item.expense_status !== 'R')
+    .map(item => item.id) || [];
+
+  // If all selectable items are selected, set selectAll to true, else false
+  if (selectableIds.length > 0) {
+    setSelectAll(
+      selectableIds.every(id => selectedItems.includes(id))
+    );
+  } else {
+    setSelectAll(false);
+  }
+}, [selectedItems, claim]);
 
   // Render item row
   const renderItem = useCallback(({ item }) => {
@@ -316,61 +375,14 @@ const validateForm = useCallback(() => {
         onToggleExpand={() => toggleItemExpand(item.id)}
         onToggleSelect={() => toggleItemSelection(item.id)}
         managers={managers}
-  onActionChange={(itemId, action) => updateItemAction(itemId, 'action', action)}
-  onAmountChange={(itemId, amount) => updateItemAction(itemId, 'approvedAmount', amount)}
-  onForwardManagerChange={(itemId, managerId) => updateItemAction(itemId, 'forwardManager', managerId)}
-  onRemarkChange={(itemId, remark) => updateItemAction(itemId, 'remarks', remark)}
-  itemActions={itemActions[item.id]}
-  errors={errors}
+        onActionChange={(itemId, action) => updateItemAction(itemId, 'action', action)}
+        onAmountChange={(itemId, amount) => updateItemAction(itemId, 'approvedAmount', amount)}
+        onForwardManagerChange={(itemId, managerId) => updateItemAction(itemId, 'forwardManager', managerId)}
+        onRemarkChange={(itemId, remark) => updateItemAction(itemId, 'remarks', remark)}
+        itemActions={itemActions[item.id]}
+        errors={errors}
+        formatIndianCurrency={formatIndianCurrency}
       >
-        {/* {isExpanded && (
-          <View style={styles.actionContainer}>
-            <DropdownPicker
-              items={[
-                { label: 'Approve', value: 'APPROVE' },
-                { label: 'Reject', value: 'REJECT' },
-                { label: 'Forward', value: 'FORWARD' },
-                { label: 'Back To Claimant', value: 'Back To Claimant' }
-              ]}
-              selectedValue={itemActions[item.id]?.action}
-              onValueChange={(value) => updateItemAction(item.id, 'action', value)}
-              placeholder="Select Action"
-              disabled={isDisabled}
-            />
-            
-            {(itemActions[item.id]?.action === 'APPROVE' || itemActions[item.id]?.action === 'FORWARD') && 
-             validationResult.limitType === 'N' && (
-              <AmountInput
-                value={itemActions[item.id]?.approvedAmount}
-                onChangeText={(text) => updateItemAction(item.id, 'approvedAmount', text)}
-                error={errors[`itemAmount-${item.id}`]}
-                maxAmount={parseFloat(item.expense_amt)}
-                disabled={isDisabled}
-              />
-            )}
-            
-            {(itemActions[item.id]?.action === 'FORWARD' || validationResult.limitType !== 'N') && (
-              <DropdownPicker
-                items={managers.map(manager => ({
-                  label: manager.employee_name,
-                  value: manager.employee_id
-                }))}
-                selectedValue={itemActions[item.id]?.forwardManager || validationResult.forwardManager}
-                onValueChange={(value) => updateItemAction(item.id, 'forwardManager', value)}
-                placeholder="Select Manager"
-                disabled={isDisabled}
-              />
-            )}
-            
-            <RemarksInput
-              value={itemActions[item.id]?.remarks}
-              onChangeText={(text) => updateItemAction(item.id, 'remarks', text)}
-              placeholder="Enter remarks"
-              error={errors[`itemRemarks-${item.id}`]}
-              disabled={isDisabled}
-            />
-          </View>
-        )} */}
       </ClaimItemCard>
     );
   }, [selectedItems, itemActions, validationResults, errors, managers, expandedItems, toggleItemExpand, toggleItemSelection, updateItemAction]);
@@ -420,7 +432,10 @@ const validateForm = useCallback(() => {
         <View style={styles.employeeInfo}>
           <Text style={styles.employeeName}>{claim.employee_name}</Text>
           <Text style={styles.claimDate}>Claim Date: {claim.claim_date}</Text>
-          <Text style={styles.totalAmount}>Total Amount: ₹{totalAmount.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>Total Amount: {formatIndianCurrency(totalAmount.toFixed(2))}</Text>
+          {validationError && (
+          <Text style={styles.validationErrorText}>{validationError}</Text>
+        )}
         </View>
         
         <View style={styles.selectAllContainer}>
@@ -434,15 +449,16 @@ const validateForm = useCallback(() => {
             </View>
             <Text style={styles.selectAllText}>Select All Items</Text>
           </TouchableOpacity>
+            <Text>{selectedItems.length > 0 && (`Total Item selected (${(selectedItems.length)})`)}</Text>
         </View>
         
         {errors.selectedItems && (
           <Text style={styles.errorText}>{errors.selectedItems}</Text>
         )}
         
-        {validationError && (
+        {/* {validationError && (
           <Text style={styles.validationErrorText}>{validationError}</Text>
-        )}
+        )} */}
         
         <FlatList
           data={claim.claim_items}
@@ -497,6 +513,19 @@ const validateForm = useCallback(() => {
           navigation.goBack();
         }}
       />
+      {/* <ErrorModal
+        visible={!!validationError}
+        message={validationError}
+        onClose={() => {
+          setValidationError(null)
+          handleBackPress()}
+        }
+      /> */}
+      <ErrorModal
+        visible={showErrorModal}
+        message={errorMessage}
+        onClose={handleBackPress}
+      />
     </SafeAreaView>
   );
 };
@@ -540,6 +569,9 @@ const styles = StyleSheet.create({
   },
   selectAllContainer: {
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: "space-between"
   },
   checkboxContainer: {
     flexDirection: 'row',

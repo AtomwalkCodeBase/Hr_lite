@@ -87,6 +87,10 @@ const TimeSheet = () => {
 
   const appliedFilterCount = Object.values(filters).filter(v => v && v !== "").length;
 
+  const hasActiveFilters = () => {
+    return  filters.project || filters.status || filters.activity || filters.month || filters.year;
+  };
+
   const statuses = ["SUBMITTED", "APPROVED", "REJECTED"];
 
   function formatDateForAPI(date) {
