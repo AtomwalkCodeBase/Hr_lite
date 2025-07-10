@@ -25,15 +25,19 @@ const HeaderComponent = ({ headerTitle,  onBackPress, icon1Name, icon1OnPress, i
           
           <View style={styles.rightIconsContainer}>
             {icon1Name && (
-              <TouchableOpacity 
-                onPress={icon1OnPress}
-                style={styles.iconButton}
-                activeOpacity={0.6}
-              >
-                <Ionicons name={icon1Name} size={24} color="#fff" />
-                <Text style={styles.filterBadgeText}>{filterCount}</Text>
-              </TouchableOpacity>
-            )}
+  <TouchableOpacity 
+    onPress={icon1OnPress}
+    style={styles.iconButton}
+    activeOpacity={0.6}
+  >
+    <Ionicons name={icon1Name} size={24} color="#fff" />
+    {filterCount > 0 && (
+      <View style={styles.filterBadge}>
+        <Text style={styles.filterBadgeText}>{filterCount}</Text>
+      </View>
+    )}
+  </TouchableOpacity>
+)}
             
             {icon2Name && (
               <TouchableOpacity 
@@ -96,25 +100,25 @@ const styles = StyleSheet.create({
     width: 40,
   },
   filterBadge: {
-    backgroundColor: "#ff5252",
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -8,
-    marginTop: -8,
-    position: "absolute",
-    right: 2,
-    top: 2,
-    zIndex: 1,
-    paddingHorizontal: 3,
-  },
-  filterBadgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
+  backgroundColor: "#ff5252",
+  borderRadius: 8,
+  minWidth: 16,
+  height: 16,
+  alignItems: "center",
+  justifyContent: "center",
+  marginLeft: -8,
+  marginTop: -8,
+  position: "absolute",
+  right: 2,
+  top: 2,
+  zIndex: 1,
+  paddingHorizontal: 3,
+},
+filterBadgeText: {
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: "bold",
+},
 });
 
 export default HeaderComponent;

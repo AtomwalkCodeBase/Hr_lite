@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing, Dimensions } from 'react-native';
-import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, usePathname, useRouter } from 'expo-router';
 import { getEmpClaim, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ImageViewer from 'react-native-image-zoom-viewer';
@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import FilterModal from '../components/FilterModal';
 import SuccessModal from '../components/SuccessModal';
 import ErrorModal from '../components/ErrorModal';
+import ClaimModalComponent from '../components/ClaimModalComponent';
 
 const { width } = Dimensions.get('window');
 
@@ -47,11 +48,6 @@ const TabText = styled.Text`
   color: ${props => props.active ? '#a970ff' : '#666'};
 `;
 
-const ButtonWrapper = styled.View`
-  padding: 10px;
-  background-color: #fff;
-`;
-
 const GroupHeader = styled.TouchableOpacity`
   flex-direction: row;
   justify-content: space-between;
@@ -62,44 +58,6 @@ const GroupHeader = styled.TouchableOpacity`
   margin-bottom: 8px;
   border-left-width: 4px;
   border-left-color: ${props => props.isApproved ? '#4caf50' : props.isDraft ? '#a970ff' : '#ff9800'};
-`;
-
-const GroupTitleContainer = styled.View`
-  flex-direction: column;
-  flex: 1;
-`;
-
-const GroupTitle = styled.Text`
-  font-weight: bold;
-  color: #333;
-  font-size: ${width < 400 ? 14 : 16}px;
-  max-width: ${width * 0.6}px;
-`;
-
-const GroupSubtitle = styled.Text`
-  font-size: ${width < 400 ? 12 : 14}px;
-  color: #666;
-  margin-top: 4px;
-`;
-
-const GroupStatus = styled.Text`
-  font-size: ${width < 400 ? 10 : 12}px;
-  color: ${props => props.isApproved ? '#4caf50' : props.isDraft ? '#a970ff' : '#666'};
-  margin-left: 8px;
-  font-style: italic;
-`;
-
-const GroupAmount = styled.Text`
-  font-size: ${width < 400 ? 14 : 16}px;
-  font-weight: bold;
-  color: ${props => props.isApproved ? '#4caf50' : props.isDraft ? '#a970ff' : '#333'};
-`;
-
-const GroupContent = styled.View`
-  padding-left: 10px;
-  border-left-width: 2px;
-  border-left-color: #a970ff;
-  margin-left: 10px;
 `;
 
 const StatusContainer = styled.View`
@@ -127,19 +85,6 @@ const StatusValue = styled.Text`
   font-size: 16px;
   font-weight: bold;
   color: ${props => props.color || '#333'};
-`;
-
-const SubmitButton = styled.TouchableOpacity`
-  background-color: #4CAF50;
-  padding: 10px;
-  border-radius: 5px;
-  margin-top: 8px;
-  align-items: center;
-`;
-
-const SubmitButtonText = styled.Text`
-  color: white;
-  font-weight: bold;
 `;
 
 const styles = StyleSheet.create({
@@ -212,22 +157,31 @@ const ClaimScreen = (props) => {
   const [selectedClaimId, setSelectedClaimId] = useState(null);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState(null);
-  const [selectedClaimIdFilter, setSelectedClaimIdFilter] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('CY'); // Default to Current Year
+  // const [selectedPeriod, setSelectedPeriod] = useState('CY'); // Default to Current Year
+  const [pendingFilters, setPendingFilters] = useState({
+  all: { status: null, claimId: null, period: 'CY' },
+  drafts: { claimId: null, period: 'CY' }
+});
+  const pathname = usePathname();
   const [statusSummary, setStatusSummary] = useState({
     total: 0,
     approved: 0,
     pending: 0,
     draft: 0
   });
-  const [pendingFilters, setPendingFilters] = useState({
-  status: null,
-  claimId: null,
-  period: 'CY'
+  const [filters, setFilters] = useState({
+  all: { // For "Submitted Claims" tab
+    status: null,
+    claimId: null,
+    period: 'CY'
+  },
+  drafts: { // For "Draft Claims" tab
+    claimId: null,
+    period: 'CY'
+  }
 });
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -257,17 +211,28 @@ const periodOptions = [
     }
   }, [allClaims]);
 
-//   useEffect(() => {
-//   // Check if both sections are empty and data is loaded
-//   if (!isLoading && allClaims.length === 0) {
-//     // Small timeout to ensure UI is ready
-//     const timer = setTimeout(() => {
-//       handlePress('ADD NEW');
-//     }, 100);
-    
-//     return () => clearTimeout(timer);
-//   }
-// }, [allClaims, isLoading]);
+
+  const getFilterCount = () => {
+  const currentFilters = getCurrentFilters();
+  let count = 0;
+  
+  if (activeTab === 'all' && currentFilters.status) count++;
+  if (currentFilters.claimId) count++;
+  if (currentFilters.period && currentFilters.period !== 'CY') count++;
+  
+  return count;
+};
+
+const getCurrentFilters = () => {
+  return activeTab === 'all' ? filters.all : filters.drafts;
+};
+
+// const setCurrentFilters = (newFilters) => {
+//   setFilters(prev => ({
+//     ...prev,
+//     [activeTab]: { ...prev[activeTab], ...newFilters }
+//   }));
+// };
 
   const updateStatusSummary = (claims) => {
     const summary = {
@@ -305,24 +270,14 @@ const periodOptions = [
 };
 
   useEffect(() => {
-    if (groupedClaims.length > 0 && Object.keys(expandedGroups).length === 0) {
-      const initialExpanded = {};
-      groupedClaims.forEach(claim => {
-        initialExpanded[claim.master_claim_id] = true;
-      });
-      setExpandedGroups(initialExpanded);
-    }
-  }, [groupedClaims]);
-
-  useEffect(() => {
     fetchEmpId();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   if (empId) {
     fetchClaimDetails();
   }
-}, [empId, selectedPeriod]);
+}, [empId, filters.all.period, filters.drafts.period]); // Watch period filters for both tabs
 
   useEffect(() => {
     if (allClaims.length > 0) {
@@ -333,10 +288,33 @@ const periodOptions = [
     }
   }, [allClaims]);
 
-  useEffect(() => {
-    filterClaims();
-  }, [allClaims, activeTab, searchQuery, selectedStatus, selectedClaimIdFilter]);
+useEffect(() => {
+  filterClaims();
+}, [allClaims, activeTab, searchQuery, filters]); // Add filters to dependencies
 
+const formatIndianCurrency = (num) => {
+    if (!num && num !== 0) return null;
+    
+    const numberValue = Number(num);
+    if (isNaN(numberValue)) return null;
+
+    const isInteger = Number.isInteger(numberValue);
+    const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+    const parts = numStr.split('.');
+    let integerPart = parts[0];
+    const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+
+    const lastThree = integerPart.substring(integerPart.length - 3);
+    const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+    
+    if (otherNumbers !== '') {
+      integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+    } else {
+      integerPart = lastThree;
+    }
+
+    return `₹${integerPart}${decimalPart}`;
+  };
   
 
 // Helper function to parse claim dates in "DD-MMM-YYYY" format
@@ -362,25 +340,20 @@ const parseClaimDate = (dateString) => {
   }
 };
 
-  useEffect(() => {
-  // Reset filters when tab changes
-  setSelectedStatus(null);
-  setSelectedClaimIdFilter(null);
-  // Keep the period filter as it's independent of tabs
-}, [activeTab]);
 
 const filterClaims = () => {
+  const currentFilters = getCurrentFilters();
   let filtered = [...allClaims];
 
-  // Filter by period - only if not 'ALL'
-  if (selectedPeriod && selectedPeriod !== 'ALL') {
+  // Filter by period - now using currentFilters.period
+  if (currentFilters.period && currentFilters.period !== 'ALL') {
     const currentYear = new Date().getFullYear();
     filtered = filtered.filter(claim => {
       const claimDate = parseClaimDate(claim.claim_date);
       if (!claimDate) return true;
       
       const claimYear = claimDate.getFullYear();
-      return selectedPeriod === 'CY' 
+      return currentFilters.period === 'CY' 
         ? claimYear === currentYear 
         : claimYear === currentYear - 1;
     });
@@ -397,9 +370,14 @@ const filterClaims = () => {
       claim.expense_status !== 'N' && 
       claim.status_display !== 'Not Submitted'
     );
+    
+    // Apply status filter only for "all" tab
+    if (currentFilters.status) {
+      filtered = filtered.filter(claim => claim.expense_status === currentFilters.status);
+    }
   }
 
-  // Apply other filters
+  // Apply search filter
   if (searchQuery) {
     filtered = filtered.filter(claim => 
       claim.master_claim_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -407,12 +385,9 @@ const filterClaims = () => {
     );
   }
 
-  if (selectedStatus) {
-    filtered = filtered.filter(claim => claim.expense_status === selectedStatus);
-  }
-
-  if (selectedClaimIdFilter) {
-    filtered = filtered.filter(claim => claim.master_claim_id === selectedClaimIdFilter);
+  // Apply claim ID filter
+  if (currentFilters.claimId) {
+    filtered = filtered.filter(claim => claim.master_claim_id === currentFilters.claimId);
   }
 
   setFilteredClaims(filtered);
@@ -431,20 +406,21 @@ const filterClaims = () => {
   const fetchClaimDetails = () => {
   setIsLoading(true);
   
-  const apiPeriod = selectedPeriod === 'ALL' ? null : selectedPeriod;
+  // Get the current period filter from the filters state
+  const currentPeriod = getCurrentFilters().period;
+  const apiPeriod = currentPeriod === 'ALL' ? null : currentPeriod;
   
   getEmpClaim(requestData, empId, apiPeriod || 'CY')
     .then((res) => {
       const claims = res.data || [];
-      const validClaims = (res.data || []).filter(claim => 
-      !claim.master_claim_id || // Keep non-grouped claims
-      (claim.master_claim_id && claim.claim_items && claim.claim_items.length > 0)
-    );
-    
-    setAllClaims(validClaims);
+      const validClaims = claims.filter(claim => 
+        !claim.master_claim_id || 
+        (claim.master_claim_id && claim.claim_items && claim.claim_items.length > 0)
+      );
+      
+      setAllClaims(validClaims);
       setIsLoading(false);
       
-      // If no claims at all, show add screen
       if (claims.length === 0) {
         handlePress('ADD NEW');
       }
@@ -453,13 +429,27 @@ const filterClaims = () => {
       setIsLoading(false);
       console.error("Error fetching claim data:", error);
     });
-  };
+};
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   }, [navigation]);
+
+  const handleTabChange = (tab) => {
+  // When switching to drafts tab, we don't want to carry over status filters
+  if (tab === 'drafts') {
+    setFilters(prev => ({
+      ...prev,
+      drafts: {
+        ...prev.drafts,
+        status: null // Explicitly clear status filter for drafts
+      }
+    }));
+  }
+  setActiveTab(tab);
+};
 
   console.log("Claim Data--",allClaims)
 
@@ -532,6 +522,12 @@ const filterClaims = () => {
   const closeModal = () => {
     setModalVisible(false);
   };
+
+  const handleFilterPress = () => {
+  // Initialize pending filters with current filters
+  setPendingFilters(JSON.parse(JSON.stringify(filters)));
+  setShowFilterModal(true);
+};
 
   const handlePress = (mode, masterClaimId = null, claimData = null) => {
   const params = {
@@ -706,7 +702,7 @@ const filterClaims = () => {
               color: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#454545',
               marginRight: 8
             }}>
-              ₹{groupTotal.toFixed(2)}
+              {formatIndianCurrency(groupTotal.toFixed(2))}
             </Text>
             <Ionicons 
               name={expandedGroups[item.master_claim_id] ? 'chevron-up' : 'chevron-down'} 
@@ -811,10 +807,12 @@ const filterClaims = () => {
         icon2Name={"add-circle"}
         icon2OnPress={() => handlePress('ADD')}
         icon1Name="filter"
-        icon1OnPress={() => setShowFilterModal(true)}
+        icon1OnPress={handleFilterPress}
+        filterCount={getFilterCount()}
       />
       
       <Container>
+        {activeTab=='all' &&(
           <StatusContainer>
             <StatusItem>
               <StatusTitle>Total</StatusTitle>
@@ -827,7 +825,7 @@ const filterClaims = () => {
               </StatusValue>
             </StatusItem>
             <StatusItem>
-              <StatusTitle>Pending</StatusTitle>
+              <StatusTitle>Submitted</StatusTitle>
               <StatusValue color="#FF9800">
                 {filteredClaims.filter(claim => ['S', 'F', 'B'].includes(claim.expense_status)).length}
               </StatusValue>
@@ -839,22 +837,22 @@ const filterClaims = () => {
               </StatusValue>
             </StatusItem>
           </StatusContainer>
-        {/* )} */}
+         )}
 
         <TabContainer>
           <TabButton 
             active={activeTab === 'drafts'} 
-            onPress={() => setActiveTab('drafts')}
+            onPress={() => handleTabChange('drafts')}
           >
-            <TabText active={activeTab === 'drafts'}>Draft Claims</TabText>
-          </TabButton>
-          
-          <TabButton 
-            active={activeTab === 'all'} 
-            onPress={() => setActiveTab('all')}
-          >
-            <TabText active={activeTab === 'all'}>Submitted Claims</TabText>
-          </TabButton>
+  <TabText active={activeTab === 'drafts'}>Draft Claims</TabText>
+</TabButton>
+
+<TabButton 
+  active={activeTab === 'all'} 
+  onPress={() => handleTabChange('all')}
+>
+  <TabText active={activeTab === 'all'}>Submitted Claims</TabText>
+</TabButton>
 
         </TabContainer>
 
@@ -875,8 +873,12 @@ const filterClaims = () => {
           }
         />
 
+        
+        <ApplyButton onPress={() => handlePress('ADD')} buttonText="Add New Claim" 
+          icon='add-circle' currentPath={pathname}/>
+
         {selectedClaim && (
-          <ModalComponent
+          <ClaimModalComponent
             isVisible={isModalVisible}
             claim={selectedClaim}
             onClose={closeModal}
@@ -905,47 +907,60 @@ const filterClaims = () => {
         />
 
         <FilterModal
-          visible={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          onClearFilters={() => {
-            setPendingFilters({
-              status: null,
-              claimId: null,
-              period: 'CY'
-            });
-            setSelectedStatus(null);
-            setSelectedClaimIdFilter(null);
-            setSelectedPeriod('CY');
-          }}
-          onApplyFilters={() => {
-            setSelectedStatus(pendingFilters.status);
-            setSelectedClaimIdFilter(pendingFilters.claimId);
-            setSelectedPeriod(pendingFilters.period);
-            setShowFilterModal(false);
-          }}
-          filterConfigs={[
-            // Only show status filter in "Submitted Claims" tab
-            ...(activeTab === 'all' ? [{
-              label: "Status",
-              options: statusOptions.filter(opt => opt.value !== 'N'), // Exclude Draft option
-              value: pendingFilters.status,
-              setValue: (value) => setPendingFilters(prev => ({...prev, status: value})),
-            }] : []),
-            {
-              label: "Claim ID",
-              options: getDropdownOptions('master_claim_id'),
-              value: pendingFilters.claimId,
-              setValue: (value) => setPendingFilters(prev => ({...prev, claimId: value})),
-            },
-            {
-              label: "Period",
-              options: periodOptions,
-              value: pendingFilters.period,
-              setValue: (value) => setPendingFilters(prev => ({...prev, period: value})),
-            }
-          ]}
-          modalTitle="Filter Claims"
-        />
+  visible={showFilterModal}
+  onClose={() => {
+    // Reset pending filters to current active filters when closing
+    setPendingFilters(JSON.parse(JSON.stringify(filters)));
+    setShowFilterModal(false);
+  }}
+  onClearFilters={() => {
+    // Clear both pending and active filters immediately
+    const clearedFilters = {
+      all: { status: null, claimId: null, period: 'CY' },
+      drafts: { claimId: null, period: 'CY' }
+    };
+    
+    setPendingFilters(clearedFilters);
+    setFilters(clearedFilters);
+    filterClaims(); // Immediately apply the cleared filters
+  }}
+  onApplyFilters={() => {
+    // Apply the pending filters to active filters
+    setFilters(JSON.parse(JSON.stringify(pendingFilters)));
+    filterClaims();
+    setShowFilterModal(false);
+  }}
+  filterConfigs={[
+    ...(activeTab === 'all' ? [{
+      label: "Status",
+      options: statusOptions.filter(opt => opt.value !== 'N'),
+      value: pendingFilters[activeTab].status,
+      setValue: (value) => setPendingFilters(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], status: value }
+      })),
+    }] : []),
+    {
+      label: "Claim ID",
+      options: getDropdownOptions('master_claim_id'),
+      value: pendingFilters[activeTab].claimId,
+      setValue: (value) => setPendingFilters(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], claimId: value }
+      })),
+    },
+    {
+      label: "Period",
+      options: periodOptions,
+      value: pendingFilters[activeTab].period,
+      setValue: (value) => setPendingFilters(prev => ({
+        ...prev,
+        [activeTab]: { ...prev[activeTab], period: value }
+      })),
+    }
+  ]}
+  modalTitle="Filter Claims"
+/>
       </Container>
       <Loader visible={isLoading} />
 

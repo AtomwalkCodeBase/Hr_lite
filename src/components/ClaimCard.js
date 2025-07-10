@@ -265,10 +265,10 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
           </DetailRow>
         )}
 
-          <DetailRow>
+          {/* <DetailRow>
             <DetailLabel>Expense Date:</DetailLabel>
             <DetailValue>{claim.expense_date}</DetailValue>
-          </DetailRow>
+          </DetailRow> */}
 
           <DetailRow>
             <DetailLabel>Submitted:</DetailLabel>

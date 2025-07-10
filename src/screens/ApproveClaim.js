@@ -26,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import FilterModal from '../components/FilterModal';
 import styled from 'styled-components/native';
 import ClaimCard from '../components/ClaimCard';
+import ClaimModalComponent from '../components/ClaimModalComponent';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 400;
@@ -62,59 +63,6 @@ const GroupAmount = styled.Text`
   font-weight: bold;
   color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
   margin-right: 8px;
-`;
-
-const ItemCard = styled.View`
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-left-width: 4px;
-  border-left-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
-`;
-
-const ItemHeader = styled.View`
-  flex-direction: row;
-  justify-content: space-between;
-  margin-bottom: 8px;
-`;
-
-const ItemName = styled.Text`
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  flex: 1;
-`;
-
-const ItemAmount = styled.Text`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
-`;
-
-const ItemDetail = styled.View`
-  flex-direction: row;
-  margin-bottom: 4px;
-`;
-
-const ItemLabel = styled.Text`
-  font-size: 13px;
-  color: #666;
-  width: 80px;
-`;
-
-const ItemValue = styled.Text`
-  font-size: 13px;
-  color: #333;
-  flex: 1;
-`;
-
-const StatusIndicator = styled.View`
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  margin-right: 5px;
-  background-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
 `;
 
 const styles = StyleSheet.create({
@@ -673,7 +621,7 @@ const ApproveClaim = () => {
         )}
         
         {selectedClaim && (
-          <ModalComponent
+          <ClaimModalComponent
             isVisible={isModalVisible}
             claim={selectedClaim}
             onClose={closeModal}

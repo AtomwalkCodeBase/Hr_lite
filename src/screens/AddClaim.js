@@ -100,6 +100,7 @@ const AddClaim = (props) => {
     setIsLoading(true);
     try {
       const response = await getExpenseItem();
+      console.log("Item List--",response.data)
       const formattedData = response.data.map(item => ({
         label: item.name,
         value: item.id.toString() // Ensure string value for dropdown

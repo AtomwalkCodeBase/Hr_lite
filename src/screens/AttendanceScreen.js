@@ -198,16 +198,6 @@ const AddAttendance = () => {
     }
   
     let location = null;
-    // let retries = 0;
-  
-    // while (!location && retries < 5) {
-    //   try {
-    //     location = await Location.getCurrentPositionAsync({});
-    //   } catch (error) {
-    //     retries += 1;
-    //     await new Promise((resolve) => setTimeout(resolve, 1000));
-    //   }
-    // }
   
     try {
       location = await Location.getCurrentPositionAsync({});
