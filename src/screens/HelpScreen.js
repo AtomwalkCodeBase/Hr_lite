@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import ApplyButton from '../components/ApplyButton';
 import RequestCard from '../components/RequestCard';
 import ModalComponent from '../components/ModalComponent';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FilterModal from '../components/FilterModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,6 +37,12 @@ const HelpScreen = (props) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filteredHelpCategories, setFilteredHelpCategories] = useState([]);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState({ category: "", status: "" });
+  const [pendingFilters, setPendingFilters] = useState({ category: "", status: "" });
+    
+    
+  const appliedFilterCount = Object.values(filters).filter(v => v && v !== "").length;
 
   useEffect(() => {
     if (empId) {
@@ -134,12 +141,51 @@ const HelpScreen = (props) => {
     });
   };
 
+  function getDropdownOptions(data, key) {
+    const uniqueValues = [...new Set(data.map(item => item[key]))];
+    return uniqueValues.map(value => ({ label: value, value }));
+  }
+
+const displayedHelps = useMemo(() => {
+  return filteredHelps.filter(item => {
+    const matchesCategory = !filters.category || item.request_sub_type === filters.category;
+    const matchesStatus = !filters.status || item.status_display === filters.status;
+
+    return matchesCategory && matchesStatus;
+  });
+}, [filteredHelps, filters]);
+
+
+const filterConfigs = useMemo(() => [
+  {
+    label: "Category",
+    options: getDropdownOptions(filteredHelpCategories, "name"),
+    value: pendingFilters.category,
+    setValue: (value) => setPendingFilters((prev) => ({ ...prev, category: value })),
+  },
+  {
+    label: "Status",
+    options: getDropdownOptions(filteredHelps, "status_display"),
+    value: pendingFilters.status,
+    setValue: (value) => setPendingFilters((prev) => ({ ...prev, status: value })),
+  }
+], [pendingFilters]);
+
+
+  const openFilterModal = () => {
+    setPendingFilters(filters);
+    setShowFilterModal(true);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle="Help Desk" 
         onBackPress={handleBackPress} 
         showActionButton={false}
+        icon1Name="filter"
+        icon1OnPress={openFilterModal}
+        filterCount={appliedFilterCount}
       />
       <View style={styles.container}>
         {loading ? (
@@ -156,9 +202,9 @@ const HelpScreen = (props) => {
               />
             }
           >
-            {filteredHelps.length > 0 ? (
+            {displayedHelps.length > 0 ? (
               <FlatList
-                data={filteredHelps}
+                data={displayedHelps}
                 renderItem={({ item }) => (
                   <RequestCard 
                     item={item}
@@ -192,6 +238,25 @@ const HelpScreen = (props) => {
         isVisible={isModalVisible}
         helpRequest={selectedRequest}
         onClose={closeModal}
+      />
+
+      <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
+        onClearFilters={() => {
+          setPendingFilters({
+            category: "",
+            status: "",
+          });
+          setFilters({
+            category: "",
+            status: "",
+          });
+        }}
+        filterConfigs={filterConfigs}
+        modalTitle="Filter TimeSheet"
+        onApplyFilters={() => {
+          setFilters(pendingFilters);
+          setShowFilterModal(false);
+        }}
       />
     </SafeAreaView>
   );

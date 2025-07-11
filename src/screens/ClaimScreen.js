@@ -214,7 +214,7 @@ const ClaimScreen = (props) => {
 
 const periodOptions = [
   { label: 'Current Financial Year', value: 'CY' },
-  { label: 'Last Financial Year', value: 'LY' },
+  { label: 'Upto Last Financial Year', value: 'LY' },
   { label: 'All Claims', value: 'ALL' },
 ];
 

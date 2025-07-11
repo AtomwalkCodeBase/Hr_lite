@@ -14,8 +14,8 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
     approved: { color: '#4CAF50', icon: 'check-circle', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
     rejected: { color: '#f44336', icon: 'cancel', bgColor: '#FFEBEE', borderColor: '#f44336' },
     pending: { bgColor: '#FFF3E0', color: '#EF6C00', borderColor: '#FF9800', icon: 'schedule' },
-    submitted: { color: '#2196F3', icon: 'schedule', bgColor: '#E3F2FD', borderColor: '#2196F3' },
-    default: { color: '#9E9E9E', icon: 'help-outline', bgColor: '#F5F5F5', borderColor: '#9E9E9E' }
+    submitted: { color: '#0D47A1', icon: 'schedule', bgColor: '#E3F2FD', borderColor: '#2196F3' },
+    default: { color: '#FF9500', icon: 'help-outline', bgColor: '#FF950015', borderColor: '#9E9E9E' }
   };
 
   // Determine status configuration based on item status
@@ -91,7 +91,7 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
         </TouchableOpacity> */}
         
         {/* View Details button */}
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           style={styles.actionButton}
           onPress={onUpdate}
           activeOpacity={0.8}
@@ -101,7 +101,6 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
           >
              <Ionicons name="create-outline" size={18} color="#fff" />
             <Text style={styles.buttonText}>Update</Text>
-            {/* <Ionicons name="arrow-forward" size={18} color="white" /> */}
           </View>
         </TouchableOpacity>
 
@@ -115,7 +114,18 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
           >
             <MaterialCommunityIcons name="checkbox-marked-outline" size={18} color="white" />
             <Text style={styles.buttonText}>Resolve</Text>
-            {/* <Ionicons name="arrow-forward" size={18} color="white" /> */}
+          </View>
+        </TouchableOpacity> */}
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
+          <View
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>View Details</Text>
+            <Ionicons name="arrow-forward" size={18} color="white" />
           </View>
         </TouchableOpacity>
       </View>

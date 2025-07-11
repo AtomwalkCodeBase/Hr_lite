@@ -55,7 +55,7 @@ export async function postEmpLeave(leave_type) {
     if (period){
         data['period'] = period;
     }
-    console.log("Data to be sent--",data)
+    console.log("Data to be sent++--",data)
     const url = await getEmpClaimdata();
     return authAxios(url, data);
   }

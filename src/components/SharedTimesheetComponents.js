@@ -274,6 +274,7 @@ export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, onDelete
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Delete"
         cancelText="Cancel"
+        color="red"
       />
     </View>
   );

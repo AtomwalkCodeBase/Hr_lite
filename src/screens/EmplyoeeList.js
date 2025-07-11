@@ -18,6 +18,7 @@ import Loader from '../components/old_components/Loader';
 import { useNavigation, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FilterModal from '../components/FilterModal';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -28,33 +29,25 @@ const EmployeeListScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [totalEmployee, setTOtalEmployee] = useState(true);
   const [loading, setLoading] = useState(false);
-
-  // Extract unique grades and departments for filters
-  const grades = useMemo(() => {
-    const uniqueGrades = [...new Set(employees.map(emp => emp.grade_name))];
-    return uniqueGrades.sort();
-  }, [employees]);
-
-  const departments = useMemo(() => {
-    const uniqueDepts = [...new Set(employees.map(emp => emp.department_name))];
-    return uniqueDepts.sort();
-  }, [employees]);
-
-  // Filter employees based on search and filters
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState({ departments: "", grades: "" });
+  const [pendingFilters, setPendingFilters] = useState({ departments: "", grades: "" });
+  
+  
+  const appliedFilterCount = Object.values(filters).filter(v => v && v !== "").length;
   const filteredEmployees = useMemo(() => {
     return employees.filter(employee => {
       const matchesSearch = employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            employee.emp_id.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGrade = !selectedGrade || employee.grade_name === selectedGrade;
-      const matchesDepartment = !selectedDepartment || employee.department_name === selectedDepartment;
+      const matchesGrade = !filters.grades || employee.grade_name === filters.grades;
+      const matchesDepartment = !filters.departments || employee.department_name === filters.departments;
+
       
       return matchesSearch && matchesGrade && matchesDepartment;
     });
-  }, [employees, searchQuery, selectedGrade, selectedDepartment]);
-
+  }, [employees, searchQuery,filters]);
+  
 const handleTimesheetPress = (employee) => {
   route.push({
     pathname: 'TimeSheet',
@@ -64,12 +57,49 @@ const handleTimesheetPress = (employee) => {
   });
 };
 
+const DropdownOptions = (data, labelKey, valueKey) => {
+  const seen = new Set();
+  return data
+    .filter(item => {
+      const value = item[valueKey];
+      if (seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    })
+    .map(item => ({
+      label: item[labelKey],
+      value: item[valueKey],
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+};
 
-  const clearFilters = () => {
-    setSelectedGrade('');
-    setSelectedDepartment('');
-    setSearchQuery('');
-  };
+
+const filterConfigs = useMemo(() => [
+  {
+    label: "Department",
+    options: DropdownOptions(employees, "department_name", "department_name"),
+    value: pendingFilters.departments,
+    setValue: (value) =>
+      setPendingFilters((prev) => ({ ...prev, departments: value })),
+  },
+  {
+    label: "Grade",
+    options: DropdownOptions(employees, "grade_name", "grade_name"),
+    value: pendingFilters.grades,
+    setValue: (value) =>
+      setPendingFilters((prev) => ({ ...prev, grades: value })),
+  },
+], [pendingFilters, employees]);
+
+
+
+    const clearFilters = () => {
+      setSearchQuery('');
+      setFilters({
+        grades: '',
+        departments: '',
+      });
+    };
 
 	  useEffect(() => {
 		fetchEmployeeList()
@@ -79,9 +109,7 @@ const handleTimesheetPress = (employee) => {
 		setLoading(true)
 		try {
 		  const res = await getEmplyoeeList();
-		const EmpId = await AsyncStorage.getItem('empId');
-		let filteredData = res.data;
-		setEmployees(res.data)
+		setEmployees(res.data);
 		} catch (err) {
 		  console.error("Error fetching activities:", err);
 		  Alert.alert('Error', 'Failed to fetch activities');
@@ -89,18 +117,6 @@ const handleTimesheetPress = (employee) => {
 			setLoading(false)
 		}
 	  };
-
-  const renderFilterChip = (label, value, onPress, isActive) => (
-    <TouchableOpacity
-	 key={value || label}
-      style={[styles.filterChip, isActive && styles.filterChipActive]}
-      onPress={onPress}
-    >
-      <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
 
   const renderEmployeeCard = ({ item: employee }) => (
     <View style={styles.employeeCard}>
@@ -168,6 +184,11 @@ const handleTimesheetPress = (employee) => {
     </View>
   );
 
+    const openFilterModal = () => {
+    setPendingFilters(filters);
+    setShowFilterModal(true);
+  };
+
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -175,6 +196,9 @@ const handleTimesheetPress = (employee) => {
         headerTitle="Employee List"
         onBackPress={()=> navigate.goBack()}
         headerStyle={{ backgroundColor: "#a970ff" }}
+        icon1Name="filter"
+        icon1OnPress={openFilterModal}
+        filterCount={appliedFilterCount}
       />
         <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
 
@@ -184,92 +208,14 @@ const handleTimesheetPress = (employee) => {
             <Feather name="search" size={20} color="#666" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search employees..."
+              placeholder="Search Employees..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor="#999"
             />
           </View>
-
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              showFilters && styles.filterButtonActive,
-            ]}
-            onPress={() => setShowFilters(!showFilters)}
-          >
-            <AntDesign
-              name="filter"
-              size={20}
-              color={showFilters ? "#fff" : "#a970ff"}
-            />
-          </TouchableOpacity>
         </View>
 
-        {/* Filters */}
-        {showFilters && (
-          <View style={styles.filtersContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filtersScroll}
-            >
-              <Text style={styles.filterLabel}>Grade:</Text>
-              {renderFilterChip(
-                "All Grades",
-                "",
-                () => setSelectedGrade(""),
-                !selectedGrade
-              )}
-              {grades.map((grade) =>
-                renderFilterChip(
-                  grade,
-                  grade,
-                  () => setSelectedGrade(grade),
-                  selectedGrade === grade
-                )
-              )}
-            </ScrollView>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.filtersScroll}
-            >
-              <Text style={styles.filterLabel}>Department:</Text>
-              {renderFilterChip(
-                "All Departments",
-                "",
-                () => setSelectedDepartment(""),
-                !selectedDepartment
-              )}
-              {departments.map((dept) =>
-                renderFilterChip(
-                  dept,
-                  dept,
-                  () => setSelectedDepartment(dept),
-                  selectedDepartment === dept
-                )
-              )}
-            </ScrollView>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center"}}>
-              <View style={styles.header}>
-                <Text style={styles.headerSubtitle}>{filteredEmployees.length} employees found</Text>
-              </View>
-
-              {(selectedGrade || selectedDepartment || searchQuery) && (
-                <TouchableOpacity
-                  style={styles.clearFiltersButton}
-                  onPress={clearFilters}
-                >
-                  <Text style={styles.clearFiltersText}>Clear All Filters</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Employee List */}
          {/* Employee List */}
       {filteredEmployees.length === 0 ? (
         <View style={styles.emptyStateContainer}>
@@ -301,6 +247,26 @@ const handleTimesheetPress = (employee) => {
         />
       )}
       </SafeAreaView>
+
+      <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
+        onClearFilters={() => {
+          setPendingFilters({
+            departments: "",
+            grades: "",
+          });
+          setFilters({
+            departments: "",
+            grades: "",
+          });
+        }}
+        filterConfigs={filterConfigs}
+        modalTitle="Employee Grade and department"
+        onApplyFilters={() => {
+          setFilters(pendingFilters);
+          setShowFilterModal(false);
+        }}
+      />
+
       <Loader visible={loading} />
     </>
   );

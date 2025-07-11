@@ -206,13 +206,21 @@ const ApproveClaim = () => {
     status: null,
     claimId: null,
     employee: null,
+     period: 'CY'
   });
   const [pendingFilters, setPendingFilters] = useState({
     status: null,
     claimId: null,
     employee: null,
+     period: 'CY'
   });
   const [showFilterModal, setShowFilterModal] = useState(false);
+
+  const periodOptions = [
+  { label: 'Current Financial Year', value: 'CY' },
+  { label: 'Upto Last Financial Year', value: 'LY' },
+  { label: 'All Claims', value: 'ALL' },
+];
 
   const filterConfigs = React.useMemo(() => [
   {
@@ -247,7 +255,16 @@ const ApproveClaim = () => {
       : [],
     value: pendingFilters.employee,
     setValue: (value) => setPendingFilters(prev => ({ ...prev, employee: value })),
-  }
+  },
+  {
+      label: "Period",
+      options: periodOptions,
+      value: pendingFilters.period,
+      setValue: (value) => setPendingFilters(prev => ({ ...prev, period: value
+        // ...prev,
+        // [activeTab]: { ...prev[activeTab], period: value }
+      })),
+    }
 ], [claimData, pendingFilters]);  // Recreate when these dependencies change
 
   const handleApplyFilters = () => {
@@ -260,11 +277,13 @@ const ApproveClaim = () => {
       status: null,
       claimId: null,
       employee: null,
+      period: 'CY'
     });
     setActiveFilters({
       status: null,
       claimId: null,
       employee: null,
+      period: 'CY'
     });
   };
 
@@ -273,6 +292,7 @@ const ApproveClaim = () => {
   if (activeFilters.status) count++;
   if (activeFilters.claimId) count++;
   if (activeFilters.employee) count++;
+  if (activeFilters.period && activeFilters.period !== 'CY') count++;
   return count;
 };
 
@@ -331,6 +351,10 @@ const ApproveClaim = () => {
     setCurrentPage(1);
   }, [activeFilters, claimData]);
 
+  const getCurrentFilters = () => {
+  return activeTab === 'all' ? filters.all : filters.drafts;
+};
+
   const closeModal = () => {
     setModalVisible(false);
   };
@@ -341,10 +365,12 @@ const ApproveClaim = () => {
       try {
         const employeeId = profile?.id;
         if (employeeId) {
-          const res = await getEmpClaim(requestData, employeeId, 'CY');
+          const period = activeFilters.period || 'CY';
+          const apiPeriod = period === 'ALL' ? null : period;
+          const res = await getEmpClaim(requestData, employeeId, apiPeriod);
           // Filter out claims with expense_status "N"
           const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
-          setClaimData(filteredClaims);
+          setClaimData(filteredClaims.reverse());
           setFilteredData(filteredClaims);
           setTotalPages(Math.ceil(filteredClaims.length / ITEMS_PER_PAGE));
           
@@ -363,7 +389,7 @@ const ApproveClaim = () => {
     };
 
     fetchClaimDetails();
-  }, []);
+  }, [profile?.id, activeFilters.period]);
 
   const getClaimStatus = (status) => {
     switch (status) {

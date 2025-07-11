@@ -164,6 +164,7 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Delete"
         cancelText="Cancel"
+        color="red"
       />
 
        <TaskDetailsModal

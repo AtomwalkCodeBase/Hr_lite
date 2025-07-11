@@ -154,23 +154,23 @@ const TimeSheet = () => {
   }
 
   function getFilterDateRange(filters, currentWeekStart) {
-  const getLastDayOfMonth = (year, month) => new Date(year, month, 0).getDate();
-  const defaultYear = new Date().getFullYear();
-  if (filters.month) {
-    const year = filters.year ? Number(filters.year) : defaultYear;
-    const month = Number(filters.month);
-    const start = new Date(year, month - 1, 1);
-    const end = new Date(year, month - 1, getLastDayOfMonth(year, month));
-    return { start, end, type: 'month', year };
-  } else if (filters.year) {
-    const year = Number(filters.year);
-    const start = new Date(year, 0, 1);
-    const end = new Date(year, 11, 31);
-    return { start, end, type: 'year', year };
-  } else {
-    const { start, end } = getCurrentWeekDates(currentWeekStart);
-    return { start, end, type: 'week', year: defaultYear };
-  }
+    const getLastDayOfMonth = (year, month) => new Date(year, month, 0).getDate();
+    const defaultYear = new Date().getFullYear();
+    if (filters.month) {
+      const year = filters.year ? Number(filters.year) : defaultYear;
+      const month = Number(filters.month);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month - 1, getLastDayOfMonth(year, month));
+      return { start, end, type: 'month', year };
+    } else if (filters.year) {
+      const year = Number(filters.year);
+      const start = new Date(year, 0, 1);
+      const end = new Date(year, 11, 31);
+      return { start, end, type: 'year', year };
+    } else {
+      const { start, end } = getCurrentWeekDates(currentWeekStart);
+      return { start, end, type: 'week', year: defaultYear };
+    }
 }
 
   useEffect(() => {
@@ -548,7 +548,7 @@ const TimeSheet = () => {
       <TimeSheetWeekNavigation currentWeekStart={currentWeekStart} onNavigate={navigateWeek} formatDisplayDate={formatDisplayDate} getCurrentWeekDates={getCurrentWeekDates} filterRange={{ year: filters.year, month: filters.month, setFilters }} getFilterDateRange={getFilterDateRange} monthOptions={monthOptions} />
 
       {employee && <EmployeeInfoCard employee={employee} />}
-      
+
       {activeTab === 'summary' && (
         <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
           {filteredTasks.length > 0 ? (
@@ -658,9 +658,10 @@ const TimeSheet = () => {
         visible={SubmitConfirmModalVisible || ApproveConfirmModalVisible}
         message={
           SubmitConfirmModalVisible
-            ? "Once you submit timesheet you can not add new task for this week. Are you sure to submit it?"
+            ? `Once you submit timesheet you can not add new task for this week.${'\n\n'} Are you sure to submit it?`
             : "Are you sure you want to approve timesheet for this employee?"
         }
+        messageColor="#EC625F"
         onConfirm={() => {
           handleWeeklySubmit(SubmitConfirmModalVisible ? "WEEKLY_SUBMIT" : "WEEKLY_APPROVE");
         }}

@@ -16,7 +16,9 @@ const ConfirmationModal = ({
   onConfirm, 
   onCancel,
   confirmText = 'Confirm',
-  cancelText = 'Cancel'
+  cancelText = 'Cancel',
+  color,
+  messageColor
 }) => {
   const scaleValue = React.useRef(new Animated.Value(0)).current;
 
@@ -47,7 +49,7 @@ const ConfirmationModal = ({
           { transform: [{ scale: scaleValue }] }
         ]}>
           <Text style={styles.modalTitle}>Confirmation</Text>
-          <Text style={styles.modalText}>{message}</Text>
+          <Text style={[styles.modalText, messageColor && { color: messageColor }]}>{message}</Text>
           
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -62,7 +64,10 @@ const ConfirmationModal = ({
             <View style={styles.buttonDivider} />
             
             <TouchableOpacity
-              style={[styles.button, styles.confirmButton]}
+              style={[
+                styles.button,
+                color ? { backgroundColor: color, marginLeft: 8 } : styles.confirmButton
+              ]}
               onPress={onConfirm}
               activeOpacity={0.7}
               accessibilityLabel={confirmText}
