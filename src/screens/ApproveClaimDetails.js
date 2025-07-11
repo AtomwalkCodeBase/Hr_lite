@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useLayoutEffect, useState, useCallback, useMemo } from 'react';
 import { Alert, ActivityIndicator, ScrollView, View, StyleSheet, Text, TouchableOpacity, FlatList } from 'react-native';
-import { useNavigation, useLocalSearchParams } from 'expo-router';
+import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router';
 import { getClaimApprover, postClaimAction, validateClaimItem } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import SuccessModal from '../components/SuccessModal';
@@ -18,6 +18,7 @@ const ApproveClaimDetails = () => {
   const params = useLocalSearchParams();
   const navigation = useNavigation();
   const { profile } = useContext(AppContext);
+    const router = useRouter();
 
   // Memoize the parsed claimData to prevent recreation on every render
   const claimData = useMemo(() => {
@@ -87,7 +88,7 @@ const ApproveClaimDetails = () => {
             parsedDetails.claim_items.forEach(item => {
               initialStates[item.id] = {
                 action: null,
-                approvedAmount: item.expense_amt.toString(),
+                approvedAmount: item.expense_amt ? item.expense_amt.toString() : '', // Ensure string and handle empty
                 remarks: '',
                 forwardManager: null
               };
@@ -171,6 +172,9 @@ const ApproveClaimDetails = () => {
     }
   };
 
+  const handleSuccessBack = () => {
+    router.push('ApproveClaim')
+  };
   // Toggle item selection
   const toggleItemSelection = useCallback((itemId) => {
     setSelectedItems(prev => {
@@ -209,7 +213,6 @@ const ApproveClaimDetails = () => {
 const validateForm = useCallback(() => {
   const newErrors = {};
   
-  // Check if claimRemarks is empty only if there are selected items
   if (selectedItems.length > 0 && claimRemarks.trim() === '') {
     newErrors.claimRemarks = 'Claim level remarks are required';
   }
@@ -224,16 +227,23 @@ const validateForm = useCallback(() => {
     const originalItem = claim.claim_items.find(i => i.id === itemId);
     const validationResult = validationResults[originalItem.claim_id];
     
-    if (!validationResult || validationResult.limitType === 'N') {
-      if (item.action === 'APPROVE' || item.action === 'FORWARD') {
-        if (!item.approvedAmount || item.approvedAmount.trim() === '') {
-          newErrors[`itemAmount-${itemId}`] = 'Please enter an approved amount';
+    // Only validate if action is selected
+    if (item.action) {
+      if (!validationResult || validationResult.limitType === 'N') {
+        if (item.action === 'APPROVE' || item.action === 'FORWARD') {
+          if (!item.approvedAmount || item.approvedAmount.trim() === '') {
+            newErrors[`itemAmount-${itemId}`] = 'Please enter an approved amount';
+          }
+          else if (isNaN(parseFloat(item.approvedAmount))) {
+            newErrors[`itemAmount-${itemId}`] = 'Please enter a valid amount';
+          }
+          else if (parseFloat(item.approvedAmount) > parseFloat(originalItem.expense_amt)) {
+            newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
+          }
         }
-        else if (isNaN(parseFloat(item.approvedAmount))) {
-          newErrors[`itemAmount-${itemId}`] = 'Please enter a valid amount';
-        }
-        else if (parseFloat(item.approvedAmount) > parseFloat(originalItem.expense_amt)) {
-          newErrors[`itemAmount-${itemId}`] = 'Approved amount cannot exceed claimed amount';
+        
+        if (item.action === 'FORWARD' && !item.forwardManager && !validationResult?.forwardManager) {
+          newErrors[`forwardManager-${itemId}`] = 'Please select a manager to forward to';
         }
       }
     }
@@ -244,72 +254,77 @@ const validateForm = useCallback(() => {
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-    
-    setShowConfirmationModal(true);
-  }, [validateForm]);
+  console.log('Submit button clicked'); // Debug log
+  
+  const validationErrors = validateForm();
+  console.log('Validation errors:', validationErrors); // Debug log
+  
+  if (Object.keys(validationErrors).length > 0) {
+    console.log('Validation failed, not showing modal');
+    setErrors(validationErrors);
+    return;
+  }
+  
+  console.log('Setting confirmation modal to true');
+  setShowConfirmationModal(true);
+}, [validateForm]);
 
   // Confirm submission
   const confirmSubmit = useCallback(async () => {
-    setShowConfirmationModal(false);
-    setIsLoading(true);
-    
-    try {
-      const claim_list = selectedItems.map(itemId => {
-        const item = itemActions[itemId];
-        const originalItem = claim.claim_items.find(i => i.id === itemId);
-        const validationResult = validationResults[originalItem.claim_id];
-        
-        const itemPayload = {
-          claim_id: originalItem.claim_id,
-          approve_type: validationResult?.approvalType || getApproveType(item.action),
-          approved_amt: item.action === 'REJECT' ? '0' : item.approvedAmount,
-          remarks: item.remarks || ''
-        };
-
-        if ((item.action === 'FORWARD' || validationResult?.limitType !== 'N') && 
-            (validationResult?.forwardManager || item.forwardManager)) {
-          itemPayload.a_emp_id = validationResult?.forwardManager || item.forwardManager;
-        }
-
-        return itemPayload;
-      });
-
-      const payload = {
-        m_claim_id: claimData?.master_claim_id || claim?.master_claim_id,
-        remarks: claimRemarks,
-        call_mode: 'APPROVE_CLAIM',
-        claim_list: claim_list
+  setShowConfirmationModal(false);
+  setIsLoading(true);
+  
+  try {
+    const claim_list = selectedItems.map(itemId => {
+      const item = itemActions[itemId];
+      const originalItem = claim.claim_items.find(i => i.id === itemId);
+      const validationResult = validationResults[originalItem.claim_id];
+      
+      // If validation requires forwarding (approvalType === 'F'), force FORWARD action
+      const actionType = validationResult?.approvalType === 'F' ? 'FORWARD' : (item.action || 'APPROVE');
+      
+      const itemPayload = {
+        claim_id: originalItem.claim_id,
+        // Use validationResult.approvalType if it exists, otherwise get from action
+        approve_type: validationResult?.approvalType || getApproveType(actionType),
+        approved_amt: actionType === 'REJECT' ? '0' : item.approvedAmount,
+        remarks: item.remarks || ''
       };
 
-      await postClaimAction(payload);
-      setShowSuccessModal(true);
-    } catch (error) {
-      // console.error('Submission error:', error);
-      setErrorMessage( error.response?.data?.message || error.message || 'Failed to process claim');
-      setShowErrorModal(true)
-      // Alert.alert(
-      //   'Action Failed', 
-      //   error.response?.data?.message || error.message || 'Failed to process claim'
-      // );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedItems, itemActions, claim, validationResults, claimData, claimRemarks]);
+      // Set forward manager if required
+      if (validationResult?.approvalType === 'F' || actionType === 'FORWARD') {
+        itemPayload.a_emp_id = validationResult?.forwardManager || item.forwardManager;
+      }
+
+      return itemPayload;
+    });
+
+    const payload = {
+      m_claim_id: claimData?.master_claim_id || claim?.master_claim_id,
+      remarks: claimRemarks,
+      call_mode: 'APPROVE_CLAIM',
+      claim_list: claim_list
+    };
+
+    await postClaimAction(payload);
+    setShowSuccessModal(true);
+  } catch (error) {
+    setErrorMessage(error.response?.data?.message || error.message || 'Failed to process claim');
+    setShowErrorModal(true);
+  } finally {
+    setIsLoading(false);
+  }
+}, [selectedItems, itemActions, claim, validationResults, claimData, claimRemarks]);
 
   const getApproveType = (action) => {
-    switch (action) {
-      case 'APPROVE': return 'A';
-      case 'REJECT': return 'R';
-      case 'FORWARD': return 'F';
-      case 'Back To Claimant': return 'B';
-      default: return 'A';
-    }
-  };
+  switch (action) {
+    case 'APPROVE': return 'A';
+    case 'REJECT': return 'R';
+    case 'FORWARD': return 'F';
+    case 'Back To Claimant': return 'B';
+    default: return null; // or throw an error for unknown actions
+  }
+};
 
   const formatIndianCurrency = (num) => {
     if (!num && num !== 0) return null; // handles null, undefined, empty string
@@ -492,16 +507,16 @@ useEffect(() => {
       </ScrollView>
       
       <TouchableOpacity
-        style={[styles.submitButton, (isLoading || selectedItems.length === 0) && styles.disabledButton]}
-        onPress={handleSubmit}
-        disabled={isLoading || selectedItems.length === 0}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitButtonText}>Submit Action</Text>
-        )}
-      </TouchableOpacity>
+  style={[styles.submitButton, (isLoading || selectedItems.length === 0) && styles.disabledButton]}
+  onPress={handleSubmit}
+  disabled={isLoading || selectedItems.length === 0}
+>
+  {isLoading ? (
+    <ActivityIndicator color="#fff" />
+  ) : (
+    <Text style={styles.submitButtonText}>Submit Action</Text>
+  )}
+</TouchableOpacity>
       
       <ConfirmationModal
         visible={showConfirmationModal}
@@ -518,7 +533,7 @@ useEffect(() => {
         message="The claim has been processed successfully."
         onClose={() => {
           setShowSuccessModal(false);
-          navigation.goBack();
+          handleSuccessBack();
         }}
       />
       {/* <ErrorModal

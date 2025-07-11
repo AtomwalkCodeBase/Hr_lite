@@ -37,11 +37,11 @@ const GroupHeader = styled.TouchableOpacity`
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: ${props => props.isApproved ? '#f0f9f0' : props.isForwarded ? '#f0f5ff' : props.isRejected ? '#ffebee' : '#fffaf2'};
+  background-color: ${props => props.isApproved ? '#f0f9f0' : props.isForwarded ? '#f0f5ff' : props.isRejected ? '#ffebee' : '#E3F2FD'};
   border-radius: 12px;
   margin-bottom: 8px;
   border-left-width: 6px;
-  border-left-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+  border-left-color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#2196F3'};
 `;
 
 const GroupTitle = styled.Text`
@@ -61,7 +61,7 @@ const GroupSubtitle = styled.Text`
 const GroupAmount = styled.Text`
   font-size: 16px;
   font-weight: bold;
-  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#ff9800'};
+  color: ${props => props.isApproved ? '#4caf50' : props.isForwarded ? '#3c9df1' : props.isRejected ? '#f44336' : '#454545'};
   margin-right: 8px;
 `;
 
@@ -165,6 +165,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 10,
   },
+  itemCountBadge: {
+    backgroundColor: '#e0e0e0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  itemCountText: {
+    fontSize: 12,
+    color: '#424242',
+    fontWeight: 'bold',
+  },
 });
 
 const ApproveClaim = () => {
@@ -201,41 +214,41 @@ const ApproveClaim = () => {
   });
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  const filterConfigs = [
-    {
-      label: "Status",
-      options: [
-        { label: "Submitted", value: "S" },
-        { label: "Approved", value: "A" },
-        { label: "Forwarded", value: "F" },
-        { label: "Rejected", value: "R" },
-      ],
-      value: pendingFilters.status,
-      setValue: (value) => setPendingFilters(prev => ({ ...prev, status: value })),
-    },
-    {
-      label: "Claim ID",
-      options: claimData.length > 0 
-        ? [...new Set(claimData.map(item => item.master_claim_id))].map(id => ({
-            label: id,
-            value: id,
-          }))
-        : [],
-      value: pendingFilters.claimId,
-      setValue: (value) => setPendingFilters(prev => ({ ...prev, claimId: value })),
-    },
-    {
-      label: "Employee",
-      options: claimData.length > 0
-        ? [...new Set(claimData.map(item => item.employee_name))].map(name => ({
-            label: name,
-            value: name,
-          }))
-        : [],
-      value: pendingFilters.employee,
-      setValue: (value) => setPendingFilters(prev => ({ ...prev, employee: value })),
-    }
-  ];
+  const filterConfigs = React.useMemo(() => [
+  {
+    label: "Status",
+    options: [
+      { label: "Submitted", value: "S" },
+      { label: "Approved", value: "A" },
+      { label: "Forwarded", value: "F" },
+      { label: "Rejected", value: "R" },
+    ],
+    value: pendingFilters.status,
+    setValue: (value) => setPendingFilters(prev => ({ ...prev, status: value })),
+  },
+  {
+    label: "Claim ID",
+    options: claimData.length > 0 
+      ? [...new Set(claimData.map(item => item.master_claim_id))].map(id => ({
+          label: id,
+          value: id,
+        }))
+      : [],
+    value: pendingFilters.claimId,
+    setValue: (value) => setPendingFilters(prev => ({ ...prev, claimId: value })),
+  },
+  {
+    label: "Employee",
+    options: claimData.length > 0
+      ? [...new Set(claimData.map(item => item.employee_name))].map(name => ({
+          label: name,
+          value: name,
+        }))
+      : [],
+    value: pendingFilters.employee,
+    setValue: (value) => setPendingFilters(prev => ({ ...prev, employee: value })),
+  }
+], [claimData, pendingFilters]);  // Recreate when these dependencies change
 
   const handleApplyFilters = () => {
     setActiveFilters(pendingFilters);
@@ -254,6 +267,14 @@ const ApproveClaim = () => {
       employee: null,
     });
   };
+
+  const getFilterCount = () => {
+  let count = 0;
+  if (activeFilters.status) count++;
+  if (activeFilters.claimId) count++;
+  if (activeFilters.employee) count++;
+  return count;
+};
 
   const getCurrentPageData = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -356,7 +377,7 @@ const ApproveClaim = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'S': return '#ff9800';
+      case 'S': return '#454545';
       case 'A': return '#4caf50';
       case 'F': return '#3c9df1';
       case 'R': return '#f44336';
@@ -402,6 +423,12 @@ const ApproveClaim = () => {
       });
     }
   };
+
+  const handleFilterPress = () => {
+  // Reset pending filters to current active filters when opening modal
+  setPendingFilters({ ...activeFilters });
+  setShowFilterModal(true);
+};
 
   const toggleGroup = (claimId) => {
     setExpandedGroups(prev => ({
@@ -471,9 +498,11 @@ const ApproveClaim = () => {
           <GroupSubtitle>
             {item.employee_name}
           </GroupSubtitle>
-          <GroupSubtitle>
-            {item.claim_items?.length || 1} item{item.claim_items?.length !== 1 ? 's' : ''}
-          </GroupSubtitle>
+          <View style={styles.itemCountBadge}>
+                        <Text style={styles.itemCountText}>
+                          {item.claim_items?.length || 1} item{item.claim_items?.length !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
         </View>
         
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -482,7 +511,6 @@ const ApproveClaim = () => {
             isForwarded={isMasterForwarded}
             isRejected={isMasterRejected}
           >
-            {/* ₹{groupTotal.toFixed(2)} */}
             {formatIndianCurrency(groupTotal.toFixed(2))}
           </GroupAmount>
           <Ionicons 
@@ -570,13 +598,21 @@ const ApproveClaim = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <HeaderComponent 
+      {/* <HeaderComponent 
         headerTitle={`Approve Claim List (${filteredData.length})`}
         onBackPress={handleBackPress}
         icon1Name="filter"
         icon1OnPress={() => setShowFilterModal(true)}
-      />
+      /> */}
       
+      <HeaderComponent 
+  headerTitle={`Approve Claim List (${filteredData.length})`}
+  onBackPress={handleBackPress}
+  icon1Name="filter"
+  icon1OnPress={handleFilterPress}  // Use the handler instead of direct setState
+  filterCount={getFilterCount()}
+/>
+
       <View style={styles.container}>
         {isLoading ? (
           <Loader visible={isLoading} />
@@ -629,13 +665,25 @@ const ApproveClaim = () => {
         )}
         
         <FilterModal
-          visible={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          onClearFilters={handleClearFilters}
-          onApplyFilters={handleApplyFilters}
-          filterConfigs={filterConfigs}
-          modalTitle="Filter Claims"
-        />
+  visible={showFilterModal}
+  onClose={() => {
+    setPendingFilters({ ...activeFilters });  // Reset to active filters
+    setShowFilterModal(false);
+  }}
+  onClearFilters={() => {
+    const clearedFilters = {
+      status: null,
+      claimId: null,
+      employee: null,
+    };
+    setPendingFilters(clearedFilters);
+    setActiveFilters(clearedFilters);
+    setShowFilterModal(false);  // Close modal after clearing
+  }}
+  onApplyFilters={handleApplyFilters}
+  filterConfigs={filterConfigs}
+  modalTitle={`Filter Claims (${getFilterCount()})`}
+/>
       </View>
     </SafeAreaView>
   );

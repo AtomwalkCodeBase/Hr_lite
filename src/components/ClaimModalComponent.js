@@ -140,7 +140,7 @@ const ClaimModalComponent = ({
               </DetailItem>
 
               <DetailItem>
-              <DetailLabel>Actual Cost</DetailLabel>
+              <DetailLabel>Approved Amount</DetailLabel>
               <DetailValue>{formatIndianCurrency(claim.expense_cost)}</DetailValue>
             </DetailItem>
               

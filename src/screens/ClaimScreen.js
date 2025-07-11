@@ -134,6 +134,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  itemCountBadge: {
+    backgroundColor: '#e0e0e0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  itemCountText: {
+    fontSize: 12,
+    color: '#424242',
+    fontWeight: 'bold',
+  },
 });
 
 const ClaimScreen = (props) => {
@@ -664,8 +677,8 @@ const filterClaims = () => {
         style={{ 
           padding: 16,
           borderLeftWidth: 6,
-          borderLeftColor: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#ff9800',
-          backgroundColor: isApproved ? '#f0f9f0' : isDraft ? '#f8f2ff' : '#fffaf2'
+          borderLeftColor: isApproved ? '#4caf50' : isDraft ? '#a970ff' : '#2196F3',
+          backgroundColor: isApproved ? '#f0f9f0' : isDraft ? '#f8f2ff' : '#E3F2FD'
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
@@ -679,19 +692,17 @@ const filterClaims = () => {
               }}>
                 {item.master_claim_id}
               </Text>
-              {/* {isDraft && (
-                <View style={{ 
-                  backgroundColor: '#a970ff', 
-                  paddingHorizontal: 8, 
-                  paddingVertical: 2, 
-                  borderRadius: 10 
-                }}>
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>DRAFT</Text>
-                </View>
-              )} */}
             </View>
-            <Text style={{ fontSize: 13, color: '#666' }}>
-              {item.claim_date} • {item.claim_items?.length || 1} item{item.claim_items?.length !== 1 ? 's' : ''}
+            
+            {/* Replace the existing Text component with this badge */}
+            <View style={styles.itemCountBadge}>
+              <Text style={styles.itemCountText}>
+                {item.claim_items?.length || 1} item{item.claim_items?.length !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            
+            <Text style={{ fontSize: 15, color: '#666' }}>
+              {item.claim_date} 
             </Text>
           </View>
           

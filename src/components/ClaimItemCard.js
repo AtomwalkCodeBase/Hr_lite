@@ -29,9 +29,10 @@ const ClaimItemCard = ({
     onActionChange(item.id, action);
   };
 
-  const handleAmountChange = (amount) => {
-    onAmountChange(item.id, amount);
-  };
+ const handleAmountChange = (amount) => {
+  // Ensure we handle empty string properly
+  onAmountChange(item.id, amount === '' ? '' : amount);
+};
 
   const handleForwardManagerChange = (managerId) => {
     onForwardManagerChange(item.id, managerId);
@@ -42,7 +43,7 @@ const ClaimItemCard = ({
     onRemarkChange(item.id, text);
   };
 
-  console.log("data", item)
+  console.log("data", validationResult)
 
   return (
     <View style={[
@@ -226,18 +227,18 @@ const ClaimItemCard = ({
               </View>
               
               {(itemActions?.action === 'APPROVE' || itemActions?.action === 'FORWARD') && (
-                <View style={styles.amountInputContainer}>
-                  <Text style={styles.detailLabel}>Approved Amount:</Text>
-                  <AmountInput
-                    label=""
-                    claimAmount={itemActions?.approvedAmount || ''}
-                    setClaimAmount={handleAmountChange}
-                    error={errors[`itemAmount-${item.id}`]}
-                    style={styles.amountInput}
-                    disabled={isDisabled}
-                  />
-                </View>
-              )}
+  <View style={styles.amountInputContainer}>
+    <Text style={styles.detailLabel}>Approval Amount:</Text>
+    <AmountInput
+      label=""
+      claimAmount={itemActions?.approvedAmount || ''} // Ensure empty string as fallback
+      setClaimAmount={handleAmountChange}
+      error={errors[`itemAmount-${item.id}`]}
+      style={styles.amountInput}
+      disabled={isDisabled}
+    />
+  </View>
+)}
               
               {itemActions?.action === 'FORWARD' && (
                 <View style={styles.managerDropdownContainer}>
