@@ -213,8 +213,8 @@ const ClaimScreen = (props) => {
 ];
 
 const periodOptions = [
-  { label: 'Current Year', value: 'CY' },
-  { label: 'Last Year', value: 'LY' },
+  { label: 'Current Financial Year', value: 'CY' },
+  { label: 'Last Financial Year', value: 'LY' },
   { label: 'All Claims', value: 'ALL' },
 ];
 
@@ -588,14 +588,16 @@ const filterClaims = () => {
 
   try {
     await postClaimAction(claimPayload);
-    // Alert.alert('Success', 'Claim submitted successfully!');
     setSuccessMessage("Claim submitted successfully!");
-    setShowSuccessModal(true)
+    setShowSuccessModal(true);
+    
+    // Switch to the "Submitted Claims" tab after successful submission
+    setActiveTab('all');
+    
     fetchClaimDetails(); // Refresh the claims list
   } catch (error) {
     setErrorMessage("Failed to submit claim.");
-    setShowErrorModal(true)
-    // Alert.alert('Action Failed', 'Failed to submit claim.');
+    setShowErrorModal(true);
     console.error('Error submitting claim:', error);
   } finally {
     setIsLoading(false);
@@ -974,11 +976,13 @@ const filterClaims = () => {
 />
       </Container>
       <Loader visible={isLoading} />
-
       <SuccessModal
         visible={showSuccessModal}
         message={successMessage}
-        onClose={() => setShowSuccessModal(false)}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setActiveTab('all'); // Ensure we stay on Submitted Claims tab
+        }}
       />
       <ErrorModal
         visible={showErrorModal}
