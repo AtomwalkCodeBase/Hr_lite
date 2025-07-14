@@ -48,16 +48,16 @@ const AddAttendance = () => {
   const [dataLoaded, setDataLoaded] = useState(false); // New state to track if all data is loaded
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
 
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-    });
-  }, [navigation]);
+    useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: false,
+      });
+    }, [navigation]);
 
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
@@ -82,16 +82,19 @@ const AddAttendance = () => {
 
   // Load employee data and then attendance data
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitialData = async () => {
       try {
         setIsLoading(true);
-        setDataLoaded(false);
         
-        // First load employee data
+        // 1. First ensure we have employee data
+        if (!profile) {
+          console.log('Waiting for profile data...');
+          return;
+        }
+        
         setEmployeeData(profile);
         
-        
-        // Then load attendance data
+        // 2. Load attendance data
         const data = {
           eId: profile.id,
           month: moment().format('MM'),
@@ -104,46 +107,63 @@ const AddAttendance = () => {
         checkPreviousDayAttendance(attRes.data);
         
         setDataLoaded(true);
+        setInitialLoadComplete(true);
+        
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading initial data:', error);
         Alert.alert('Error', 'Failed to load attendance data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    loadInitialData();
   }, [profile]);
 
   useFocusEffect(
     useCallback(() => {
-      if (employeeData) {
-        const data = {
-          eId: employeeData.id,
-          month: moment().format('MM'),
-          year: moment().format('YYYY'),
+      if (initialLoadComplete && employeeData) {
+        const refreshData = async () => {
+          try {
+            setIsLoading(true);
+            const data = {
+              eId: employeeData.id,
+              month: moment().format('MM'),
+              year: moment().format('YYYY'),
+            };
+            
+            const attRes = await getEmpAttendance(data);
+            setAttData(attRes.data);
+            processAttendanceData(attRes.data);
+            checkPreviousDayAttendance(attRes.data);
+          } catch (error) {
+            console.error('Error refreshing data:', error);
+          } finally {
+            setIsLoading(false);
+          }
         };
-        fetchAttendanceDetails(data);
+        
+        refreshData();
       }
-    }, [employeeData])
+    }, [initialLoadComplete, employeeData])
   );
 
-  const fetchAttendanceDetails = (data) => {
-    setIsLoading(true);
-    getEmpAttendance(data)
-      .then((res) => {
-        setAttData(res.data);
-        processAttendanceData(res.data);
-        checkPreviousDayAttendance(res.data);
-      })
-      .catch((error) => {
-        console.error('Error fetching attendance:', error);
-        Alert.alert('Error', 'Failed to fetch attendance details');
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
+  // const fetchAttendanceDetails = (data) => {
+  //   setIsLoading(true);
+  //   getEmpAttendance(data)
+  //     .then((res) => {
+  //       setAttData(res.data);
+  //       processAttendanceData(res.data);
+  //       checkPreviousDayAttendance(res.data);
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error fetching attendance:', error);
+  //       Alert.alert('Error', 'Failed to fetch attendance details');
+  //     })
+  //     .finally(() => {
+  //       setIsLoading(false);
+  //     });
+  // };
 
   const checkPreviousDayAttendance = (attendanceData) => {
     if (!employeeData?.is_shift_applicable) {
@@ -332,7 +352,7 @@ const isCheckOutDisabled = !dataLoaded ||
                          (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
 
 
-  if (!dataLoaded && isLoading) {
+  if (!initialLoadComplete || isLoading) {
     return <Loader visible={true} />;
   }
 

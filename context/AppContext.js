@@ -112,12 +112,14 @@ const AppProvider = ({ children }) => {
     //     router.replace('AuthScreen');
     // };
 
-    const logout = async () => {
+   const logout = async () => {
   setIsLoading(true);
-
+  
   try {
-    // const empId = await AsyncStorage.getItem('empId'); // Save for reuse
-
+    // Navigate first to prevent any API calls from Home screen
+    router.replace('AuthScreen');
+    
+    // Then clear storage and state
     await AsyncStorage.multiRemove([
       'userToken',
     //   'eId',
@@ -126,20 +128,14 @@ const AppProvider = ({ children }) => {
     //   'empId'
     ]);
 
-    // Restore empId for pre-fill
-    // if (empId) {
-    //   await AsyncStorage.setItem('empId', empId);
-    // }
-
-    // Clear in-memory context
     setUserToken(null);
     setProfile({});
     setReload(false);
+    console.log("1")
   } catch (err) {
     console.log("Logout error:", err);
   } finally {
     setIsLoading(false);
-    router.replace('AuthScreen');
   }
 };
 
