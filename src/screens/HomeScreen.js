@@ -117,6 +117,9 @@ const HomePage = ({ navigation }) => {
     if (!profile) throw new Error("Employee profile data not found.");
     
     // setProfile(profileData);
+    if(profile?.name){
+      await AsyncStorage.setItem('profilename', profile.name);
+    }
     setEmployeeData(profile);
     setEmpId(profile.emp_id);
     setEmpNId(profile.id);
@@ -505,7 +508,7 @@ const HomePage = ({ navigation }) => {
                           previousDayUnchecked;
                           
 const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
-const isCheckOutDisabled = !employeeData || (!previousDayUnchecked && hasCheckedOut);
+const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
 
 
                           

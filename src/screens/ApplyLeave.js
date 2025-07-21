@@ -116,7 +116,7 @@ const ApplyLeave = (props) => {
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <HeaderComponent headerTitle="Apply Leave" onBackPress={handleBackPress} />
-      <Container>
+      <Container showsVerticalScrollIndicator={false}>
         <DatePicker 
           label="From Date" 
           cDate={fromDate} 
@@ -144,6 +144,13 @@ const ApplyLeave = (props) => {
          <SubmitButton
         label="Apply Half Day"
         onPress={() => { validate('HL'); }}
+        bgColor={colors.yellow}
+        textColor="black"
+      />
+
+         <SubmitButton
+        label="Apply On Duty"
+        onPress={() => { validate('OD'); }}
         bgColor={colors.yellow}
         textColor="black"
       />
