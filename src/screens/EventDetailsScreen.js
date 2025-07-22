@@ -49,7 +49,6 @@ const EventDetailsScreen = (props) => {
     const fetchEmpId = async () => {
       try {
         const profileData = await AsyncStorage.getItem('empId');
-        console.log("Parsed Data==",profileData)
         if (profileData) {
           setCurrentUserEmpId(profileData);
         }
@@ -67,8 +66,6 @@ const EventDetailsScreen = (props) => {
       useNativeDriver: true,
     }).start();
   }, []);
-  
-  console.log("Current user empid---",currentUserEmpId)
   
   // Parse the event details from props
   let eventDetails = {};

@@ -171,7 +171,6 @@ export async function postEmpLeave(leave_type) {
     if (event_data) {
       data = event_data;
     }
-    console.log("Response Data to be pass--",data)
     const url = await processEventRes();
     return authAxiosFilePost(url, data);
   }
