@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { Keyboard, Alert, Image } from 'react-native';
+import { View, Text, Keyboard, Alert, Image } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { getRequestCategory, postEmpRequest } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -24,10 +24,10 @@ const Container = styled.ScrollView`
 const AddHelp = (props) => {
   const itemdata = JSON.parse(props?.data?.item || '{}');
   const [empId, setEmpId] = useState("");
-  const [requestText, setRequestText] = useState(itemdata?.request_text||"");
-  const [remark, setRemark] = useState(itemdata?.remarks||"");
-  const [fileName, setFileName] = useState('');
-  const [fileUri, setFileUri] = useState('');
+  const [requestText, setRequestText] = useState(itemdata?.request_text || "");
+  const [remark, setRemark] = useState(itemdata?.remarks || "");
+  const [fileName, setFileName] = useState(itemdata?.submitted_file_1 ? 'Current file' : '');
+  const [fileUri, setFileUri] = useState(itemdata?.submitted_file_1 || '');
   const [fileMimeType, setFileMimeType] = useState('');
   const [requestCategories, setRequestCategories] = useState([]);
   const [filteredCategories, setFilteredCategories] = useState([]);
@@ -41,7 +41,10 @@ const AddHelp = (props) => {
   const call_type = props.data.call_type;
   const is_shift_request = props.data.shift_request;
   
-  // Dynamic header title - if it's a shift request, use "Change shift request", otherwise use the provided title or default
+  // Check if we're in update mode
+  const isUpdateMode = props?.data?.headerTitle === "Update Request" && itemdata.request_id;
+  
+  // Dynamic header title
   const headerTitle = is_shift_request 
     ? 'Change Shift Request' 
     : props?.data?.headerTitle 
@@ -74,7 +77,6 @@ const AddHelp = (props) => {
         const filtered = res.data.filter(category => category.request_type === call_type);
         setFilteredCategories(filtered);
         
-        // If it's a shift request, try to auto-select HR Requests or Workforce Management
         if (is_shift_request) {
           const shiftCategory = filtered.find(category => 
             category.name.includes('HR Requests') || 
@@ -93,11 +95,10 @@ const AddHelp = (props) => {
       });
   };
 
-
-const handleBackPress = () => {
-  router.setParams({ empId });
-  router.back();
-};
+  const handleBackPress = () => {
+    router.setParams({ empId });
+    router.back();
+  };
 
   const handleError = (error, input) => {
     setErrors(prevState => ({ ...prevState, [input]: error }));
@@ -117,7 +118,8 @@ const handleBackPress = () => {
       isValid = false;
     }
 
-    if (!fileUri) {
+    // Don't require file for update mode (since we might keep the existing one)
+    if (!isUpdateMode && !fileUri) {
       handleError('Please attach supporting document', 'file');
       isValid = false;
     }
@@ -133,13 +135,14 @@ const handleBackPress = () => {
     const formData = new FormData();
     formData.append('emp_id', empId);
     formData.append('request_category_id', selectedCategory);
-    formData.append('call_mode', props?.data?.headerTitle === "Resolve Request" ? "RESOLVED" : itemdata.request_id ? "UPDATE" : "ADD");
-    formData.append('request_type',itemdata.request_id?itemdata.request_type: call_type);
-    formData.append('request_id', itemdata.request_id?itemdata.request_id:'0');
+    formData.append('call_mode', isUpdateMode ? "UPDATE" : "ADD");
+    formData.append('request_type', itemdata.request_type || call_type);
+    formData.append('request_id', isUpdateMode ? `${itemdata.id}` : '0');
     formData.append('request_text', requestText);
     formData.append('remarks', remark);
     
-    if (fileUri) {
+    // Only append file if a new one was selected
+    if (fileUri && (!isUpdateMode || fileUri !== itemdata.submitted_file_1)) {
       formData.append('uploaded_file', {
         uri: fileUri,
         name: fileName || 'supporting_document.jpg',
@@ -147,24 +150,18 @@ const handleBackPress = () => {
       });
     }
 
-    console.log("data of submit", formData)
-
     try {
       const res = await postEmpRequest(formData);
       
       if (res.status === 200) {
         setIsSuccessModalVisible(true);
       } else {
-        console.error('Unexpected response:', res);
         Alert.alert(
           'Request Error', 
           `Failed to submit request. Status: ${res.status}`
         );
       }
     } catch (error) {
-      console.error('Submission error:', error);
-      console.error('Error response:', error.response);
-      
       Alert.alert(
         'Submission Failed', 
         error.response?.data?.message || 
@@ -186,13 +183,35 @@ const handleBackPress = () => {
       }
     }
   }, [filteredCategories]);
+
+  // Show current file in update mode
+  const renderCurrentFile = () => {
+    if (isUpdateMode && itemdata.submitted_file_1) {
+      return (
+        <View style={{ marginVertical: 10 }}>
+          <Text style={{ marginBottom: 5 }}>Current File:</Text>
+          <Image 
+            source={{ uri: itemdata.submitted_file_1 }} 
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 12,
+              resizeMode: "cover",
+              borderWidth: 1,
+              borderColor: "#eee"
+            }}
+          />
+        </View>
+      );
+    }
+    return null;
+  };
   
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <HeaderComponent 
         headerTitle={headerTitle} 
         onBackPress={handleBackPress} 
-        // onBackPress={() => router.back()} 
       />
       {isLoading ? (
         <Loader
@@ -213,7 +232,7 @@ const handleBackPress = () => {
             value={selectedCategory}
             setValue={setSelectedCategory}
             error={errors.category}
-            disabled={is_shift_request} // Disable dropdown if it's a shift request
+            disabled={is_shift_request || isUpdateMode} // Disable in shift request or update mode
           />
 
           <RequestTextInput
@@ -235,8 +254,10 @@ const handleBackPress = () => {
             error={errors.remarks}
           />
 
+          {renderCurrentFile()}
+
           <FilePicker 
-            label="Attach Supporting Document"
+            label={isUpdateMode ? "Update Supporting Document (Optional)" : "Attach Supporting Document"}
             fileName={fileName}
             setFileName={setFileName}
             fileUri={fileUri}
@@ -245,17 +266,14 @@ const handleBackPress = () => {
             error={errors.file}
           />
 
-          {/* <Image source={{uri: fileUri}} style={{
-              width: 120,
-              height: 120,
-              borderRadius: 12,
-              resizeMode: "cover",
-              borderWidth: 1,
-              borderColor: "#eee"
-            }}/> */}
-
           <SubmitButton
-            label={is_shift_request ? "Submit Shift Request" : call_type === 'H' ? "Submit Help Request" : "Submit Request"}
+            label={isUpdateMode 
+              ? "Update Request" 
+              : is_shift_request 
+                ? "Submit Shift Request" 
+                : call_type === 'H' 
+                  ? "Submit Help Request" 
+                  : "Submit Request"}
             onPress={validate}
             bgColor={colors.primary}
             textColor="white"
@@ -269,11 +287,13 @@ const handleBackPress = () => {
           setIsSuccessModalVisible(false);
           handleBackPress();
         }} 
-        message={is_shift_request 
-          ? "Shift request submitted successfully!" 
-          : call_type === 'H' 
-            ? "Help request submitted successfully!" 
-            : "Request submitted successfully!"}
+        message={isUpdateMode
+          ? "Request updated successfully!"
+          : is_shift_request 
+            ? "Shift request submitted successfully!" 
+            : call_type === 'H' 
+              ? "Help request submitted successfully!" 
+              : "Request submitted successfully!"}
       />
     </SafeAreaView>
   );

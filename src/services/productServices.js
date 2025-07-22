@@ -142,7 +142,7 @@ export async function postEmpLeave(leave_type) {
   }
 
   export async function postEmpRequest(request_data) {
-    console.log('Data to be sent:', request_data);
+    console.log('Request Data to be sent:', request_data);
     const url = await processEmployeeRequest();
     return authAxiosFilePost(url, request_data);
   }
@@ -171,6 +171,7 @@ export async function postEmpLeave(leave_type) {
     if (event_data) {
       data = event_data;
     }
+    console.log("Response Data to be pass--",data)
     const url = await processEventRes();
     return authAxiosFilePost(url, data);
   }

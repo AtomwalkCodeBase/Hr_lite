@@ -48,12 +48,10 @@ const EventDetailsScreen = (props) => {
   useEffect(() => {
     const fetchEmpId = async () => {
       try {
-        const profileData = await AsyncStorage.getItem('profile');
+        const profileData = await AsyncStorage.getItem('empId');
+        console.log("Parsed Data==",profileData)
         if (profileData) {
-          const parsedProfile = JSON.parse(profileData);
-          const empIdFromStorage = parsedProfile?.emp_id || '';
-          // setEmpId(empIdFromStorage);
-          setCurrentUserEmpId(empIdFromStorage);
+          setCurrentUserEmpId(profileData);
         }
       } catch (error) {
         console.error("Error fetching empId from AsyncStorage:", error);

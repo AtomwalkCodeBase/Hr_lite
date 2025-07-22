@@ -872,13 +872,19 @@ const HomePage = ({ navigation }) => {
       <ConfirmationModal
         visible={showExitModal}
         message="Are you sure you want to exit the app?"
-        onConfirm={() => BackHandler.exitApp()}
+        onConfirm={() => {
+          setShowExitModal(false); // Close the modal
+          setTimeout(() => {
+            BackHandler.exitApp(); // Exit app after short delay
+          }, 200); // Delay for modal to close (adjust if needed)
+        }}
         onCancel={() => setShowExitModal(false)}
         confirmText="Exit"
         cancelText="Cancel"
-        color="#FF3B30" // Red color for exit button
+        color="#FF3B30"
         messageColor="#333"
       />
+
 
       {/* Sidebar overlay (should be last to overlay everything) */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
