@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, SafeAreaView, 
   ScrollView, Dimensions, Image, Text, Alert, Keyboard, Platform } from 'react-native';
@@ -15,6 +15,7 @@ import Loader from '../../src/components/old_components/Loader';
 import Icon from 'react-native-vector-icons/Ionicons'; 
 import { forgetUserPinView } from '../../src/services/productServices';
 import SuccessModal from '../../src/components/SuccessModal';
+import { AppContext } from '../../context/AppContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,6 +33,8 @@ const ResetPinScreen = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
 const [successMessage, setSuccessMessage] = useState('');
+
+const {completLogout} = useContext(AppContext);
 
   useEffect(() => {
     fetchDbList();
@@ -118,10 +121,11 @@ const [successMessage, setSuccessMessage] = useState('');
       setIsSuccessModalVisible(true);
 
       setTimeout(() => {
-         router.replace({
-           pathname: "AuthScreen",
-           params: { backTohome: "true" }
-         });
+        //  router.replace({
+        //    pathname: "AuthScreen",
+        //    params: { backTohome: "true" }
+        //  });
+        completLogout();
        }, 3000);
        
     } else {
@@ -236,7 +240,7 @@ const [successMessage, setSuccessMessage] = useState('');
         visible={isSuccessModalVisible}
         onClose={() => {
           setIsSuccessModalVisible(false);
-          router.back(); // Changed from replace('/login') to back()
+          completLogout(); // Changed from replace('/login') to back()
         }}
         message={successMessage}
       />

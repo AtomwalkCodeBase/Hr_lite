@@ -87,7 +87,7 @@ export async function postEmpLeave(leave_type) {
       'month':res.month,
       'year': res.year
     };
-    console.log("At data to be pass--",data)
+    // console.log("At data to be pass--",data)
     const url = await getEmpAttendanceData();
     return authAxios(url, data);
   }
@@ -205,7 +205,7 @@ export async function getEmpShift(res) {
       'w_start':res.w_data,
       // 'year': res.year
     };
-    console.log("At data to be pass--",data)
+    // console.log("At data to be pass--",data)
     const url = await getEmpShiftData();
     return authAxiosPost(url, data);
   }
@@ -230,7 +230,7 @@ export async function EnrollEmpTraining(res) {
     if (res) {
       data = res;
     }
-    console.log("At data to be pass--",data)
+    // console.log("At data to be pass--",data)
     const url = await processEmpTraining();
     return authAxiosFilePost(url, data);
   }

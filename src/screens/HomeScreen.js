@@ -1,8 +1,7 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
-import {  View,  Text,  Image,  StatusBar,  TouchableOpacity,  ScrollView,  Dimensions, StyleSheet, SafeAreaView, Platform, RefreshControl, Animated, Alert, FlatList, TextInput, ActivityIndicator} from 'react-native';
+import { View, Text, Image, StatusBar, TouchableOpacity, ScrollView, Dimensions, StyleSheet, SafeAreaView, Platform, RefreshControl, Animated, Alert, FlatList, TextInput, ActivityIndicator, BackHandler } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppContext } from '../../context/AppContext';
-import { getCompanyInfo, getEmployeeInfo, getProfileInfo } from '../services/authServices';
 import { useRouter } from "expo-router";
 import Loader from '../components/old_components/Loader';
 import NetInfo from '@react-native-community/netinfo';
@@ -10,12 +9,11 @@ import * as Location from 'expo-location';
 import moment from 'moment';
 import { useLayoutEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import {  MaterialIcons,  FontAwesome5,  Feather,  MaterialCommunityIcons,} from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5, Feather, MaterialCommunityIcons, } from '@expo/vector-icons';
 import { getEmpAttendance, getEvents, postCheckIn } from '../services/productServices';
 import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
 
@@ -23,7 +21,7 @@ const { width, height } = Dimensions.get('window');
 
 const HomePage = ({ navigation }) => {
   const router = useRouter();
-  const { profile,logout, userToken,setReload,pisLoading  } = useContext(AppContext);
+  const { profile, setReload, companyInfo, isLoading } = useContext(AppContext);
   const [loading, setIsLoading] = useState(false);
   // const [profile, setProfile] = useState({});
   const [company, setCompany] = useState({});
@@ -35,13 +33,12 @@ const HomePage = ({ navigation }) => {
   const [isBirthday, setIsBirthday] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   // Attendance related states
   const [employeeData, setEmployeeData] = useState(null);
   const [currentDate, setCurrentDate] = useState(moment().format('DD-MM-YYYY'));
   const [currentTimeStr, setCurrentTimeStr] = useState('');
   const [checkedIn, setCheckedIn] = useState(false);
-  const [startTime, setStartTime] = useState(null);
   const [attendance, setAttendance] = useState(null);
   const [attData, setAttData] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -52,22 +49,17 @@ const HomePage = ({ navigation }) => {
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-  
+
   // Active events
-  const [activeEvents, setActiveEvents] = useState([]);
   const [eventData, setEventData] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [eventLoading, setEventLoading] = useState(true);
-  
+
   const fadeAnim = useState(new Animated.Value(0))[0];
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  useEffect(()=>{
-  setReload(true)
-  },[])
+  const [showExitModal, setShowExitModal] = useState(false);
 
 
- 
   useLayoutEffect(() => {
     if (navigation) {
       navigation.setOptions({
@@ -78,8 +70,23 @@ const HomePage = ({ navigation }) => {
 
   useEffect(() => {
     fetchEvents();
-  }, [empId]);
-  
+    setCompany(companyInfo);
+  }, [empId, companyInfo]);
+
+  useEffect(() => {
+    const backAction = () => {
+      setShowExitModal(true); // Show the confirmation modal instead of Alert
+      return true; // Prevent default back behavior
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      backAction
+    );
+
+    return () => backHandler.remove();
+  }, []);
+
 
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
@@ -90,85 +97,73 @@ const HomePage = ({ navigation }) => {
   };
 
   const checkPreviousDayAttendance = (attendanceData) => {
-    if(employeeData){
-    if (!employeeData?.is_shift_applicable) {
-      setPreviousDayUnchecked(false);
-      return;
-    }}
+    if (employeeData) {
+      if (!employeeData?.is_shift_applicable) {
+        setPreviousDayUnchecked(false);
+        return;
+      }
+    }
 
     const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item => 
-      item.a_date === yesterday && 
-      item.attendance_type !== "L" && 
+    const yesterdayAttendance = attendanceData.find(item =>
+      item.a_date === yesterday &&
+      item.attendance_type !== "L" &&
       item.end_time === null
     );
-    
+
     setPreviousDayUnchecked(!!yesterdayAttendance);
   };
 
-  // console.log(profile,"byhyh")
-  
+
   const fetchData = async () => {
-  setIsLoading(true);
-  try {
-    // const profileRes = await getEmployeeInfo();
-    // const profileData = profile;
-    
-    if (!profile) throw new Error("Employee profile data not found.");
-    
-    // setProfile(profileData);
-    if(profile?.name){
-      await AsyncStorage.setItem('profilename', profile.name);
+    setIsLoading(true);
+    try {
+
+      if (!profile) throw new Error("Employee profile data not found.");
+
+      setEmployeeData(profile);
+      setEmpId(profile.emp_id);
+      setEmpNId(profile.id);
+      setIsManager(profile?.is_manager || false);
+
+      // Set current date and time
+      const now = moment();
+      setCurrentDate(now.format('DD-MM-YYYY'));
+      setCurrentTimeStr(await setdatatime());
+
+      // Fetch attendance data only after profile is set
+      const data = {
+        eId: profile.id,
+        month: now.format('MM'),
+        year: now.format('YYYY'),
+      };
+      await fetchAttendanceDetails(data);
+
+    } catch (error) {
+      // console.error("Error fetching data", error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
     }
-    setEmployeeData(profile);
-    setEmpId(profile.emp_id);
-    setEmpNId(profile.id);
-    setIsManager(profile?.is_manager || false);
-
-    // Set current date and time
-    const now = moment();
-    setCurrentDate(now.format('DD-MM-YYYY'));
-    setCurrentTimeStr(await setdatatime());
-
-    // Fetch attendance data only after profile is set
-    const data = {
-      eId: profile.id,
-      month: now.format('MM'),
-      year: now.format('YYYY'),
-    };
-    await fetchAttendanceDetails(data);
-
-    // Fetch company info in parallel
-    const companyRes = await getCompanyInfo();
-    setCompany(companyRes.data);
-
-  } catch (error) {
-    console.error("Error fetching data", error);
-  } finally {
-    setIsLoading(false);
-    setRefreshing(false);
-  }
-};
-
-// console.log("is manager",isManager)
+  };
 
 
   const fetchEvents = async () => {
     try {
       setEventLoading(true);
-      
+
       const paramsAllEvents = {
         date_range: 'D0',
         event_type: '',
       };
       const resAllEvents = await getEvents(paramsAllEvents);
-      
+
       const filteredEventTypes = ['C', 'B', 'A', 'M', 'O'];
-      const filteredEvents = resAllEvents.data.filter(event => 
-        filteredEventTypes.includes(event.event_type) && 
+      const filteredEvents = resAllEvents.data.filter(event =>
+        filteredEventTypes.includes(event.event_type) &&
         (event.event_status === 'A' || event.event_status === 'P')
       );
-  
+
       let personalEvents = [];
       if (empId) {
         const paramsWithEmpId = {
@@ -177,11 +172,11 @@ const HomePage = ({ navigation }) => {
           emp_id: empId
         };
         const resWithEmpId = await getEvents(paramsWithEmpId);
-        personalEvents = resWithEmpId.data.filter(event => 
+        personalEvents = resWithEmpId.data.filter(event =>
           event.event_status === 'A' || event.event_status === 'P'
         );
       }
-  
+
       const combinedEvents = [...filteredEvents, ...personalEvents].reduce((acc, current) => {
         const x = acc.find(item => item.id === current.id);
         if (!x) {
@@ -190,24 +185,24 @@ const HomePage = ({ navigation }) => {
           return acc;
         }
       }, []);
-  
+
       setEventData(combinedEvents);
       setFilteredEvents(combinedEvents);
     } catch (error) {
-      console.error("Fetch Event Error:", error?.response?.data);
+      // console.error("Fetch Event Error:", error?.response?.data);
       try {
         const paramsCompanyEvents = {
           date_range: 'D0',
           event_type: 'C'
         };
         const resCompanyEvents = await getEvents(paramsCompanyEvents);
-        const filteredCompanyEvents = resCompanyEvents.data.filter(event => 
+        const filteredCompanyEvents = resCompanyEvents.data.filter(event =>
           event.event_status === 'A' || event.event_status === 'P'
         );
         setEventData(filteredCompanyEvents);
         setFilteredEvents(filteredCompanyEvents);
       } catch (fallbackError) {
-        console.error("Fallback Fetch Error:", fallbackError);
+        // console.error("Fallback Fetch Error:", fallbackError);
         setEventData([]);
         setFilteredEvents([]);
       }
@@ -216,7 +211,7 @@ const HomePage = ({ navigation }) => {
     }
   };
 
-  const handlePressApproveLeave = () => {  
+  const handlePressApproveLeave = () => {
     router.push({
       pathname: 'ApproveLeaves',
       params: { empNId },
@@ -224,72 +219,38 @@ const HomePage = ({ navigation }) => {
   };
 
   const fetchAttendanceDetails = async (data) => {
-  try {
-    const res = await getEmpAttendance(data);
-    setAttData(res.data);
-    processAttendanceData(res.data);
-    checkPreviousDayAttendance(res.data);
-  } catch (error) {
-    console.error("Error fetching attendance", error);
-    setAttData([]);
-    setCheckedIn(false);
-    setStartTime(null);
-    setAttendance(null);
-  }
-};
+    try {
+      const res = await getEmpAttendance(data);
+      setAttData(res.data);
+      processAttendanceData(res.data);
+      checkPreviousDayAttendance(res.data);
+    } catch (error) {
+      // console.error("Error fetching attendance", error);
+      setAttData([]);
+      setCheckedIn(false);
+      setAttendance(null);
+    }
+  };
 
   const processAttendanceData = (data) => {
     const today = currentDate;
-    const todayAttendance = data.find(item => 
-      item.a_date === today && 
+    const todayAttendance = data.find(item =>
+      item.a_date === today &&
       item.attendance_type !== "L"
     );
 
     if (todayAttendance) {
       setCheckedIn(todayAttendance.end_time === null);
-      setStartTime(todayAttendance.start_time);
       setAttendance(todayAttendance);
     } else {
       setCheckedIn(false);
-      setStartTime(null);
       setAttendance(null);
     }
   };
 
-  // const checkIfBirthday = (dobString) => {
-  //   try {
-  //     const dobParts = dobString.split('-');
-  //     if (dobParts.length !== 3) return;
-
-  //     const today = new Date();
-      
-  //     const months = {
-  //       'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
-  //       'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
-  //     };
-      
-  //     const dobDay = parseInt(dobParts[0], 10);
-  //     const dobMonth = months[dobParts[1]];
-      
-  //     if (today.getDate() === dobDay && today.getMonth() === dobMonth) {
-  //       setIsBirthday(true);
-  //       Animated.timing(fadeAnim, {
-  //         toValue: 1,
-  //         duration: 1000,
-  //         useNativeDriver: true
-  //       }).start();
-  //     } else {
-  //       setIsBirthday(false);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error checking birthday:", error);
-  //     setIsBirthday(false);
-  //   }
-  // };
-
   useEffect(() => {
     fetchData();
-    
+
     const updateGreeting = () => {
       const currentHour = new Date().getHours();
       if (currentHour < 12) {
@@ -300,26 +261,26 @@ const HomePage = ({ navigation }) => {
         setGreeting('Good Evening');
       }
     };
-    
+
     updateGreeting();
-    
+
     const interval = setInterval(() => {
       setCurrentTime(new Date());
       updateGreeting();
     }, 60000);
-    
+
     const netInfoUnsubscribe = NetInfo.addEventListener(state => {
       if (!isConnected && state.isConnected) {
         fetchData();
       }
       setIsConnected(state.isConnected);
     });
-    
+
     return () => {
       clearInterval(interval);
       netInfoUnsubscribe();
     };
-  }, [isConnected,profile]);
+  }, [isConnected, profile]);
 
   useFocusEffect(
     useCallback(() => {
@@ -343,24 +304,24 @@ const HomePage = ({ navigation }) => {
   };
 
   const handleError = (error, input) => {
-    setErrors(prevState => ({...prevState, [input]: error}));
+    setErrors(prevState => ({ ...prevState, [input]: error }));
   };
 
   const handleCheck = async (data) => {
     if (!employeeData) return;
-    
+
     setIsLoading(true);
     const { status } = await Location.requestForegroundPermissionsAsync();
-  
+
     if (status !== 'granted') {
       Alert.alert('Permission denied', 'Location permission is required to check.');
       setIsLoading(false);
       return;
     }
-  
+
     let location = null;
     let retries = 0;
-  
+
     while (!location && retries < 1) {
       try {
         location = await Location.getCurrentPositionAsync({});
@@ -369,17 +330,17 @@ const HomePage = ({ navigation }) => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
-  
+
     if (!location) {
       Alert.alert('Error', 'Unable to fetch location. Please try again.');
       setIsLoading(false);
       return;
     }
-  
+
     const todayAttendance = attData.find((item) => item.a_date === currentDate);
     const attendanceId = todayAttendance ? todayAttendance.id : null;
     const time = await setdatatime();
-    
+
     const checkPayload = {
       emp_id: employeeData?.id,
       call_mode: data,
@@ -391,11 +352,10 @@ const HomePage = ({ navigation }) => {
       remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
       id: attendanceId,
     };
-  
+
     try {
       await postCheckIn(checkPayload);
       setCheckedIn(data === 'ADD');
-      setStartTime(currentTimeStr);
       setRefreshKey((prevKey) => prevKey + 1);
       setIsSuccessModalVisible(true);
       if (data === 'UPDATE') setRemark('');
@@ -406,7 +366,7 @@ const HomePage = ({ navigation }) => {
       setIsLoading(false);
     }
   };
-  
+
   const handleRemarkSubmit = () => {
     if (!remark.trim()) {
       handleError('Remark cannot be empty', 'remarks');
@@ -414,19 +374,19 @@ const HomePage = ({ navigation }) => {
     }
 
     setIsRemarkModalVisible(false);
-    
+
     if (isYesterdayCheckout) {
       // Handle yesterday's checkout
-      const yesterdayRecord = attData.find(item => 
+      const yesterdayRecord = attData.find(item =>
         item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
         item.end_time === null
       );
-      
+
       if (!yesterdayRecord) {
         Alert.alert('Error', 'No pending checkout found for yesterday');
         return;
       }
-      
+
       const payload = {
         emp_id: employeeData.id,
         call_mode: 'UPDATE',
@@ -436,7 +396,7 @@ const HomePage = ({ navigation }) => {
         id: yesterdayRecord.id,
         remarks: remark || 'Check-out from Mobile (completed next day)'
       };
-      
+
       submitCheckout(payload);
     } else {
       // Handle today's checkout
@@ -448,7 +408,7 @@ const HomePage = ({ navigation }) => {
     try {
       setIsLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
-    
+
       if (status !== 'granted') {
         Alert.alert('Permission denied', 'Location permission is required to check out.');
         setIsLoading(false);
@@ -503,15 +463,15 @@ const HomePage = ({ navigation }) => {
 
   // Determine button states for check-in/out
   const isCheckInDisabled = !employeeData ||
-                          (attendance && attendance.start_time && !attendance.end_time) || 
-                          (attendance && attendance.geo_status === 'O') ||
-                          previousDayUnchecked;
-                          
-const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
-const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
+    (attendance && attendance.start_time && !attendance.end_time) ||
+    (attendance && attendance.geo_status === 'O') ||
+    previousDayUnchecked;
+
+  const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
+  const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
 
 
-                          
+
 
   const renderEventCard = ({ item }) => (
     <View style={styles.eventCard}>
@@ -590,7 +550,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
   ];
 
   const getEventIcon = (eventType) => {
-    switch(eventType) {
+    switch (eventType) {
       case 'B': return 'cake';
       case 'A': return 'work';
       case 'C': return 'business';
@@ -604,17 +564,17 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-      {(loading || pisLoading ) && (
+      {(loading || isLoading) && (
         <View style={styles.loaderContainer}>
           <Loader visible={true} />
         </View>
       )}
-      
+
       {/* Curved Header */}
       <View style={styles.headerContainer}>
-        <LinearGradient 
-          colors={['#a970ff', '#8a5bda']} 
-          start={[0, 0]} 
+        <LinearGradient
+          colors={['#a970ff', '#8a5bda']}
+          start={[0, 0]}
           end={[1, 1]}
           style={styles.headerGradient}
         >
@@ -627,9 +587,9 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
             <View style={styles.headerTopContent}>
               <View style={styles.companySection}>
                 {company.image ? (
-                  <Image 
-                    source={{ uri: company.image }} 
-                    style={styles.companyLogo} 
+                  <Image
+                    source={{ uri: company.image }}
+                    style={styles.companyLogo}
                     resizeMode="contain"
                   />
                 ) : (
@@ -643,7 +603,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
               </View>
             </View>
           </View>
-          
+
           <View style={styles.welcomeSection}>
             <Text style={styles.greeting}>{greeting},</Text>
             <Text style={styles.userName} onPress={() => router.push('profile')}>
@@ -651,7 +611,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
             </Text>
           </View>
         </LinearGradient>
-        
+
         {/* Time Card */}
         <View style={styles.timeCardContainer}>
           <LinearGradient
@@ -661,11 +621,11 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
             <View style={styles.timeCardContent}>
               <View style={styles.timeSection}>
                 <Text style={styles.dateText}>
-                  {currentTime.toLocaleDateString('en-US', { 
-                    weekday: 'short', 
-                    day: 'numeric', 
-                    month: 'short', 
-                    year: 'numeric' 
+                  {currentTime.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
                   })}
                 </Text>
                 <Text style={styles.timeText}>
@@ -674,9 +634,9 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
               </View>
               <View style={styles.attendanceButtonsContainer}>
                 <View style={styles.attendanceButtons}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[
-                      styles.attendanceButton, 
+                      styles.attendanceButton,
                       styles.checkInButton,
                       isCheckInDisabled && styles.disabledButton,
                       checkedIn && styles.checkedInButton
@@ -684,20 +644,20 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
                     onPress={() => handleCheck('ADD')}
                     disabled={isCheckInDisabled}
                   >
-                    <MaterialCommunityIcons 
-                      name="login" 
-                      size={20} 
-                      color={isCheckInDisabled ? "#888" : "#fff"} 
+                    <MaterialCommunityIcons
+                      name="login"
+                      size={20}
+                      color={isCheckInDisabled ? "#888" : "#fff"}
                     />
-                    <Text 
+                    <Text
                       style={[
-                        styles.attendanceButtonText, 
+                        styles.attendanceButtonText,
                         isCheckInDisabled && styles.disabledButtonText
                       ]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
-                      {checkedIn 
+                      {checkedIn
                         ? `Checked In`
                         : 'Check In'}
                     </Text>
@@ -705,7 +665,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
 
                   <TouchableOpacity
                     style={[
-                      styles.attendanceButton, 
+                      styles.attendanceButton,
                       styles.checkOutButton,
                       isCheckOutDisabled && styles.disabledButton,
                       previousDayUnchecked && styles.yesterdayButton
@@ -720,14 +680,14 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
                     }}
                     disabled={isCheckOutDisabled}
                   >
-                    <MaterialCommunityIcons 
-                      name="logout" 
-                      size={20} 
-                      color={isCheckOutDisabled ? "#888" : "#fff"} 
+                    <MaterialCommunityIcons
+                      name="logout"
+                      size={20}
+                      color={isCheckOutDisabled ? "#888" : "#fff"}
                     />
-                    <Text 
+                    <Text
                       style={[
-                        styles.attendanceButtonText, 
+                        styles.attendanceButtonText,
                         isCheckOutDisabled && styles.disabledButtonText
                       ]}
                       numberOfLines={1}
@@ -744,7 +704,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
       </View>
 
       {/* Main Content */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -766,8 +726,8 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
                 showsHorizontalScrollIndicator={false}
                 data={[
                   ...(isBirthday ? [{ id: 'birthday', type: 'birthday' }] : []),
-                  ...filteredEvents.map(event => ({ 
-                    ...event, 
+                  ...filteredEvents.map(event => ({
+                    ...event,
                     type: 'event',
                     title: event.event_name,
                     description: event.event_description,
@@ -776,7 +736,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
                   }))
                 ]}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => 
+                renderItem={({ item }) =>
                   item.type === 'birthday' ? (
                     <Animated.View style={[styles.birthdayCard, { opacity: fadeAnim }]}>
                       <LinearGradient
@@ -841,7 +801,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
           <Text style={styles.sectionTitle}>Quick Menu</Text>
           <View style={styles.menuGrid}>
             {menuItems.map((item) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={item.id}
                 style={styles.menuItem}
                 onPress={item.onPress}
@@ -872,7 +832,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            
+
             <RemarksInput
               remark={remark}
               label={false}
@@ -881,7 +841,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
               placeholder="Please enter your check out remark"
             />
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalSubmitButton}
               onPress={handleRemarkSubmit}
             >
@@ -890,7 +850,7 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
           </View>
         </View>
       </Modal>
-        
+
       <SuccessModal
         visible={isSuccessModalVisible}
         onClose={closeSuccessModal}
@@ -907,6 +867,17 @@ const isCheckOutDisabled = !employeeData ||(!checkedIn && !previousDayUnchecked)
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Check Out"
         cancelText="Cancel"
+      />
+
+      <ConfirmationModal
+        visible={showExitModal}
+        message="Are you sure you want to exit the app?"
+        onConfirm={() => BackHandler.exitApp()}
+        onCancel={() => setShowExitModal(false)}
+        confirmText="Exit"
+        cancelText="Cancel"
+        color="#FF3B30" // Red color for exit button
+        messageColor="#333"
       />
 
       {/* Sidebar overlay (should be last to overlay everything) */}
@@ -935,49 +906,49 @@ const styles = StyleSheet.create({
     zIndex: 999,
     elevation: Platform.OS === 'android' ? 999 : 0,
     // Remove the pointerEvents from here - handle it at the component level
-},
-headerGradient: {
-  paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10,
-  paddingHorizontal: 20,
-  paddingBottom: 60, // Extra padding for the curved effect
-  borderBottomLeftRadius: 30,
-  borderBottomRightRadius: 30,
-},
-headerTop: {
-  paddingVertical: 10,
-  // marginTop: -20, // Added negative margin to move content up
-},
-headerTopContent: {
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-companySection: {
-  alignItems: 'center',
-  justifyContent: 'center',
-  // marginBottom: 20,
-},
-companyLogo: {
-  width: width * 0.25,
-  height: width * 0.25,
-  borderRadius: width * 0.125,
-  backgroundColor: '#fff',
-  marginBottom: 12,
-},
-companyPlaceholder: {
-  width: width * 0.25,
-  height: width * 0.25,
-  borderRadius: width * 0.125,
-  backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginBottom: 12,
-},
-companyName: {
-  color: '#fff',
-  fontSize: width * 0.06,
-  fontWeight: 'bold',
-  textAlign: 'center',
-},
+  },
+  headerGradient: {
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10,
+    paddingHorizontal: 20,
+    paddingBottom: 60, // Extra padding for the curved effect
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerTop: {
+    paddingVertical: 10,
+    // marginTop: -20, // Added negative margin to move content up
+  },
+  headerTopContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  companySection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // marginBottom: 20,
+  },
+  companyLogo: {
+    width: width * 0.25,
+    height: width * 0.25,
+    borderRadius: width * 0.125,
+    backgroundColor: '#fff',
+    marginBottom: 12,
+  },
+  companyPlaceholder: {
+    width: width * 0.25,
+    height: width * 0.25,
+    borderRadius: width * 0.125,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  companyName: {
+    color: '#fff',
+    fontSize: width * 0.06,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
   profileButton: {
     width: width * 0.11,
     height: width * 0.11,
@@ -1013,26 +984,26 @@ companyName: {
     marginTop: 3,
   },
   timeCardContainer: {
-  paddingHorizontal: 20,
-  marginTop: -40,
-},
-timeCard: {
-  borderRadius: 15,
-  elevation: 8,
-  shadowColor: '#a970ff',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.2,
-  shadowRadius: 8,
-},
-timeCardContent: {
-  padding: 16,
-},
+    paddingHorizontal: 20,
+    marginTop: -40,
+  },
+  timeCard: {
+    borderRadius: 15,
+    elevation: 8,
+    shadowColor: '#a970ff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  timeCardContent: {
+    padding: 16,
+  },
   timeSection: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: 12,
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   dateText: {
     fontSize: width * 0.036,
     color: '#555',
@@ -1044,63 +1015,63 @@ timeCardContent: {
     fontWeight: 'bold',
   },
   attendanceButtonsContainer: {
-  width: '100%',
-},
+    width: '100%',
+  },
   attendanceButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  width: '100%',
-  gap: 10,
-},
-attendanceButton: {
-  flex: 1,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: 12,
-  paddingHorizontal: 8,
-  borderRadius: 10,
-  elevation: 2,
-  minHeight: 48,
-},
-buttonLoading: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(255,255,255,0.5)',
-  borderRadius: 10,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 10,
+  },
+  attendanceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    elevation: 2,
+    minHeight: 48,
+  },
+  buttonLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   checkInButton: {
-  backgroundColor: '#a970ff',
-},
-checkOutButton: {
-  backgroundColor: '#a970ff',
-},
-yesterdayButton: {
-  backgroundColor: '#FF6B6B',
-},
-checkedInButton: {
-  backgroundColor: '#D7DAD7',
-},
- disabledButton: {
-  backgroundColor: '#f0f0f0',
-  elevation: 0,
-},
+    backgroundColor: '#a970ff',
+  },
+  checkOutButton: {
+    backgroundColor: '#a970ff',
+  },
+  yesterdayButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  checkedInButton: {
+    backgroundColor: '#D7DAD7',
+  },
+  disabledButton: {
+    backgroundColor: '#f0f0f0',
+    elevation: 0,
+  },
   attendanceButtonText: {
-  color: '#fff',
-  fontWeight: '600',
-  marginLeft: 8,
-  fontSize: 14,
-  flexShrink: 1,
-  maxWidth: '90%',
-},
-disabledButtonText: {
-  color: '#888',
-},
+    color: '#fff',
+    fontWeight: '600',
+    marginLeft: 8,
+    fontSize: 14,
+    flexShrink: 1,
+    maxWidth: '90%',
+  },
+  disabledButtonText: {
+    color: '#888',
+  },
   checkinTimeText: {
     textAlign: 'center',
     color: '#a970ff',
@@ -1155,7 +1126,7 @@ disabledButtonText: {
     padding: 16,
     // height: '100%',  // This ensures the gradient fills the card
   },
-  
+
   birthdayIconContainer: {
     width: 50,
     height: 50,

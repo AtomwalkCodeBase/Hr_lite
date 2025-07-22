@@ -51,12 +51,6 @@ const [modalVisible, setModalVisible] = useState(false);       // controls confi
 }, []);
 
 
-const toggleFingerprint = async () => {
-  const newValue = !useFingerprint;
-  setUseFingerprint(newValue);
-  await AsyncStorage.setItem('useFingerprint', newValue.toString());
-};
-
 const handleSwitchToggle = (newValue) => {
   setPendingValue(newValue); // Store intended value
   setModalVisible(true);     // Show confirmation modal
@@ -76,7 +70,6 @@ const handleCancel = () => {
 };
 
 
-  const handleBackPress = () => router.back();
   const handlePressPassword = () => router.push({ pathname: 'ResetPassword' });
   const handleQRPress = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
@@ -91,7 +84,6 @@ const handleCancel = () => {
     return require('../../assets/images/default-profile.jpg'); // Make sure you have this asset
   };
 
-  // console.log("Profile Data---",profile)
   
   return (
     <>
@@ -238,7 +230,7 @@ const handleCancel = () => {
           <QRModal
             isVisible={isModalVisible}
             onClose={handleCloseModal}
-            qrValue={profile?.emp_id || 'EMP-007'}
+            qrValue={profile?.emp_id || 'EMP-000'}
           />
 
           <ConfirmationModal
