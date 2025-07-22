@@ -57,8 +57,6 @@ const AppProvider = ({ children }) => {
             return;
         }
 
-        console.log("Login Call")
-
         try {
             // Update dbName if provided
             if (dbName) {
@@ -204,74 +202,72 @@ const AppProvider = ({ children }) => {
     };
 
     const isLoggedIn = async () => {
-    const networkStatus = await checkNetwork();
-    if (!networkStatus) {
-        return;
-    }
-
-    try {
-        setIsLoading(true);
-        const userToken = await AsyncStorage.getItem('userToken');
-        const Dbname = await AsyncStorage.getItem('dbName');
-        if (!userToken) {
-            router.replace('PinScreen');
+        const networkStatus = await checkNetwork();
+        if (!networkStatus) {
             return;
         }
 
-        if (!userToken && !Dbname) {
-            router.replace('AuthScreen');
-            return;
+        try {
+            setIsLoading(true);
+            const userToken = await AsyncStorage.getItem('userToken');
+            const Dbname = await AsyncStorage.getItem('dbName');
+            if (!userToken && !Dbname) {
+                router.replace('AuthScreen');
+                return;
+            }
+
+            if (!userToken) {
+                router.replace('PinScreen'); // You might want to double-check this logic
+                return;
+            }
+
+
+            setUserToken(userToken);
+
+            // Retrieve all stored data
+            const [
+                companyInfo,
+                dbName,
+                userPin
+            ] = await Promise.all([
+                AsyncStorage.getItem('companyInfo'),
+                AsyncStorage.getItem('dbName'),
+                AsyncStorage.getItem('userPin')
+            ]);
+
+            if (companyInfo) {
+                setCompanyInfo(JSON.parse(companyInfo));
+            }
+            if (dbName) {
+                setDbName(dbName);
+            }
+
+
+            if (userPin) {
+                router.replace('PinScreen');
+            } else {
+                setReload(true);
+            }
+        } catch (e) {
+            console.log('Login Status Error:', e);
+        } finally {
+            setIsLoading(false);
         }
+    };
 
-        setUserToken(userToken);
 
-        // Retrieve all stored data
-        const [
-            companyInfo,
-            dbName,
-            userPin
-        ] = await Promise.all([
-            AsyncStorage.getItem('companyInfo'),
-            AsyncStorage.getItem('dbName'),
-            AsyncStorage.getItem('userPin')
-        ]);
-
-        if (companyInfo) {
-            setCompanyInfo(JSON.parse(companyInfo));
+    const refreshProfileData = async () => {
+        try {
+            setIsLoading(true);
+            setReload(true); // This will trigger the useEffect that fetches data
+        } catch (error) {
+            console.error('Failed to refresh data:', error);
         }
-        if (dbName) {
-            setDbName(dbName);
-        }
-
-
-        if (userPin) {
-            // Navigate to PinScreen instead of home when reloading
-            router.replace('PinScreen');
-        } else {
-            // This is I'm calling the reload to get the fresh profile data. It is for blow useEffect
-            setReload(true);
-        }
-    } catch (e) {
-        console.log('Login Status Error:', e);
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-
-const refreshProfileData = async () => {
-    try {
-        setIsLoading(true);
-        setReload(true); // This will trigger the useEffect that fetches data
-    } catch (error) {
-        console.error('Failed to refresh data:', error);
-    }
-};
+    };
 
 
     useEffect(() => {
         if (reLoad) {
-            console.log("Profile Call==")
             setIsLoading(true);
             const fetchData = async () => {
                 try {
