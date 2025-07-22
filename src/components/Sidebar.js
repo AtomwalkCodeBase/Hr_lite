@@ -351,7 +351,7 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
       hasChevron: true,
     },
     {
-      name: "Training",
+      name: "My Training",
       icon: <MaterialIcons name="book" size={20} color={colors.textSecondary} />,
       action: handlePressTraining,
       show: true,

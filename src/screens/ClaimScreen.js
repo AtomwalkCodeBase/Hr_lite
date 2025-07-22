@@ -464,7 +464,7 @@ const filterClaims = () => {
   setActiveTab(tab);
 };
 
-  console.log("Claim Data--",allClaims)
+  // console.log("Claim Data--",allClaims)
 
   const handleBackPress = () => {
     if (selectedImageUrl) {

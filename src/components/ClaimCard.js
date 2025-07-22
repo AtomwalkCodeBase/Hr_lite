@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const ClaimCardContainer = styled.TouchableOpacity`
@@ -195,8 +196,23 @@ const ButtonContainer2 = styled.View`
 `;
 
 const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () => {}, onUpdate = () => {} }) => {
+
   const status = claim.expense_status;
   const statusText = getStatusText(status);
+  const [showUpdate, setShowUpdate] = useState(false);
+
+ 
+
+  const employeeId = async() => {
+      const EmpId = await AsyncStorage.getItem("empNoId")
+      if (claim.employee_id == EmpId){
+        setShowUpdate(true);
+      }
+  }
+
+  useEffect(()=> {
+    employeeId()
+  },[])
 
   // const handleDelete = () => onDelete(claim.id);
   const formatIndianCurrency = (num) => {
@@ -310,11 +326,7 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
           </ViewFileButton>
         )}
 
-        {status === 'N' && onDelete && (
-          // <DeleteButton onPress={handleDelete}>
-          //   <Ionicons name="trash-outline" size={18} color="#fff" />
-          //   <DeleteButtonText>Delete</DeleteButtonText>
-          // </DeleteButton>
+        {(status === 'N' || status === 'B' && showUpdate) && (
           <UpdateButton onPress={handleUpdate}>
               <Ionicons name="create-outline" size={18} color="#fff" />
               <UpdateButtonText>Update</UpdateButtonText>

@@ -213,7 +213,7 @@ const handlePressProfile = () => {
     show: isShift
   },
   {
-    title: "Training",
+    title: "My Training",
     subTitle: "Check your training details",
     icon: <MaterialIcons name="book" size={24} color="#7e57c2" />,
     action: handlePressTraining,

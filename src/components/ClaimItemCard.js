@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import RemarksInput from './RemarkInput';
 import DropdownPicker from './DropdownPicker';
 import AmountInput from './AmountInput';
+import ActionDropdown from './ClaimActionDropdown';
 
 const ClaimItemCard = ({ 
   item, 
@@ -173,7 +174,7 @@ const ClaimItemCard = ({
             </View>
           ) : (
             <>
-              <View style={styles.actionButtonsContainer}>
+              {/* <View style={styles.actionButtonsContainer}>
                 <TouchableOpacity
                   style={[
                     styles.actionButton,
@@ -211,6 +212,23 @@ const ClaimItemCard = ({
                 <TouchableOpacity
                   style={[
                     styles.actionButton,
+                    itemActions?.action === 'Back To Claimant' && styles.actionButtonActive,
+                    itemActions?.action === 'Back To Claimant' && styles.rejectButtonActive
+                  ]}
+                  onPress={() => handleActionChange('Back To Claimant')}
+                  disabled={isDisabled}
+                >
+                  <Text style={[
+                    styles.actionButtonText,
+                    itemActions?.action === 'Back To Claimant' && styles.actionButtonTextActive
+                  ]}>
+                    Back To Claimant
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
                     itemActions?.action === 'FORWARD' && styles.actionButtonActive,
                     itemActions?.action === 'FORWARD' && styles.forwardButtonActive
                   ]}
@@ -224,7 +242,14 @@ const ClaimItemCard = ({
                     Forward
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
+
+              <ActionDropdown
+                item={item}
+                itemActions={itemActions}
+                onActionChange={onActionChange}
+                // isDisabled={isDisabled}
+              />
               
               {(itemActions?.action === 'APPROVE' || itemActions?.action === 'FORWARD') && (
   <View style={styles.amountInputContainer}>

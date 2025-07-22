@@ -22,12 +22,41 @@ const PickerContainer = styled.View`
   border-radius: 5px;
 `;
 
-const DropdownPicker = ({ error, label, data, value, setValue }) => {
-  
+const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActionStyle = false }) => {
+  // Optional dynamic style logic
+  const getSelectedStyle = () => {
+    if (!enableDynamicActionStyle) return {};
+    switch (value) {
+      case 'APPROVE':
+        return {
+          borderColor: '#2e7d32',
+          backgroundColor: '#e8f5e9',
+        };
+      case 'REJECT':
+      case 'Back To Claimant':
+        return {
+          borderColor: '#c62828',
+          backgroundColor: '#ffebee',
+        };
+      case 'FORWARD':
+        return {
+          borderColor: '#1565c0',
+          backgroundColor: '#e3f2fd',
+        };
+      default:
+        return {
+          borderColor: '#ccc',
+          backgroundColor: '#fff',
+        };
+    }
+  };
+
+  const dynamicStyle = getSelectedStyle();
+
   return (
     <FieldContainer>
       <Label>{label}</Label>
-      <PickerContainer>
+      <PickerContainer style={{ ...dynamicStyle, borderWidth: 1, borderRadius: 8 }}>
         <Dropdown
           data={(data || []).map((item) => ({
             label: item.label,
@@ -40,6 +69,8 @@ const DropdownPicker = ({ error, label, data, value, setValue }) => {
           onChange={(item) => setValue(item.value)}
           style={{
             padding: 10,
+            ...dynamicStyle,
+            borderRadius: 8,
           }}
           placeholderStyle={{
             color: '#ccc',
@@ -51,7 +82,7 @@ const DropdownPicker = ({ error, label, data, value, setValue }) => {
         />
       </PickerContainer>
       {error && (
-        <Text style={{marginTop: 7, color: colors.red, fontSize: 12}}>
+        <Text style={{ marginTop: 7, color: '#ff3b30', fontSize: 12 }}>
           {error}
         </Text>
       )}

@@ -397,6 +397,7 @@ const ApproveClaim = () => {
       case 'A': return 'APPROVED';
       case 'F': return 'FORWARDED';
       case 'R': return 'REJECTED';
+      case 'B': return 'Back To Claimant';
       default: return 'UNKNOWN';
     }
   };
@@ -473,7 +474,7 @@ const ApproveClaim = () => {
     return parseFloat(claim.expense_amt) || 0;
   };
 
-  console.log("Claim Data==",claimData[2])
+  // console.log("Claim Data==",claimData[2])
 
   const renderGroupedClaimItem = ({ item }) => {
   const masterStatus = item.expense_status;

@@ -280,20 +280,26 @@ const validateForm = useCallback(() => {
       const originalItem = claim.claim_items.find(i => i.id === itemId);
       const validationResult = validationResults[originalItem.claim_id];
       
-      // If validation requires forwarding (approvalType === 'F'), force FORWARD action
+           
+      // Always use getApproveType for the action
       const actionType = validationResult?.approvalType === 'F' ? 'FORWARD' : (item.action || 'APPROVE');
-      
+        console.log("actionType", actionType)
+      const approveType = getApproveType(actionType);
+          console.log("approveType", approveType)
       const itemPayload = {
         claim_id: originalItem.claim_id,
-        // Use validationResult.approvalType if it exists, otherwise get from action
-        approve_type: validationResult?.approvalType || getApproveType(actionType),
+        approve_type: approveType,
         approved_amt: actionType === 'REJECT' ? '0' : item.approvedAmount,
         remarks: item.remarks || ''
       };
 
       // Set forward manager if required
-      if (validationResult?.approvalType === 'F' || actionType === 'FORWARD') {
-        itemPayload.a_emp_id = validationResult?.forwardManager || item.forwardManager;
+      if (approveType === 'F') {
+        if (item.action === 'FORWARD') {
+          itemPayload.a_emp_id = item.forwardManager;
+        } else {
+          itemPayload.a_emp_id = validationResult?.forwardManager;
+        }
       }
 
       return itemPayload;
@@ -305,6 +311,8 @@ const validateForm = useCallback(() => {
       call_mode: 'APPROVE_CLAIM',
       claim_list: claim_list
     };
+
+    // console.log("payload", payload)
 
     await postClaimAction(payload);
     setShowSuccessModal(true);
