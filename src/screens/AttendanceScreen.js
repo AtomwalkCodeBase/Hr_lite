@@ -205,58 +205,97 @@ const AddAttendance = () => {
     setErrors(prevState => ({...prevState, [input]: error}));
   };
 
+  // Add these constants at the top of your file
+const ORIGIN_LATITUDE = 12.967688425929936; // Replace with your origin latitude
+const ORIGIN_LONGITUDE = 77.71320980043427; // Replace with your origin longitude
+const ALLOWED_RADIUS = 100; // Radius in meters
+
+// Add this utility function to calculate distance between coordinates
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+};
+
+
   const handleCheck = async (data) => {
-    if (!employeeData) return;
-    
-    setIsLoading(true);
-    const { status } = await Location.requestForegroundPermissionsAsync();
+  if (!employeeData) return;
   
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Location permission is required to check.');
+  setIsLoading(true);
+  const { status } = await Location.requestForegroundPermissionsAsync();
+
+  if (status !== 'granted') {
+    Alert.alert('Permission denied', 'Location permission is required to check.');
+    setIsLoading(false);
+    return;
+  }
+
+  let location = null;
+
+  try {
+    location = await Location.getCurrentPositionAsync({});
+    
+    // Calculate distance from origin
+    const distance = calculateDistance(
+      ORIGIN_LATITUDE,
+      ORIGIN_LONGITUDE,
+      location.coords.latitude,
+      location.coords.longitude
+    );
+
+    if (distance > ALLOWED_RADIUS) {
+      Alert.alert(
+        'Location Out of Range',
+        `You are ${Math.round(distance)} meters away from the allowed location. ` +
+        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
+      );
       setIsLoading(false);
       return;
     }
+  } catch (error) {
+    Alert.alert('Error', 'Unable to fetch location. Please try again.');
+    setIsLoading(false);
+    return;
+  }
+
+  // Rest of your existing handleCheck code...
+  const todayAttendance = attData.find((item) => item.a_date === currentDate);
+  const attendanceId = todayAttendance ? todayAttendance.id : null;
+  const time = await setdatatime();
   
-    let location = null;
-  
-    try {
-      location = await Location.getCurrentPositionAsync({});
-    } catch (error) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
-      setIsLoading(false);
-      return;
-    }
-  
-    const todayAttendance = attData.find((item) => item.a_date === currentDate);
-    const attendanceId = todayAttendance ? todayAttendance.id : null;
-    const time = await setdatatime();
-    
-    const checkPayload = {
-      emp_id: employeeData?.id,
-      call_mode: data,
-      time: time,
-      geo_type: data === 'ADD' ? 'I' : 'O',
-      a_date: currentDate,
-      latitude_id: `${location?.coords?.latitude}`,
-      longitude_id: `${location?.coords?.longitude}`,
-      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-      id: attendanceId,
-    };
-  
-    try {
-      await postCheckIn(checkPayload);
-      // setCheckedIn(data === 'ADD');
-      // setStartTime(currentTime);
-      setRefreshKey((prevKey) => prevKey + 1);
-      setIsSuccessModalVisible(true);
-      if (data === 'UPDATE') setRemark('');
-    } catch (error) {
-      console.error('Check in/out error:', error);
-      Alert.alert('Check Failure', 'Failed to Check.');
-    } finally {
-      setIsLoading(false);
-    }
+  const checkPayload = {
+    emp_id: employeeData?.id,
+    call_mode: data,
+    time: time,
+    geo_type: data === 'ADD' ? 'I' : 'O',
+    a_date: currentDate,
+    latitude_id: `${location?.coords?.latitude}`,
+    longitude_id: `${location?.coords?.longitude}`,
+    remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+    id: attendanceId,
   };
+
+  try {
+    await postCheckIn(checkPayload);
+    setRefreshKey((prevKey) => prevKey + 1);
+    setIsSuccessModalVisible(true);
+    if (data === 'UPDATE') setRemark('');
+  } catch (error) {
+    console.error('Check in/out error:', error);
+    Alert.alert('Check Failure', 'Failed to Check.');
+  } finally {
+    setIsLoading(false);
+  }
+};
   
   const handleRemarkSubmit = () => {
   if (!remark.trim()) {
@@ -310,6 +349,24 @@ const submitCheckout = async (payload) => {
     const location = await Location.getCurrentPositionAsync({});
     if (!location) {
       Alert.alert('Error', 'Unable to fetch location. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
+    // Calculate distance from origin
+    const distance = calculateDistance(
+      ORIGIN_LATITUDE,
+      ORIGIN_LONGITUDE,
+      location.coords.latitude,
+      location.coords.longitude
+    );
+
+    if (distance > ALLOWED_RADIUS) {
+      Alert.alert(
+        'Location Out of Range',
+        `You are ${Math.round(distance)} meters away from the allowed location. ` +
+        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
+      );
       setIsLoading(false);
       return;
     }
@@ -573,6 +630,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f7fa',
   },
+  distanceText: {
+  fontSize: 14,
+  fontFamily: 'Inter-Medium',
+  textAlign: 'center',
+  marginTop: 8,
+  color: '#666',
+},
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
