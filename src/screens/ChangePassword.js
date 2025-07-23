@@ -76,6 +76,13 @@ const ResetPasswordScreen = () => {
         return;
       }
 
+      if (newPin == oldPin) {
+        setErrorMessage('Old and new PINs must be different.');
+        triggerShake();
+        setIsLoading(false);
+        return;
+      }
+
       if (newPin.length < 4) {
         setErrorMessage('Please enter a PIN with at least 4 digits.');
         triggerShake();
@@ -91,7 +98,7 @@ const ResetPasswordScreen = () => {
         setIsLoading(false);
         setIsSuccessModalVisible(true);
         setIsMandatoryReset(false); // Reset mandatory flag after successful update
-        router.push({ pathname: 'home' });
+        // router.push({ pathname: 'home' });
       } else {
         const errorMsg = response?.message || 'Failed to update PIN. Please try again.';
         setErrorMessage(errorMsg);
@@ -267,7 +274,7 @@ const ResetPasswordScreen = () => {
         visible={isSuccessModalVisible}
         onClose={() => {
           setIsSuccessModalVisible(false);
-          router.push({ pathname: 'home' });
+          router.back()
         }}
         message="Your PIN has been updated successfully."
       />
