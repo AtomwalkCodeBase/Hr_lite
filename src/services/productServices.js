@@ -154,6 +154,7 @@ export async function postEmpLeave(leave_type) {
       event_type: params.event_type || "",
       date_range: params.date_range || 'ALL'
     };
+    console.log("Event fetching data--",data)
     const url = await getEventtList();
     return authAxios(url, data);
   }

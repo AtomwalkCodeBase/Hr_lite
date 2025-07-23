@@ -86,41 +86,45 @@ const EventScreen = (props) => {
     }
   }, [props?.data?.empId]);
   
+  // useEffect(() => {
+  //   fetchEvents();
+  // }, [empId, pendingFilters.dateRange, pendingFilters.eventType]);
   useEffect(() => {
-    fetchEvents();
-  }, [empId, pendingFilters.dateRange, pendingFilters.eventType]);
+  fetchEvents();
+}, [empId, dateRange, activeFilter]);
 
   const handleBackPress = () => {
     router.push('MoreScreen');
   };
 
   const fetchEvents = () => {
-    setLoading(true);
-    setRefreshing(true);
-    
-    const params = {
-      emp_id: (activeFilter === 'All' || activeFilter === 'P') ? empId : '',
-      event_type: activeFilter === 'All' ? '' : activeFilter,
-      date_range: dateRange
-    };
-    
-    getEvents(params)
-      .then((res) => {
-        // Filter events to only include those with status 'A' or 'P'
-        const filteredData = res.data.filter(event => 
-          event.event_status === 'A' || event.event_status === 'P'
-        );
-        setEventData(filteredData);
-        applyFilter(activeFilter, filteredData);
-      })
-      .catch((error) => {
-        console.error("Fetch Event Error:", error?.response?.data);
-      })
-      .finally(() => {
-        setLoading(false);
-        setRefreshing(false);
-      });
+  setLoading(true);
+  setRefreshing(true);
+  
+  // Use the actual filter values (dateRange and activeFilter) instead of pendingFilters
+  const params = {
+    emp_id: (activeFilter === 'All' || activeFilter === 'P') ? empId : '',
+    event_type: activeFilter === 'All' ? '' : activeFilter,
+    date_range: dateRange
   };
+  
+  getEvents(params)
+    .then((res) => {
+      const filteredData = res.data.filter(event => 
+        event.event_status === 'A' || event.event_status === 'P'
+      );
+      setEventData(filteredData);
+      applyFilter(activeFilter, filteredData);
+    })
+    .catch((error) => {
+      console.error("Fetch Event Error:", error?.response?.data);
+    })
+    .finally(() => {
+      setLoading(false);
+      setRefreshing(false);
+    });
+};
+
 
   const applyFilter = (typeCode, data) => {
     if (typeCode === 'All') {
@@ -147,14 +151,6 @@ const EventScreen = (props) => {
   const closeModal = () => {
     setIsModalVisible(false);
     setSelectedEvent(null);
-  };
-
-  const handleFilterPress = (typeCode) => {
-    setActiveFilter(typeCode);
-  };
-
-  const handleDateRangePress = (rangeCode) => {
-    setDateRange(rangeCode);
   };
 
   const onRefresh = () => {
@@ -192,16 +188,24 @@ const EventScreen = (props) => {
   ];
 
   const handleApplyFilters = () => {
+  // Update the actual filter states with the pending values
   setDateRange(pendingFilters.dateRange);
   setActiveFilter(pendingFilters.eventType);
+  
+  // Now fetch events with the new filters
+  fetchEvents();
+  
   setShowFilterModal(false);
 };
 
+
 const handleClearFilters = () => {
+  // Reset pending filters to default values
   setPendingFilters({
-    dateRange: '',
-    eventType: '',
+    dateRange: 'D0',  // Default value
+    eventType: 'All', // Default value
   });
+  
 };
 
   return (
@@ -272,6 +276,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    paddingTop: 16,
     backgroundColor: '#fff',
   },
   headerSection: {

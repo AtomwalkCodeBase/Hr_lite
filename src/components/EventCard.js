@@ -15,23 +15,22 @@ const responsiveWidth = (percentage) => width * (percentage / 100);
 const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-
 const EventCard = ({ event, onPress }) => {
   // Helper function to get event type color
   const getEventTypeColor = (type) => {
     const typeColors = {
-      'B': { bg: '#E1F5FE', text: '#0288D1' },  // Birthday - Light Blue
-      'A': { bg: '#E8F5E9', text: '#388E3C' },  // Anniversary - Light Green
-      'C': { bg: '#FFF3E0', text: '#F57C00' },  // Conference - Light Orange
-      'M': { bg: '#E0F2F1', text: '#00796B' },  // Meeting - Light Teal
-      'P': { bg: '#F3E5F5', text: '#7B1FA2' },  // Party - Light Purple
-      'O': { bg: '#EFEBE9', text: '#5D4037' },  // Other - Light Brown
+      'B': { bg: '#E1F5FE', text: '#0288D1' },  // Birthday
+      'A': { bg: '#E8F5E9', text: '#388E3C' },  // Anniversary
+      'C': { bg: '#FFF3E0', text: '#F57C00' },  // Conference
+      'M': { bg: '#E0F2F1', text: '#00796B' },  // Meeting
+      'P': { bg: '#F3E5F5', text: '#7B1FA2' },  // Party
+      'O': { bg: '#EFEBE9', text: '#5D4037' },  // Other
     };
     
-    return typeColors[type] || { bg: '#F5F5F5', text: '#757575' }; // Default - Light Grey
+    return typeColors[type] || { bg: '#F5F5F5', text: '#757575' };
   };
 
-  // Format the date for display (handles DD-MM-YYYY format)
+  // Format the date for display
   const formatEventDate = (dateString) => {
     try {
       if (!dateString) return { day: '--', month: '---' };
@@ -45,42 +44,50 @@ const EventCard = ({ event, onPress }) => {
       
       return {
         day: day,
-        month: date.toLocaleString('default', { month: 'short' })
+        month: date.toLocaleString('default', { month: 'short' }).toUpperCase(),
+        year: year
       };
     } catch (error) {
       console.error("Date parsing error:", error);
-      return { day: '--', month: '---' };
+      return { day: '--', month: '---', year: '----' };
     }
   };
 
-  // Get event status style and display text
+  // Get event status style
   const getStatusStyle = (status) => {
     const statusMap = {
       'A': { // Active
         display: 'Active',
-        bg: '#E3F2FD',     // Light Blue
-        text: '#1565C0'     // Dark Blue
+        bg: '#E3F2FD',
+        text: '#1565C0',
+        icon: 'flash'
       },
       'P': { // Planned
         display: 'Planned',
-        bg: '#FFFDE7',     // Light Yellow
-        text: '#F9A825'     // Amber / Dark Yellow
+        bg: '#FFFDE7',
+        text: '#F9A825',
+        icon: 'calendar'
       },
       'X': { // Cancelled
         display: 'Cancelled',
-        bg: '#FFEBEE',     // Light Red / Pink
-        text: '#C62828'     // Dark Red
+        bg: '#FFEBEE',
+        text: '#C62828',
+        icon: 'close-circle'
       },
       'C': { // Completed
         display: 'Completed',
-        bg: '#E0F2F1',     // Light Teal
-        text: '#00695C'     // Strong Teal
+        bg: '#E0F2F1',
+        text: '#00695C',
+        icon: 'checkmark-circle'
       }
     };
     
-    
-    
-    return statusMap[status] || { display: 'Unknown', bg: '#F5F5F5', text: '#757575' };
+    return statusMap[status] || { 
+      display: 'Unknown', 
+      bg: '#F5F5F5', 
+      text: '#757575',
+      icon: 'help-circle'
+    };
   };
 
   const formattedDate = formatEventDate(event.event_date);
@@ -91,54 +98,65 @@ const EventCard = ({ event, onPress }) => {
     <TouchableOpacity 
       style={styles.eventCard}
       onPress={() => onPress(event)}
-      activeOpacity={0.95}
+      activeOpacity={0.9}
     >
+      {/* Date ribbon */}
+      <View style={styles.dateRibbon}>
+        <Text style={styles.dateRibbonDay}>{formattedDate.day}</Text>
+        <Text style={styles.dateRibbonMonth}>{formattedDate.month}</Text>
+      </View>
+      
+      {/* Main content */}
       <View style={styles.cardContent}>
-        {/* Date display */}
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateDay}>{formattedDate.day}</Text>
-          <Text style={styles.dateMonth}>{formattedDate.month}</Text>
-        </View>
-        
-        {/* Main event content */}
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventTitle} numberOfLines={1}>{event.event_text}</Text>
-          
-          <View style={styles.eventMeta}>
-            {/* Event type tag */}
-            <View style={[styles.tag, { backgroundColor: typeColor.bg }]}>
-              <Text style={[styles.tagText, { color: typeColor.text }]}>
-                {event.event_type_display}
-              </Text>
-            </View>
-            
-            {/* Event status tag */}
-            <View style={[styles.tag, { backgroundColor: statusInfo.bg }]}>
-              <Text style={[styles.tagText, { color: statusInfo.text }]}>
-                {statusInfo.display}
-              </Text>
-            </View>
-          </View>
-          
-          {/* Remarks - if available */}
-          {event.emp_name && (
-            <View style={styles.remarksContainer}>
-              <Ionicons name="person" size={14} color="#7f8c8d" />
-              <Text style={styles.remarksText} numberOfLines={1}>{event.emp_name}</Text>
-            </View>
-          )}
-        </View>
-        
-        {/* Event Image */}
+        {/* Event image - now properly positioned */}
         <View style={styles.imageContainer}>
           <Image 
             source={{ uri: event.image || 'https://via.placeholder.com/100' }}
             style={styles.eventImage}
             resizeMode="cover"
           />
-          <View style={styles.arrowContainer}>
-            <MaterialIcons name="arrow-forward-ios" size={16} color="#3498db" />
+        </View>
+        
+        {/* Event details - now properly positioned to the right of image */}
+        <View style={styles.eventDetails}>
+          <Text style={styles.eventTitle} numberOfLines={1}>{event.event_text}</Text>
+          
+          {event.emp_name && (
+            <View style={styles.employeeContainer}>
+              <Ionicons name="person-outline" size={14} color="#7f8c8d" />
+              <Text style={styles.employeeText} numberOfLines={1}>
+                {event.emp_name}
+              </Text>
+            </View>
+          )}
+          
+          <View style={styles.tagsContainer}>
+            <View style={[styles.tag, { backgroundColor: typeColor.bg }]}>
+              <Text style={[styles.tagText, { color: typeColor.text }]}>
+                {event.event_type_display}
+              </Text>
+            </View>
+            
+            <View style={[styles.tag, { backgroundColor: statusInfo.bg }]}>
+              <Ionicons 
+                name={statusInfo.icon} 
+                size={14} 
+                color={statusInfo.text} 
+                style={styles.statusIcon}
+              />
+              <Text style={[styles.tagText, { color: statusInfo.text }]}>
+                {statusInfo.display}
+              </Text>
+            </View>
           </View>
+        </View>
+        
+        <View style={styles.arrowContainer}>
+          <MaterialIcons 
+            name="arrow-forward-ios" 
+            size={16} 
+            color="#bdc3c7" 
+          />
         </View>
       </View>
     </TouchableOpacity>
@@ -148,96 +166,108 @@ const EventCard = ({ event, onPress }) => {
 const styles = StyleSheet.create({
   eventCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    marginHorizontal: responsiveWidth(5),
+    borderRadius: 14,
+    marginHorizontal: responsiveWidth(4),
     marginBottom: responsiveHeight(2),
-    padding: responsiveWidth(3),
-    elevation: 3,
+    padding: 0,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    overflow: 'hidden',
+  },
+  dateRibbon: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: '#2c3e50',
+    paddingVertical: responsiveHeight(0.8),
+    paddingHorizontal: responsiveWidth(3),
+    borderBottomRightRadius: 12,
+    zIndex: 2,
+  },
+  dateRibbonDay: {
+    fontSize: responsiveFontSize(4),
+    fontWeight: '700',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: responsiveFontSize(4.2),
+  },
+  dateRibbonMonth: {
+    fontSize: responsiveFontSize(2.5),
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   cardContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed to flex-start for better alignment
+    padding: responsiveWidth(3),
+    paddingLeft: responsiveWidth(22), // Increased to make space for image
   },
-  dateContainer: {
-    backgroundColor: '#f5f6fa',
-    borderRadius: 12,
-    padding: responsiveWidth(2),
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: responsiveWidth(14),
-    height: responsiveWidth(14),
-    marginRight: responsiveWidth(3),
+  imageContainer: {
+    position: 'absolute',
+    left: responsiveWidth(3),
+    top: responsiveHeight(2), // Added top positioning
+    width: responsiveWidth(18), // Slightly reduced width
+    height: responsiveWidth(18), // Slightly reduced height
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#fff',
+    elevation: 1,
+    zIndex: 1, // Ensure image stays above other elements
   },
-  dateDay: {
-    fontSize: responsiveFontSize(4.5),
-    fontWeight: '700',
-    color: '#2c3e50',
-    lineHeight: responsiveFontSize(5),
+  eventImage: {
+    width: '100%',
+    height: '100%',
   },
-  dateMonth: {
-    fontSize: responsiveFontSize(2.8),
-    fontWeight: '500',
-    color: '#7f8c8d',
-    textTransform: 'uppercase',
-  },
-  eventInfo: {
+  eventDetails: {
     flex: 1,
-    paddingRight: responsiveWidth(2),
+    marginLeft: 0, // Removed marginLeft since we're using absolute positioning
   },
   eventTitle: {
     fontSize: responsiveFontSize(3.8),
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: responsiveHeight(0.8),
+    marginBottom: responsiveHeight(0.6),
   },
-  eventMeta: {
+  employeeContainer: {
     flexDirection: 'row',
-    marginBottom: responsiveHeight(0.8),
+    alignItems: 'center',
+    marginBottom: responsiveHeight(1.2),
+  },
+  employeeText: {
+    fontSize: responsiveFontSize(3),
+    color: '#7f8c8d',
+    marginLeft: responsiveWidth(1),
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: responsiveWidth(2.5),
-    paddingVertical: responsiveHeight(0.5),
-    borderRadius: 8,
+    paddingVertical: responsiveHeight(0.6),
+    borderRadius: 6,
     marginRight: responsiveWidth(2),
+    marginBottom: responsiveHeight(0.5),
   },
   tagText: {
     fontSize: responsiveFontSize(2.8),
     fontWeight: '500',
   },
-  remarksContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  remarksText: {
-    fontSize: responsiveFontSize(2.8),
-    color: '#7f8c8d',
-    marginLeft: responsiveWidth(1),
-  },
-  imageContainer: {
-    position: 'relative',
-  },
-  eventImage: {
-    width: responsiveWidth(16),
-    height: responsiveWidth(16),
-    borderRadius: 12,
+  statusIcon: {
+    marginRight: 3,
   },
   arrowContainer: {
-    position: 'absolute',
-    bottom: responsiveHeight(-1),
-    right: responsiveWidth(-1),
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: responsiveWidth(1),
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  }
+    marginLeft: 'auto',
+    paddingLeft: responsiveWidth(2),
+  },
 });
 
 export default EventCard;
