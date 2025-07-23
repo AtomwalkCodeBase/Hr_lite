@@ -36,6 +36,8 @@ export default function RootLayout() {
       <Stack.Screen name="ModuleDetails/index" options={{headerShown:false}}/>
       <Stack.Screen name="TimeSheet/index" options={{headerShown:false}}/>
       <Stack.Screen name="EmployeeList/index" options={{headerShown:false}}/>
+      <Stack.Screen name="ResolveScreen/index" options={{headerShown:false}}/>
+      <Stack.Screen name="ResolveRequestScreen/index" options={{headerShown:false}}/>
     </Stack>
     
     </AppProvider>

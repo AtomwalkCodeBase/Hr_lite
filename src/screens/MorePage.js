@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import styled from 'styled-components/native';
 import { useRouter } from 'expo-router';
-import { MaterialIcons, Ionicons, Feather, FontAwesome6 } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons, Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
 import { AppContext } from '../../context/AppContext';
@@ -109,6 +109,13 @@ const MorePage = () => {
     });
   };
 
+  const handlePressResolve = () => {  
+    router.push({
+      pathname: 'ResolveScreen',
+      params: { empId },
+    });
+  };
+
   const handlePressRequest = () => {  
     router.push({
       pathname: 'RequestScr',
@@ -189,6 +196,13 @@ const handlePressProfile = () => {
       subTitle: "Add your request in Request",
       icon: <FontAwesome6 name="headset" size={24} color="#7e57c2" />,
       action: handlePressRequest,
+      show: true
+    },
+    {
+      title: "Resolve Desk",
+      subTitle: "See your issues at Resolve Desk",
+      icon: <MaterialCommunityIcons name="checkbox-multiple-marked-circle-outline" size={24} color="#7e57c2" />,
+      action: handlePressResolve,
       show: true
     },
   // {

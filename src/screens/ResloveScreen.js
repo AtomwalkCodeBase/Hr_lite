@@ -25,9 +25,9 @@ const responsiveWidth = (percentage) => width * (percentage / 100);
 const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const HelpScreen = (props) => {
+const ResolveScreen = (props) => {
   const router = useRouter();
-  const call_type = 'H';
+  const call_type = 'R';
   const [helpCategories, setHelpCategories] = useState([]);
   const [helpData, setHelpData] = useState([]);
   const [filteredHelps, setFilteredHelps] = useState([]);
@@ -66,7 +66,7 @@ const HelpScreen = (props) => {
     try {
       const res = await getRequestCategory();
       setHelpCategories(res.data);
-      const filtered = res.data.filter(category => category.request_type === 'H');
+      const filtered = res.data;
       setFilteredHelpCategories(filtered);
     } catch (err) {
       console.error("Error fetching categories:", err);
@@ -79,23 +79,21 @@ const HelpScreen = (props) => {
       setHelpData(res.data);
       const filtered = res.data.filter(
         (request) => 
-          request.request_type === 'H' && 
-          request.emp_id === empId
+          request.resolved_by === empId
       );
-      // console.log("filtered",filtered)
       setFilteredHelps(filtered);
     } catch (err) {
       console.error("Error fetching requests:", err);
     }
   };
 
-  useFocusEffect(
-    React.useCallback(() => {
-      if (empId) {
-        fetchData();
-      }
-    }, [empId])
-  );
+    useFocusEffect(
+      React.useCallback(() => {
+        if (empId) {
+          fetchRequest();
+        }
+      }, [empId])
+    );
 
   const handleBackPress = () => {
     router.back();
@@ -140,7 +138,7 @@ const HelpScreen = (props) => {
 
   const handleResolveHelp = (item) => {
     router.push({
-      pathname: 'AddHelp',
+      pathname: 'ResolveRequestScreen',
       params: {
         empId,
         call_type,
@@ -189,7 +187,7 @@ const filterConfigs = useMemo(() => [
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-        headerTitle="Help Desk" 
+        headerTitle="Resolve Desk" 
         onBackPress={handleBackPress} 
         showActionButton={false}
         icon1Name="filter"
@@ -219,7 +217,7 @@ const filterConfigs = useMemo(() => [
                     item={item}
                     onPress={() => handleCardPress(item)}
                     onUpdate={() => handleUpdateHelp(item)}
-                    // onResolve={() => handleResolveHelp(item)}
+                    onResolve={() => handleResolveHelp(item)}
                   />
                 )}
                 keyExtractor={(item) => item.id.toString()}
@@ -228,19 +226,13 @@ const filterConfigs = useMemo(() => [
               />
             ) : (
               <EmptyMessage 
-                message="No help requests found"
-                subMessage="Tap the button below to create a new request"
+                message="No resolve requests found"
+                subMessage="Nothing needs your attention at the moment."
                 iconName="help-circle"
               />
             )}
           </ScrollView>
         )}
-
-        <ApplyButton             
-          onPress={handleCreateRequest}
-          buttonText="Create New Help Request"
-          iconName="add"
-        />
       </View>
       
       <ModalComponent
@@ -293,4 +285,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HelpScreen;
+export default ResolveScreen;

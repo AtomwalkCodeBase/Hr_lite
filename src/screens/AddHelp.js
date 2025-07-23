@@ -42,7 +42,10 @@ const AddHelp = (props) => {
   const is_shift_request = props.data.shift_request;
   
   // Check if we're in update mode
-  const isUpdateMode = props?.data?.headerTitle === "Update Request" && itemdata.request_id;
+  const isUpdateMode = Boolean(
+    (props?.data?.headerTitle === "Update Request" || props?.data?.headerTitle === "Update Help") && itemdata.request_id
+  );
+  // console.log("isUpdateMode", isUpdateMode)
   
   // Dynamic header title
   const headerTitle = is_shift_request 

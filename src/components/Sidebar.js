@@ -1,4 +1,4 @@
-import { Feather, MaterialIcons, Ionicons, FontAwesome6, AntDesign } from '@expo/vector-icons';
+import { Feather, MaterialIcons, Ionicons, FontAwesome6, AntDesign, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import React, { useState, useContext, useEffect } from 'react';
 import { 
@@ -261,6 +261,13 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
     });
   };
 
+    const handlePressResolve = () => {  
+    router.push({
+      pathname: 'ResolveScreen',
+      params: { empId },
+    });
+  };
+
   const handlePressEvent = () => {  
     router.push({
       pathname: 'EventScr',
@@ -333,6 +340,13 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
       name: "Request Desk",
       icon: <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />,
       action: handlePressRequest,
+      show: true,
+      hasChevron: true,
+    },
+    {
+      name: "Resolve Desk",
+      icon: <MaterialCommunityIcons name="checkbox-multiple-marked-circle-outline" size={20} color={colors.textSecondary} />,
+      action: handlePressResolve,
       show: true,
       hasChevron: true,
     },

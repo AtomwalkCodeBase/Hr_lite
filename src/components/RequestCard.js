@@ -12,6 +12,7 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
   // Status configuration with colors and icons
   const statusConfig = {
     approved: { color: '#4CAF50', icon: 'check-circle', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
+    // completed: { color: '#4CAF50', icon: 'check-circle', bgColor: '#E8F5E8', borderColor: '#4CAF50' },
     rejected: { color: '#ff0000ff', icon: 'cancel', bgColor: '#ffeff2ff', borderColor: '#f44336' },
     pending: { bgColor: '#FFF3E0', color: '#EF6C00', borderColor: '#FF9800', icon: 'schedule' },
     submitted: { color: '#0D47A1', icon: 'schedule', bgColor: '#E3F2FD', borderColor: '#2196F3' },
@@ -22,7 +23,8 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
   // Determine status configuration based on item status
    const { bgColor, borderColor, color: textColor, icon: statusIcon } = (() => {
     const status = item.status_display?.toLowerCase();
-    if (status?.includes('approved')) return statusConfig.approved;
+    if (status?.includes('approved') || status?.includes('completed')) return statusConfig.approved;
+    // if (status?.includes('completed')) return statusConfig.completed;
     if (status?.includes('rejected') || status?.includes('denied')) return statusConfig.rejected;
     if (status?.includes('pending')) return statusConfig.pending;
     if (status?.includes('submitted')) return statusConfig.submitted;
@@ -31,6 +33,7 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
   })();
 
   const isSubmitted = item.status_display?.toLowerCase().includes('submitted');
+  const isCompleted = item.status_display?.toLowerCase().includes('completed');
 
   const CardContent = () => (
     <View style={styles.cardContainer}>
@@ -83,6 +86,17 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
             </View>
           </TouchableOpacity>
         )}
+
+        {onResolve && !isCompleted && <TouchableOpacity 
+          style={[styles.actionButton, { flex: isSubmitted ? 1 : 2 }]} // Adjust flex based on whether Update button is shown
+          onPress={onResolve}
+          activeOpacity={0.8}
+        >
+          <View style={styles.button}>
+            <Text style={styles.buttonText}>Resolve Request</Text>
+            <MaterialCommunityIcons name="checkbox-marked-circle-outline" size={18} color="white" />
+          </View>
+        </TouchableOpacity>}
         
         {/* Always show View Details button */}
         <TouchableOpacity 
@@ -95,6 +109,8 @@ const RequestCard = ({ item, onPress, onUpdate, onResolve }) => {
             <Ionicons name="arrow-forward" size={18} color="white" />
           </View>
         </TouchableOpacity>
+
+
       </View>
     </View>
   );
@@ -150,10 +166,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statusBadgeText: {
-    fontSize: responsiveFontSize(3.2),
+    fontSize: responsiveFontSize(3.4),
     color: 'white',
-    fontWeight: '500',
-    marginLeft: 5,
+    fontWeight: '600',
+
   },
   cardBody: {
     marginBottom: 12,

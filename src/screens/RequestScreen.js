@@ -8,7 +8,7 @@ import {
   ScrollView,
   RefreshControl
 } from 'react-native';
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
@@ -87,6 +87,14 @@ const RequestScreen = (props) => {
       console.error("Error fetching requests:", err);
     }
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (empId) {
+        fetchRequest();
+      }
+    }, [empId])
+  );
 
   const handleBackPress = () => {
     router.push({
@@ -212,7 +220,7 @@ const filterConfigs = useMemo(() => [
                     item={item}
                     onPress={() => handleCardPress(item)}
                     onUpdate={() => handleUpdateRequest(item)}
-                    onResolve={() => handleResolveRequest(item)}
+                    // onResolve={() => handleResolveRequest(item)}
                   />
                 )}
                 keyExtractor={(item) => item.id.toString()}

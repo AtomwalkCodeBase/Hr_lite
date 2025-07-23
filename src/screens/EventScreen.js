@@ -63,6 +63,8 @@ const EventScreen = (props) => {
   eventType: activeFilter,
 });
 
+  const appliedFilterCount = Object.values(pendingFilters).filter(v => v && v !== "").length;
+
   const eventTypes = [
     { code: 'All', display: 'My Events' },
     { code: 'B', display: 'Birthday' },
@@ -215,6 +217,7 @@ const handleClearFilters = () => {
         onBackPress={handleBackPress} 
         icon1Name="filter"
         icon1OnPress={openFilterModal}
+        filterCount={appliedFilterCount}
       />
       
       <View style={styles.container}>

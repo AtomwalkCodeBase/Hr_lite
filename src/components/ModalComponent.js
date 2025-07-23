@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
 
 const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCancelLeave, showCancelButton }) => {
+  
   const formatIndianCurrency = (num) => {
   if (!num && num !== 0) return null; // handles null, undefined, empty string
   
@@ -12,6 +13,8 @@ const ModalComponent = ({ isVisible, leave, claim, helpRequest, onClose, onCance
   const numberValue = Number(num);
   if (isNaN(numberValue)) return null;
 
+  
+ 
   // Check if it's an integer (has no decimal or decimal is .00)
   const isInteger = Number.isInteger(numberValue);
   
