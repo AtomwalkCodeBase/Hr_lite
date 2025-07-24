@@ -1,3 +1,4 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { 
   Modal, 
@@ -18,7 +19,8 @@ const ConfirmationModal = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   color,
-  messageColor
+  messageColor,
+  headerTitle
 }) => {
   const scaleValue = React.useRef(new Animated.Value(0)).current;
 
@@ -48,7 +50,8 @@ const ConfirmationModal = ({
           styles.modalView,
           { transform: [{ scale: scaleValue }] }
         ]}>
-          <Text style={styles.modalTitle}>Confirmation</Text>
+          <MaterialIcons name="clear" size={24} color="black" onPress={onCancel} style={styles.cancel} />
+          <Text style={styles.modalTitle}>{headerTitle ? headerTitle : "Confirmation"}</Text>
           <Text style={[styles.modalText, messageColor && { color: messageColor }]}>{message}</Text>
           
           <View style={styles.buttonContainer}>
@@ -161,6 +164,11 @@ const styles = StyleSheet.create({
   buttonDivider: {
     width: 12,
   },
+  cancel: {
+    position: "absolute",
+    right: "7%",
+    top: "7%"
+  }
 });
 
 export default ConfirmationModal;

@@ -26,6 +26,8 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
+import ErrorModal from '../components/ErrorModal';
+import { getTimesheetData } from '../services/productServices';
 
 const { width } = Dimensions.get('window');
 
@@ -49,6 +51,9 @@ const AddAttendance = () => {
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [showTimesheetErrorModal, setShowTimesheetErrorModal] = useState(false);
+  const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
+  const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
 
@@ -224,6 +229,30 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
   return R * c;
+};
+
+const MAX_DAILY_HOURS = 9;
+
+// Utility to validate timesheet for check-out
+const validateTimesheetForCheckout = async (empId, date) => {
+  try {
+    const res = await getTimesheetData(empId, date, date);
+    const timesheetEntries = res.data || [];
+    console.log("timesheetEntries", timesheetEntries)
+    if (!timesheetEntries.length) {
+      return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+    }
+    const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
+    const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
+    return {
+      notFilled: false,
+      totalEffort,
+      isEffortOutOfRange,
+      isValid: !isEffortOutOfRange,
+    };
+  } catch (e) {
+    return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+  }
 };
 
 
@@ -408,6 +437,25 @@ const isCheckOutDisabled = !dataLoaded ||
                          !employeeData || 
                          (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
 
+const handleCheckOutAttempt = async () => {
+  if (timesheetCheckedToday) {
+    setIsRemarkModalVisible(true);
+    return;
+  }
+  if (!employeeData) return;
+   const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
+  if (notFilled) {
+    setShowTimesheetErrorModal(true);
+    return;
+  }
+  if (isEffortOutOfRange) {
+    setShowEffortConfirmModal(true);
+    return;
+  }
+  setTimesheetCheckedToday(true);
+  setIsRemarkModalVisible(true);
+};
+
 
   if (!initialLoadComplete || isLoading) {
     return <Loader visible={true} />;
@@ -513,12 +561,10 @@ const isCheckOutDisabled = !dataLoaded ||
           <TouchableOpacity
             onPress={() => {
               if (previousDayUnchecked) {
-                // Show confirmation for yesterday's checkout
                 setIsConfirmModalVisible(true);
               } else {
-                // Handle today's checkout
                 setIsYesterdayCheckout(false);
-                setIsRemarkModalVisible(true);
+                handleCheckOutAttempt();
               }
             }}
             disabled={isCheckOutDisabled}
@@ -620,6 +666,25 @@ const isCheckOutDisabled = !dataLoaded ||
 
       {/* Loader */}
       <Loader visible={isLoading} />
+      <ErrorModal
+        visible={showTimesheetErrorModal}
+        message="You did not fill today's timesheet. Please fill it before checking out."
+        onClose={() => setShowTimesheetErrorModal(false)}
+      />
+      <ConfirmationModal
+        visible={showEffortConfirmModal}
+        headerTitle="Warning"
+        messageColor="#EF6C00"
+        message="Your timesheet hours seem unusual. Do you still want to check out ?"
+        onConfirm={() => {
+          setShowEffortConfirmModal(false);
+          setTimesheetCheckedToday(true);
+          setIsRemarkModalVisible(true);
+        }}
+        onCancel={() => setShowEffortConfirmModal(false)}
+        confirmText="Yes"
+        cancelText="No"
+      />
     </>
   );
 };

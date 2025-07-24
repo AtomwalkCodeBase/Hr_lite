@@ -16,8 +16,33 @@ import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
+import ErrorModal from '../components/ErrorModal';
+import { getTimesheetData } from '../services/productServices';
 
 const { width, height } = Dimensions.get('window');
+
+const MAX_DAILY_HOURS = 9;
+
+// Utility to validate timesheet for check-out
+const validateTimesheetForCheckout = async (empId, date) => {
+  try {
+    const res = await getTimesheetData(empId, date, date);
+    const timesheetEntries = res.data || [];
+    if (!timesheetEntries.length) {
+      return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+    }
+    const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
+    const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
+    return {
+      notFilled: false,
+      totalEffort,
+      isEffortOutOfRange,
+      isValid: !isEffortOutOfRange,
+    };
+  } catch (e) {
+    return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+  }
+};
 
 const HomePage = ({ navigation }) => {
   const router = useRouter();
@@ -58,6 +83,9 @@ const HomePage = ({ navigation }) => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showTimesheetErrorModal, setShowTimesheetErrorModal] = useState(false);
+  const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
+  const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
 
 
   useLayoutEffect(() => {
@@ -307,6 +335,26 @@ const HomePage = ({ navigation }) => {
     setErrors(prevState => ({ ...prevState, [input]: error }));
   };
 
+  const ORIGIN_LATITUDE = 12.970291521583423; // Replace with your origin latitude
+const ORIGIN_LONGITUDE = 77.66967829003778; // Replace with your origin longitude
+const ALLOWED_RADIUS = 100; // Radius in meters
+
+// Add this utility function to calculate distance between coordinates
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+};
+
   const handleCheck = async (data) => {
     if (!employeeData) return;
 
@@ -320,52 +368,61 @@ const HomePage = ({ navigation }) => {
     }
 
     let location = null;
-    let retries = 0;
 
-    while (!location && retries < 1) {
-      try {
-        location = await Location.getCurrentPositionAsync({});
-      } catch (error) {
-        retries += 1;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
+  try {
+    location = await Location.getCurrentPositionAsync({});
+    
+    // Calculate distance from origin
+    const distance = calculateDistance(
+      ORIGIN_LATITUDE,
+      ORIGIN_LONGITUDE,
+      location.coords.latitude,
+      location.coords.longitude
+    );
 
-    if (!location) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+    if (distance > ALLOWED_RADIUS) {
+      Alert.alert(
+        'Location Out of Range',
+        `You are ${Math.round(distance)} meters away from the allowed location. ` +
+        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
+      );
       setIsLoading(false);
       return;
     }
+  } catch (error) {
+    Alert.alert('Error', 'Unable to fetch location. Please try again.');
+    setIsLoading(false);
+    return;
+  }
 
-    const todayAttendance = attData.find((item) => item.a_date === currentDate);
-    const attendanceId = todayAttendance ? todayAttendance.id : null;
-    const time = await setdatatime();
-
-    const checkPayload = {
-      emp_id: employeeData?.id,
-      call_mode: data,
-      time: time,
-      geo_type: data === 'ADD' ? 'I' : 'O',
-      a_date: currentDate,
-      latitude_id: `${location?.coords?.latitude}`,
-      longitude_id: `${location?.coords?.longitude}`,
-      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-      id: attendanceId,
-    };
-
-    try {
-      await postCheckIn(checkPayload);
-      setCheckedIn(data === 'ADD');
-      setRefreshKey((prevKey) => prevKey + 1);
-      setIsSuccessModalVisible(true);
-      if (data === 'UPDATE') setRemark('');
-    } catch (error) {
-      console.error('Check in/out error:', error);
-      Alert.alert('Check Failure', 'Failed to Check.');
-    } finally {
-      setIsLoading(false);
-    }
+  const todayAttendance = attData.find((item) => item.a_date === currentDate);
+  const attendanceId = todayAttendance ? todayAttendance.id : null;
+  const time = await setdatatime();
+  
+  const checkPayload = {
+    emp_id: employeeData?.id,
+    call_mode: data,
+    time: time,
+    geo_type: data === 'ADD' ? 'I' : 'O',
+    a_date: currentDate,
+    latitude_id: `${location?.coords?.latitude}`,
+    longitude_id: `${location?.coords?.longitude}`,
+    remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+    id: attendanceId,
   };
+
+  try {
+    await postCheckIn(checkPayload);
+    setRefreshKey((prevKey) => prevKey + 1);
+    setIsSuccessModalVisible(true);
+    if (data === 'UPDATE') setRemark('');
+  } catch (error) {
+    console.error('Check in/out error:', error);
+    Alert.alert('Check Failure', 'Failed to Check.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleRemarkSubmit = () => {
     if (!remark.trim()) {
@@ -422,6 +479,25 @@ const HomePage = ({ navigation }) => {
         return;
       }
 
+      
+    // Calculate distance from origin
+    const distance = calculateDistance(
+      ORIGIN_LATITUDE,
+      ORIGIN_LONGITUDE,
+      location.coords.latitude,
+      location.coords.longitude
+    );
+
+    if (distance > ALLOWED_RADIUS) {
+      Alert.alert(
+        'Location Out of Range',
+        `You are ${Math.round(distance)} meters away from the allowed location. ` +
+        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
+      );
+      setIsLoading(false);
+      return;
+    }
+
       // Add location data to payload
       payload.latitude_id = `${location.coords.latitude}`;
       payload.longitude_id = `${location.coords.longitude}`;
@@ -470,7 +546,24 @@ const HomePage = ({ navigation }) => {
   const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
   const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
 
-
+  const handleCheckOutAttempt = async () => {
+    if (timesheetCheckedToday) {
+      setIsRemarkModalVisible(true);
+      return;
+    }
+    if (!employeeData) return;
+    const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
+    if (notFilled) {
+      setShowTimesheetErrorModal(true);
+      return;
+    }
+    if (isEffortOutOfRange) {
+      setShowEffortConfirmModal(true);
+      return;
+    }
+    setTimesheetCheckedToday(true);
+    setIsRemarkModalVisible(true);
+  };
 
 
   const renderEventCard = ({ item }) => (
@@ -675,7 +768,7 @@ const HomePage = ({ navigation }) => {
                         setIsConfirmModalVisible(true);
                       } else {
                         setIsYesterdayCheckout(false);
-                        setIsRemarkModalVisible(true);
+                        handleCheckOutAttempt();
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -869,6 +962,26 @@ const HomePage = ({ navigation }) => {
         cancelText="Cancel"
       />
 
+      <ErrorModal
+        visible={showTimesheetErrorModal}
+        message="You did not fill today's timesheet. Please fill it before checking out."
+        onClose={() => setShowTimesheetErrorModal(false)}
+      />
+      <ConfirmationModal
+        visible={showEffortConfirmModal}
+        headerTitle="Warning"
+        messageColor="#EF6C00"
+        message="Your timesheet hours seem unusual. Do you still want to check out ?"
+        onConfirm={() => {
+          setShowEffortConfirmModal(false);
+          setTimesheetCheckedToday(true);
+          setIsRemarkModalVisible(true);
+        }}
+        onCancel={() => setShowEffortConfirmModal(false)}
+        confirmText="Yes"
+        cancelText="No"
+      />
+
       <ConfirmationModal
         visible={showExitModal}
         message="Are you sure you want to exit the app?"
@@ -897,6 +1010,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f5ff',
   },
+    distanceText: {
+  fontSize: 14,
+  fontFamily: 'Inter-Medium',
+  textAlign: 'center',
+  marginTop: 8,
+  color: '#666',
+},
   headerContainer: {
     overflow: 'visible',
     zIndex: 10,

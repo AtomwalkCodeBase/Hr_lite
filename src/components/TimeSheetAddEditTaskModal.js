@@ -147,7 +147,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
           >
             {projects.length > 0 && (
               <DropdownPicker
-                label="Project "
+                label="Project *"
                 data={projects.map((project) => ({
                   label: `${project.title} (${project.project_code})`,
                   value: project.project_code,
@@ -240,7 +240,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
       </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your task will be in Draft mode. You can edit or submit it later."
+        message="Your task will be in Draft mode. You can edit and submit it later."
         onConfirm={() => {
           validateAndSubmit("ADD_AND_SAVE");
           setIsConfirmModalVisible(false);
@@ -270,8 +270,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
-    paddingTop: 50,
-    // paddingBottom: 30,
+    paddingTop: 30,
+    paddingBottom: 30,
     maxHeight: height * 0.95,
   },
   scrollContent: {
