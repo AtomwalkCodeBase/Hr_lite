@@ -19,6 +19,7 @@ import FilterModal from "../components/FilterModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { EmployeeInfoCard } from '../components/SharedTimesheetComponents';
 import TabNavigation from '../components/TabNavigation';
+import moment from "moment";
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
@@ -102,12 +103,16 @@ const TimeSheet = () => {
 
   function formatTimeForAPI(date) {
     if (!(date instanceof Date)) return "";
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${ampm}`;
+    let time = moment(date).format('hh:mm A');
+    if (
+      moment(date).isBetween(
+        moment(date).startOf('day').add(12, 'hours').add(1, 'minute'),
+        moment(date).startOf('day').add(13, 'hours')
+      )
+    ) {
+      time = time.replace(/^12/, '00');
+    }
+    return time;
   }
 
   function formatDisplayDate(dateString) {
@@ -229,6 +234,12 @@ const TimeSheet = () => {
     }
   }, [EmpId, currentWeekStart, filters.year, filters.month]);
 
+  useEffect(() => {
+    if (activeTab === 'summary') {
+      getTimeSheetList();
+    }
+  }, [activeTab]);
+
     const handleSubmit = async (callMode, timeFlags = {}) => {
       if (callMode !== 'APPROVE' && callMode !== 'REJECT') {
         if (!formData.activity || !formData.hours) {
@@ -238,7 +249,7 @@ const TimeSheet = () => {
         }
       }
 
-    setIsLoading(true);
+    // setIsLoading(true);
 
     const empId = await AsyncStorage.getItem("empId");
     let submittedData;
@@ -275,6 +286,8 @@ const TimeSheet = () => {
         submittedData.ts_id = editingTask.id;
       }
     }
+
+    // console.log("submittedData", submittedData)
 
     try {
       const res = await postTimeList(submittedData);

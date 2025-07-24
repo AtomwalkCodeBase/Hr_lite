@@ -14,6 +14,8 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
+  const [timeManuallyChanged, setTimeManuallyChanged] = useState(false);
+
 
   // Helper: parse time string (e.g., '10:23 AM') to Date or null
   const parseTimeToDate = (timeStr) => {
@@ -74,7 +76,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
   useEffect(() => {
     const hasStart = formData.startTime instanceof Date && !isNaN(formData.startTime);
     const hasEnd = formData.endTime instanceof Date && !isNaN(formData.endTime);
-    if (hasStart && hasEnd) {
+    if (hasStart && hasEnd && (!editingTask || timeManuallyChanged)) {
       const diffMs = formData.endTime - formData.startTime;
       if (diffMs > 0) {
         const hours = (diffMs / (1000 * 60 * 60)).toFixed(2);
@@ -86,7 +88,8 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
     } else {
       setErrorMessage("");
     }
-  }, [formData.startTime, formData.endTime]);
+  }, [formData.startTime, formData.endTime, editingTask, timeManuallyChanged]);
+
 
   // Validation: effort vs. time
   const validateAndSubmit = (mode) => {
@@ -176,28 +179,41 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               <TimePicker
                 label="Start Time"
                 cDate={formData.startTime}
-                setCDate={(value) => setFormData((prev) => ({ ...prev, startTime: value }))}
+                setCDate={(value) => {
+                  setFormData((prev) => ({ ...prev, startTime: value }));
+                  if (editingTask) setTimeManuallyChanged(true);
+                }}
               />
+
             </View>
             <View style={styles.formGroup}>
               <TimePicker
-                label="End Time"
-                cDate={formData.endTime}
-                setCDate={(value) => setFormData((prev) => ({ ...prev, endTime: value }))}
-              />
+              label="End Time"
+              cDate={formData.endTime}
+              setCDate={(value) => {
+                setFormData((prev) => ({ ...prev, endTime: value }));
+                if (editingTask) setTimeManuallyChanged(true);
+              }}
+            />
+
             </View>
             <View style={styles.formGroup}>
               <Text style={styles.label}>Efforts </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  editingTask && formData.startTime && formData.endTime && !timeManuallyChanged && styles.disabledInput
+                ]}
                 value={formData.hours}
-                onChangeText={(value) => {
-                  setFormData((prev) => ({ ...prev, hours: value }));
-                }}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({ ...prev, hours: value }))
+                }
                 placeholder="Enter hours"
                 keyboardType="numeric"
                 placeholderTextColor="#999"
+                editable={!(editingTask && formData.startTime && formData.endTime && !timeManuallyChanged)}
               />
+
             </View>
             {errorMessage ? (
               <Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>
@@ -330,6 +346,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  disabledInput: {
+  backgroundColor: "#f0f0f0", // light grey
+  color: "#888"               // greyed-out text
+},
 });
 
 export default AddEditTaskModal;
