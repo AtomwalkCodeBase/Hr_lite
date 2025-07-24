@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback, useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  Image, 
-  Alert, 
-  Modal, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  Image,
+  Alert,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
   ScrollView,
-  Dimensions 
+  Dimensions,
+  BackHandler
 } from 'react-native';
 import moment from 'moment';
 import * as Location from 'expo-location';
@@ -26,8 +27,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
-import ErrorModal from '../components/ErrorModal';
-import { getTimesheetData } from '../services/productServices';
+import useBackHandler from '../hooks/useBackHandler';
 
 const { width } = Dimensions.get('window');
 
@@ -51,18 +51,38 @@ const AddAttendance = () => {
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [showTimesheetErrorModal, setShowTimesheetErrorModal] = useState(false);
-  const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
-  const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
 
 
-    useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: false,
-      });
-    }, [navigation]);
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
+
+  //   const homeBackHandler = useCallback(() => {
+  //    router.replace('home');
+  //         return true;
+  //  }, []);
+
+  //  useBackHandler(homeBackHandler);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.replace('home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
+
 
   const setdatatime = async () => {
     let time = moment().format('hh:mm A');
@@ -90,30 +110,30 @@ const AddAttendance = () => {
     const loadInitialData = async () => {
       try {
         setIsLoading(true);
-        
+
         // 1. First ensure we have employee data
         if (!profile) {
           console.log('Waiting for profile data...');
           return;
         }
-        
+
         setEmployeeData(profile);
-        
+
         // 2. Load attendance data
         const data = {
           eId: profile.id,
           month: moment().format('MM'),
           year: moment().format('YYYY'),
         };
-        
+
         const attRes = await getEmpAttendance(data);
         setAttData(attRes.data);
         processAttendanceData(attRes.data);
         checkPreviousDayAttendance(attRes.data);
-        
+
         setDataLoaded(true);
         setInitialLoadComplete(true);
-        
+
       } catch (error) {
         console.error('Error loading initial data:', error);
         Alert.alert('Error', 'Failed to load attendance data');
@@ -136,7 +156,7 @@ const AddAttendance = () => {
               month: moment().format('MM'),
               year: moment().format('YYYY'),
             };
-            
+
             const attRes = await getEmpAttendance(data);
             setAttData(attRes.data);
             processAttendanceData(attRes.data);
@@ -147,7 +167,7 @@ const AddAttendance = () => {
             setIsLoading(false);
           }
         };
-        
+
         refreshData();
       }
     }, [initialLoadComplete, employeeData])
@@ -177,9 +197,9 @@ const AddAttendance = () => {
     }
 
     const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item => 
-      item.a_date === yesterday && 
-      item.attendance_type !== "L" && 
+    const yesterdayAttendance = attendanceData.find(item =>
+      item.a_date === yesterday &&
+      item.attendance_type !== "L" &&
       item.end_time === null
     );
 
@@ -190,8 +210,8 @@ const AddAttendance = () => {
 
   const processAttendanceData = (data) => {
     const today = currentDate;
-    const todayAttendance = data.find(item => 
-      item.a_date === today && 
+    const todayAttendance = data.find(item =>
+      item.a_date === today &&
       item.attendance_type !== "L"
     );
 
@@ -207,215 +227,134 @@ const AddAttendance = () => {
   };
 
   const handleError = (error, input) => {
-    setErrors(prevState => ({...prevState, [input]: error}));
+    setErrors(prevState => ({ ...prevState, [input]: error }));
   };
-
-  // Add these constants at the top of your file
-const ORIGIN_LATITUDE = 12.967688425929936; // Replace with your origin latitude
-const ORIGIN_LONGITUDE = 77.71320980043427; // Replace with your origin longitude
-const ALLOWED_RADIUS = 100; // Radius in meters
-
-// Add this utility function to calculate distance between coordinates
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI/180;
-  const φ2 = lat2 * Math.PI/180;
-  const Δφ = (lat2-lat1) * Math.PI/180;
-  const Δλ = (lon2-lon1) * Math.PI/180;
-
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R * c;
-};
-
-const MAX_DAILY_HOURS = 9;
-
-// Utility to validate timesheet for check-out
-const validateTimesheetForCheckout = async (empId, date) => {
-  try {
-    const res = await getTimesheetData(empId, date, date);
-    const timesheetEntries = res.data || [];
-    if (!timesheetEntries.length) {
-      return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-    }
-    const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
-    const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
-    return {
-      notFilled: false,
-      totalEffort,
-      isEffortOutOfRange,
-      isValid: !isEffortOutOfRange,
-    };
-  } catch (e) {
-    return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-  }
-};
-
 
   const handleCheck = async (data) => {
-  if (!employeeData) return;
-  
-  setIsLoading(true);
-  const { status } = await Location.requestForegroundPermissionsAsync();
+    if (!employeeData) return;
 
-  if (status !== 'granted') {
-    Alert.alert('Permission denied', 'Location permission is required to check.');
-    setIsLoading(false);
-    return;
-  }
-
-  let location = null;
-
-  try {
-    location = await Location.getCurrentPositionAsync({});
-    
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      Alert.alert(
-        'Location Out of Range',
-        `You are ${Math.round(distance)} meters away from the allowed location. ` +
-        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      );
-      setIsLoading(false);
-      return;
-    }
-  } catch (error) {
-    Alert.alert('Error', 'Unable to fetch location. Please try again.');
-    setIsLoading(false);
-    return;
-  }
-
-  // Rest of your existing handleCheck code...
-  const todayAttendance = attData.find((item) => item.a_date === currentDate);
-  const attendanceId = todayAttendance ? todayAttendance.id : null;
-  const time = await setdatatime();
-  
-  const checkPayload = {
-    emp_id: employeeData?.id,
-    call_mode: data,
-    time: time,
-    geo_type: data === 'ADD' ? 'I' : 'O',
-    a_date: currentDate,
-    latitude_id: `${location?.coords?.latitude}`,
-    longitude_id: `${location?.coords?.longitude}`,
-    remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-    id: attendanceId,
-  };
-
-  try {
-    await postCheckIn(checkPayload);
-    setRefreshKey((prevKey) => prevKey + 1);
-    router.replace('/attendance');
-    setIsSuccessModalVisible(true);
-    if (data === 'UPDATE') setRemark('');
-  } catch (error) {
-    console.error('Check in/out error:', error);
-    Alert.alert('Check Failure', 'Failed to Check.');
-  } finally {
-    setIsLoading(false);
-  }
-};
-  
-  const handleRemarkSubmit = () => {
-  if (!remark.trim()) {
-    handleError('Remark cannot be empty', 'remarks');
-    return;
-  }
-
-  setIsRemarkModalVisible(false);
-  
-  if (isYesterdayCheckout) {
-    // Handle yesterday's checkout
-    const yesterdayRecord = attData.find(item => 
-      item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
-      item.end_time === null
-    );
-    
-    if (!yesterdayRecord) {
-      Alert.alert('Error', 'No pending checkout found for yesterday');
-      return;
-    }
-    
-    const payload = {
-      emp_id: employeeData.id,
-      call_mode: 'UPDATE',
-      time: currentTime,
-      geo_type: 'O',
-      e_date: currentDate,
-      id: yesterdayRecord.id,
-      remarks: remark || 'Check-out from Mobile (completed next day)'
-    };
-    
-    submitCheckout(payload);
-  } else {
-    // Handle today's checkout
-    handleCheck('UPDATE');
-  }
-};
-
-
-const submitCheckout = async (payload) => {
-  try {
     setIsLoading(true);
     const { status } = await Location.requestForegroundPermissionsAsync();
-  
+
     if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Location permission is required to check out.');
+      Alert.alert('Permission denied', 'Location permission is required to check.');
       setIsLoading(false);
       return;
     }
 
-    const location = await Location.getCurrentPositionAsync({});
-    if (!location) {
+    let location = null;
+
+    try {
+      location = await Location.getCurrentPositionAsync({});
+    } catch (error) {
       Alert.alert('Error', 'Unable to fetch location. Please try again.');
       setIsLoading(false);
       return;
     }
 
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
+    const todayAttendance = attData.find((item) => item.a_date === currentDate);
+    const attendanceId = todayAttendance ? todayAttendance.id : null;
+    const time = await setdatatime();
 
-    if (distance > ALLOWED_RADIUS) {
-      Alert.alert(
-        'Location Out of Range',
-        `You are ${Math.round(distance)} meters away from the allowed location. ` +
-        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      );
+    const checkPayload = {
+      emp_id: employeeData?.id,
+      call_mode: data,
+      time: time,
+      geo_type: data === 'ADD' ? 'I' : 'O',
+      a_date: currentDate,
+      latitude_id: `${location?.coords?.latitude}`,
+      longitude_id: `${location?.coords?.longitude}`,
+      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+      id: attendanceId,
+    };
+
+    try {
+      await postCheckIn(checkPayload);
+      // setCheckedIn(data === 'ADD');
+      // setStartTime(currentTime);
+      setRefreshKey((prevKey) => prevKey + 1);
+      setIsSuccessModalVisible(true);
+      if (data === 'UPDATE') setRemark('');
+    } catch (error) {
+      console.error('Check in/out error:', error);
+      Alert.alert('Check Failure', 'Failed to Check.');
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRemarkSubmit = () => {
+    if (!remark.trim()) {
+      handleError('Remark cannot be empty', 'remarks');
       return;
     }
 
-    // Add location data to payload
-    payload.latitude_id = `${location.coords.latitude}`;
-    payload.longitude_id = `${location.coords.longitude}`;
+    setIsRemarkModalVisible(false);
 
-    await postCheckIn(payload);
-    setRefreshKey(prev => prev + 1);
-    setIsSuccessModalVisible(true);
-    setRemark('');
-    setIsYesterdayCheckout(false);
-  } catch (error) {
-    console.error('Checkout error:', error);
-    Alert.alert('Error', 'Failed to complete checkout');
-  } finally {
-    setIsLoading(false);
-  }
-};
+    if (isYesterdayCheckout) {
+      // Handle yesterday's checkout
+      const yesterdayRecord = attData.find(item =>
+        item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
+        item.end_time === null
+      );
+
+      if (!yesterdayRecord) {
+        Alert.alert('Error', 'No pending checkout found for yesterday');
+        return;
+      }
+
+      const payload = {
+        emp_id: employeeData.id,
+        call_mode: 'UPDATE',
+        time: currentTime,
+        geo_type: 'O',
+        e_date: currentDate,
+        id: yesterdayRecord.id,
+        remarks: remark || 'Check-out from Mobile (completed next day)'
+      };
+
+      submitCheckout(payload);
+    } else {
+      // Handle today's checkout
+      handleCheck('UPDATE');
+    }
+  };
+
+
+  const submitCheckout = async (payload) => {
+    try {
+      setIsLoading(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission denied', 'Location permission is required to check out.');
+        setIsLoading(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      if (!location) {
+        Alert.alert('Error', 'Unable to fetch location. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Add location data to payload
+      payload.latitude_id = `${location.coords.latitude}`;
+      payload.longitude_id = `${location.coords.longitude}`;
+
+      await postCheckIn(payload);
+      setRefreshKey(prev => prev + 1);
+      setIsSuccessModalVisible(true);
+      setRemark('');
+      setIsYesterdayCheckout(false);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      Alert.alert('Error', 'Failed to complete checkout');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const closeSuccessModal = () => {
     setIsSuccessModalVisible(false);
@@ -424,37 +363,18 @@ const submitCheckout = async (payload) => {
   // Determine button states - now with additional checks for data availability
 
   const handleYesterdayCheckout = async () => {
-  setIsYesterdayCheckout(true);
-  setIsRemarkModalVisible(true);
-};
-
-  const isCheckInDisabled = !dataLoaded || 
-                        !employeeData ||
-                        (attendance && attendance.start_time && !attendance.end_time) || 
-                        (attendance && attendance.geo_status === 'O');
-                          
-const isCheckOutDisabled = !dataLoaded || 
-                         !employeeData || 
-                         (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
-
-const handleCheckOutAttempt = async () => {
-  if (timesheetCheckedToday) {
+    setIsYesterdayCheckout(true);
     setIsRemarkModalVisible(true);
-    return;
-  }
-  if (!employeeData) return;
-   const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
-  if (notFilled) {
-    setShowTimesheetErrorModal(true);
-    return;
-  }
-  if (isEffortOutOfRange) {
-    setShowEffortConfirmModal(true);
-    return;
-  }
-  setTimesheetCheckedToday(true);
-  setIsRemarkModalVisible(true);
-};
+  };
+
+  const isCheckInDisabled = !dataLoaded ||
+    !employeeData ||
+    (attendance && attendance.start_time && !attendance.end_time) ||
+    (attendance && attendance.geo_status === 'O');
+
+  const isCheckOutDisabled = !dataLoaded ||
+    !employeeData ||
+    (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
 
 
   if (!initialLoadComplete || isLoading) {
@@ -474,143 +394,145 @@ const handleCheckOutAttempt = async () => {
 
   return (
     <>
-    <SafeAreaView>
-      <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
-      
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Date and Time Card */}
-        <LinearGradient
-          colors={['#2575fc', '#6a11cb']}
-          start={[0, 0]}
-          end={[1, 1]}
-          style={styles.datetimeCard}
-        >
-          <Text style={styles.currentDate}>Date: {currentDate}</Text>
-          <Text style={styles.currentTime}>Time: {currentTime}</Text>
-        </LinearGradient>
+      <SafeAreaView>
+        <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.profileHeader}>
-            <Image
-              source={{ uri: employeeData?.image || 'https://via.placeholder.com/80' }}
-              style={styles.profileImage}
-            />
-            <View style={styles.profileTitle}>
-              <Text style={styles.employeeName}>{employeeData?.name || 'Employee Name'}</Text>
-              <Text style={styles.employeeId}>{employeeData?.emp_id || '--'}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.profileDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Designation</Text>
-              <Text style={styles.detailValue} numberOfLines={2}>
-                {employeeData?.grade_name || '--'}
-              </Text>
-            </View>
-            {employeeData?.is_shift_applicable &&
-              <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Current Shift</Text>
-              <Text style={styles.detailValue} numberOfLines={2}>
-                {employeeData?.current_shift || '--'}
-              </Text>
-            </View>
-            }
-            
-          </View>
-        </View>
-
-        {/* Attendance Action Card */}
-        <View style={styles.actionCard}>
-    <Text style={styles.cardTitle}>Today's Attendance</Text>
-    
-    {attendance && attendance.start_time === null ? (
-      <View style={styles.leaveBadge}>
-        <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
-      </View>
-    ) : (
-      <View style={[
-        styles.actionButtons,
-        (!attendance?.start_time && !previousDayUnchecked) && styles.singleButtonContainer
-      ]}>
-        {/* Check In Button */}
-        <TouchableOpacity
-          onPress={() => handleCheck('ADD')}
-          disabled={isCheckInDisabled}
-          style={[
-            styles.attendanceButton,
-            styles.checkInButton,
-            isCheckInDisabled && styles.disabledButton,
-            (!attendance?.start_time && !previousDayUnchecked) && { width: '70%' }
-          ]}
-        >
-          <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
-          <Text style={[
-            styles.buttonText,
-            isCheckInDisabled && styles.disabledButtonText
-          ]}>
-            {attendance?.start_time 
-              ? `Checked In • ${attendance.start_time}`
-              : 'Check In'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Check Out Button - show if start_time exists or previous day is unchecked */}
-        {(previousDayUnchecked || (attendance && attendance.start_time)) && (
-          <TouchableOpacity
-            onPress={() => {
-              if (previousDayUnchecked) {
-                setIsConfirmModalVisible(true);
-              } else {
-                setIsYesterdayCheckout(false);
-                handleCheckOutAttempt();
-              }
-            }}
-            disabled={isCheckOutDisabled}
-            style={[
-              styles.attendanceButton,
-              styles.checkOutButton,
-              isCheckOutDisabled && styles.disabledButton
-            ]}
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {/* Date and Time Card */}
+          <LinearGradient
+            colors={['#2575fc', '#6a11cb']}
+            start={[0, 0]}
+            end={[1, 1]}
+            style={styles.datetimeCard}
           >
-            <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
-            <Text style={[
-              styles.buttonText,
-              isCheckOutDisabled && styles.disabledButtonText
-            ]}>
-              {previousDayUnchecked ? 'Complete Yesterday' : attendance?.end_time ? `Checked Out • ${attendance.end_time}` : 'Check Out'}
-            </Text>
+            <Text style={styles.currentDate}>Date: {currentDate}</Text>
+            <Text style={styles.currentTime}>Time: {currentTime}</Text>
+          </LinearGradient>
+
+          {/* Profile Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <Image
+                source={{ uri: employeeData?.image || 'https://via.placeholder.com/80' }}
+                style={styles.profileImage}
+              />
+              <View style={styles.profileTitle}>
+                <Text style={styles.employeeName}>{employeeData?.name || 'Employee Name'}</Text>
+                <Text style={styles.employeeId}>{employeeData?.emp_id || '--'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.profileDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Designation</Text>
+                <Text style={styles.detailValue} numberOfLines={2}>
+                  {employeeData?.grade_name || '--'}
+                </Text>
+              </View>
+              {employeeData?.is_shift_applicable &&
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Current Shift</Text>
+                  <Text style={styles.detailValue} numberOfLines={2}>
+                    {employeeData?.current_shift || '--'}
+                  </Text>
+                </View>
+              }
+
+            </View>
+          </View>
+
+          {/* Attendance Action Card */}
+          <View style={styles.actionCard}>
+            <Text style={styles.cardTitle}>Today's Attendance</Text>
+
+            {attendance && attendance.start_time === null ? (
+              <View style={styles.leaveBadge}>
+                <Text style={styles.leaveBadgeText}>On Leave / Holiday</Text>
+              </View>
+            ) : (
+              <View style={[
+                styles.actionButtons,
+                (!attendance?.start_time && !previousDayUnchecked) && styles.singleButtonContainer
+              ]}>
+                {/* Check In Button */}
+                <TouchableOpacity
+                  onPress={() => handleCheck('ADD')}
+                  disabled={isCheckInDisabled}
+                  style={[
+                    styles.attendanceButton,
+                    styles.checkInButton,
+                    isCheckInDisabled && styles.disabledButton,
+                    (!attendance?.start_time && !previousDayUnchecked) && { width: '70%' }
+                  ]}
+                >
+                  <Entypo name="location-pin" size={22} color={isCheckInDisabled ? '#fff' : '#4CAF50'} />
+                  <Text style={[
+                    styles.buttonText,
+                    isCheckInDisabled && styles.disabledButtonText
+                  ]}>
+                    {attendance?.start_time
+                      ? `Checked In • ${attendance.start_time}`
+                      : 'Check In'}
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Check Out Button - show if start_time exists or previous day is unchecked */}
+                {(previousDayUnchecked || (attendance && attendance.start_time)) && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (previousDayUnchecked) {
+                        // Show confirmation for yesterday's checkout
+                        setIsConfirmModalVisible(true);
+                      } else {
+                        // Handle today's checkout
+                        setIsYesterdayCheckout(false);
+                        setIsRemarkModalVisible(true);
+                      }
+                    }}
+                    disabled={isCheckOutDisabled}
+                    style={[
+                      styles.attendanceButton,
+                      styles.checkOutButton,
+                      isCheckOutDisabled && styles.disabledButton
+                    ]}
+                  >
+                    <Feather name="log-out" size={20} color={isCheckOutDisabled ? '#fff' : '#F44336'} />
+                    <Text style={[
+                      styles.buttonText,
+                      isCheckOutDisabled && styles.disabledButtonText
+                    ]}>
+                      {previousDayUnchecked ? 'Complete Yesterday' : attendance?.end_time ? `Checked Out • ${attendance.end_time}` : 'Check Out'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Attendance History Button */}
+          <TouchableOpacity
+            style={styles.historyButton}
+            onPress={() => router.push({
+              pathname: 'AttendanceStatusDisplay',
+              params: employeeData
+            })}
+          >
+            <Text style={styles.historyButtonText}>View Attendance History</Text>
+            <Feather name="chevron-right" size={20} color="#fff" />
           </TouchableOpacity>
-        )}
-      </View>
-    )}
-  </View>
 
-        {/* Attendance History Button */}
-        <TouchableOpacity 
-          style={styles.historyButton}
-          onPress={() => router.push({ 
-            pathname: 'AttendanceStatusDisplay', 
-            params: employeeData
-          })}
-        >
-          <Text style={styles.historyButtonText}>View Attendance History</Text>
-          <Feather name="chevron-right" size={20} color="#fff" />
-        </TouchableOpacity>
 
-        
-        <TouchableOpacity 
-          style={[styles.historyButton, {marginTop: 20, marginBottom: 70}]}
-          onPress={() => router.push({ 
-            pathname: 'TimeSheet', 
-            params: employeeData
-          })}
-        >
-          <Text style={styles.historyButtonText}>Track Timesheet</Text>
-          <Feather name="chevron-right" size={20} color="#fff" />
-        </TouchableOpacity>
-      </ScrollView>
+          <TouchableOpacity
+            style={[styles.historyButton, { marginTop: 20, marginBottom: 70 }]}
+            onPress={() => router.push({
+              pathname: 'TimeSheet',
+              params: employeeData
+            })}
+          >
+            <Text style={styles.historyButtonText}>Track Timesheet</Text>
+            <Feather name="chevron-right" size={20} color="#fff" />
+          </TouchableOpacity>
+        </ScrollView>
       </SafeAreaView>
 
       {/* Remark Modal */}
@@ -628,7 +550,7 @@ const handleCheckOutAttempt = async () => {
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            
+
             <RemarksInput
               remark={remark}
               setRemark={setRemark}
@@ -636,7 +558,7 @@ const handleCheckOutAttempt = async () => {
               placeholder="Please enter your check out remark"
             />
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.modalSubmitButton}
               onPress={handleRemarkSubmit}
             >
@@ -653,38 +575,19 @@ const handleCheckOutAttempt = async () => {
         message="Attendance recorded successfully"
       />
       <ConfirmationModal
-  visible={isConfirmModalVisible}
-  message="You have an unfinished checkout from yesterday. Do you want to complete it?"
-  onConfirm={() => {
-    setIsConfirmModalVisible(false);
-    handleYesterdayCheckout();
-  }}
-  onCancel={() => setIsConfirmModalVisible(false)}
-  confirmText="Check Out"
-  cancelText="Cancel"
-/>
+        visible={isConfirmModalVisible}
+        message="You have an unfinished checkout from yesterday. Do you want to complete it?"
+        onConfirm={() => {
+          setIsConfirmModalVisible(false);
+          handleYesterdayCheckout();
+        }}
+        onCancel={() => setIsConfirmModalVisible(false)}
+        confirmText="Check Out"
+        cancelText="Cancel"
+      />
 
       {/* Loader */}
       <Loader visible={isLoading} />
-      <ErrorModal
-        visible={showTimesheetErrorModal}
-        message="You did not fill today's timesheet. Please fill it before checking out."
-        onClose={() => setShowTimesheetErrorModal(false)}
-      />
-      <ConfirmationModal
-        visible={showEffortConfirmModal}
-        headerTitle="Warning"
-        messageColor="#EF6C00"
-        message="Your timesheet hours seem unusual. Do you still want to check out ?"
-        onConfirm={() => {
-          setShowEffortConfirmModal(false);
-          setTimesheetCheckedToday(true);
-          setIsRemarkModalVisible(true);
-        }}
-        onCancel={() => setShowEffortConfirmModal(false)}
-        confirmText="Yes"
-        cancelText="No"
-      />
     </>
   );
 };
@@ -695,13 +598,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f7fa',
   },
-  distanceText: {
-  fontSize: 14,
-  fontFamily: 'Inter-Medium',
-  textAlign: 'center',
-  marginTop: 8,
-  color: '#666',
-},
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -833,28 +729,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   actionButtons: {
-  flexDirection: width > 400 ? 'row' : 'column',
-  justifyContent: 'space-between',
-  gap: 12, // Add gap between buttons
-},
-singleButtonContainer: {
-  justifyContent: 'center',
-  alignItems: 'center', // Center the single button
-},
+    flexDirection: width > 400 ? 'row' : 'column',
+    justifyContent: 'space-between',
+    gap: 12, // Add gap between buttons
+  },
+  singleButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center', // Center the single button
+  },
   singleButton: {
     width: '70%', // Make single button slightly narrower
     alignSelf: 'center', // Center the button
   },
   attendanceButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  paddingVertical: 14,
-  paddingHorizontal: 20,
-  borderRadius: 8,
-  width: width > 400 ? '48%' : '100%', // Adjust width for single button case
-  borderWidth: 1,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    width: width > 400 ? '48%' : '100%', // Adjust width for single button case
+    borderWidth: 1,
+  },
   checkInButton: {
     borderColor: '#c8e6c9',
     backgroundColor: '#f1f8e9',

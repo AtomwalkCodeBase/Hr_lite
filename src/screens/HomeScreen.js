@@ -16,6 +16,7 @@ import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
+import useBackHandler from '../hooks/useBackHandler';
 
 const { width, height } = Dimensions.get('window');
 
@@ -73,19 +74,23 @@ const HomePage = ({ navigation }) => {
     setCompany(companyInfo);
   }, [empId, companyInfo]);
 
-  useEffect(() => {
-    const backAction = () => {
-      setShowExitModal(true); // Show the confirmation modal instead of Alert
-      return true; // Prevent default back behavior
-    };
 
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      backAction
+
+  useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          setShowExitModal(true); // Show exit confirmation modal
+    return true; // Prevent default back behavior
+        };
+  
+        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        
+        return () => {
+          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        };
+      }, [])
     );
-
-    return () => backHandler.remove();
-  }, []);
+  
 
 
   const setdatatime = async () => {
@@ -471,33 +476,6 @@ const HomePage = ({ navigation }) => {
   const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
 
 
-
-
-  const renderEventCard = ({ item }) => (
-    <View style={styles.eventCard}>
-      <LinearGradient
-        colors={['#a970ff', '#8a5bda']}
-        start={[0, 0]}
-        end={[1, 1]}
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          padding: 16
-        }}
-      >
-        <View style={styles.eventIconContainer}>
-          <MaterialIcons name={item.icon} size={28} color="#fff" />
-        </View>
-        <View style={styles.eventTextContainer}>
-          <Text style={styles.eventTitle}>{item.title}</Text>
-          <Text style={styles.eventDescription}>{item.description}</Text>
-          <Text style={styles.eventTime}>{item.time}</Text>
-        </View>
-      </LinearGradient>
-    </View>
-  );
-
   const menuItems = [
     {
       id: 1,
@@ -873,18 +851,13 @@ const HomePage = ({ navigation }) => {
         visible={showExitModal}
         message="Are you sure you want to exit the app?"
         onConfirm={() => {
-          setShowExitModal(false); // Close the modal
-          setTimeout(() => {
-            BackHandler.exitApp(); // Exit app after short delay
-          }, 200); // Delay for modal to close (adjust if needed)
+          setShowExitModal(false);
+          BackHandler.exitApp();
         }}
         onCancel={() => setShowExitModal(false)}
         confirmText="Exit"
         cancelText="Cancel"
-        color="#FF3B30"
-        messageColor="#333"
       />
-
 
       {/* Sidebar overlay (should be last to overlay everything) */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
@@ -1307,8 +1280,8 @@ const styles = StyleSheet.create({
   menuIconWrapper: {
     // marginTop: 30,
     position: 'absolute',
-    left: '3%', 
-    top: '20%', 
+    left: '3%',
+    top: '20%',
     zIndex: 50,
     // backgroundColor: 'rgba(169,112,255,0.7)',
     borderRadius: 20,
