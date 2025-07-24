@@ -26,8 +26,6 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
-import ErrorModal from '../components/ErrorModal';
-import { getTimesheetData } from '../services/productServices';
 
 const { width } = Dimensions.get('window');
 
@@ -51,9 +49,6 @@ const AddAttendance = () => {
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [showTimesheetErrorModal, setShowTimesheetErrorModal] = useState(false);
-  const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
-  const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
 
@@ -210,121 +205,58 @@ const AddAttendance = () => {
     setErrors(prevState => ({...prevState, [input]: error}));
   };
 
-  // Add these constants at the top of your file
-const ORIGIN_LATITUDE = 12.967688425929936; // Replace with your origin latitude
-const ORIGIN_LONGITUDE = 77.71320980043427; // Replace with your origin longitude
-const ALLOWED_RADIUS = 100; // Radius in meters
-
-// Add this utility function to calculate distance between coordinates
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI/180;
-  const φ2 = lat2 * Math.PI/180;
-  const Δφ = (lat2-lat1) * Math.PI/180;
-  const Δλ = (lon2-lon1) * Math.PI/180;
-
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R * c;
-};
-
-const MAX_DAILY_HOURS = 9;
-
-// Utility to validate timesheet for check-out
-const validateTimesheetForCheckout = async (empId, date) => {
-  try {
-    const res = await getTimesheetData(empId, date, date);
-    const timesheetEntries = res.data || [];
-    console.log("timesheetEntries", timesheetEntries)
-    if (!timesheetEntries.length) {
-      return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-    }
-    const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
-    const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
-    return {
-      notFilled: false,
-      totalEffort,
-      isEffortOutOfRange,
-      isValid: !isEffortOutOfRange,
-    };
-  } catch (e) {
-    return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-  }
-};
-
-
   const handleCheck = async (data) => {
-  if (!employeeData) return;
-  
-  setIsLoading(true);
-  const { status } = await Location.requestForegroundPermissionsAsync();
-
-  if (status !== 'granted') {
-    Alert.alert('Permission denied', 'Location permission is required to check.');
-    setIsLoading(false);
-    return;
-  }
-
-  let location = null;
-
-  try {
-    location = await Location.getCurrentPositionAsync({});
+    if (!employeeData) return;
     
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      Alert.alert(
-        'Location Out of Range',
-        `You are ${Math.round(distance)} meters away from the allowed location. ` +
-        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      );
+    setIsLoading(true);
+    const { status } = await Location.requestForegroundPermissionsAsync();
+  
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Location permission is required to check.');
       setIsLoading(false);
       return;
     }
-  } catch (error) {
-    Alert.alert('Error', 'Unable to fetch location. Please try again.');
-    setIsLoading(false);
-    return;
-  }
-
-  // Rest of your existing handleCheck code...
-  const todayAttendance = attData.find((item) => item.a_date === currentDate);
-  const attendanceId = todayAttendance ? todayAttendance.id : null;
-  const time = await setdatatime();
   
-  const checkPayload = {
-    emp_id: employeeData?.id,
-    call_mode: data,
-    time: time,
-    geo_type: data === 'ADD' ? 'I' : 'O',
-    a_date: currentDate,
-    latitude_id: `${location?.coords?.latitude}`,
-    longitude_id: `${location?.coords?.longitude}`,
-    remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-    id: attendanceId,
+    let location = null;
+  
+    try {
+      location = await Location.getCurrentPositionAsync({});
+    } catch (error) {
+      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+  
+    const todayAttendance = attData.find((item) => item.a_date === currentDate);
+    const attendanceId = todayAttendance ? todayAttendance.id : null;
+    const time = await setdatatime();
+    
+    const checkPayload = {
+      emp_id: employeeData?.id,
+      call_mode: data,
+      time: time,
+      geo_type: data === 'ADD' ? 'I' : 'O',
+      a_date: currentDate,
+      latitude_id: `${location?.coords?.latitude}`,
+      longitude_id: `${location?.coords?.longitude}`,
+      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+      id: attendanceId,
+    };
+  
+    try {
+      await postCheckIn(checkPayload);
+      // setCheckedIn(data === 'ADD');
+      // setStartTime(currentTime);
+      setRefreshKey((prevKey) => prevKey + 1);
+      setIsSuccessModalVisible(true);
+      if (data === 'UPDATE') setRemark('');
+    } catch (error) {
+      console.error('Check in/out error:', error);
+      Alert.alert('Check Failure', 'Failed to Check.');
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  try {
-    await postCheckIn(checkPayload);
-    setRefreshKey((prevKey) => prevKey + 1);
-    setIsSuccessModalVisible(true);
-    if (data === 'UPDATE') setRemark('');
-  } catch (error) {
-    console.error('Check in/out error:', error);
-    Alert.alert('Check Failure', 'Failed to Check.');
-  } finally {
-    setIsLoading(false);
-  }
-};
   
   const handleRemarkSubmit = () => {
   if (!remark.trim()) {
@@ -382,24 +314,6 @@ const submitCheckout = async (payload) => {
       return;
     }
 
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      Alert.alert(
-        'Location Out of Range',
-        `You are ${Math.round(distance)} meters away from the allowed location. ` +
-        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      );
-      setIsLoading(false);
-      return;
-    }
-
     // Add location data to payload
     payload.latitude_id = `${location.coords.latitude}`;
     payload.longitude_id = `${location.coords.longitude}`;
@@ -436,25 +350,6 @@ const submitCheckout = async (payload) => {
 const isCheckOutDisabled = !dataLoaded || 
                          !employeeData || 
                          (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
-
-const handleCheckOutAttempt = async () => {
-  if (timesheetCheckedToday) {
-    setIsRemarkModalVisible(true);
-    return;
-  }
-  if (!employeeData) return;
-   const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
-  if (notFilled) {
-    setShowTimesheetErrorModal(true);
-    return;
-  }
-  if (isEffortOutOfRange) {
-    setShowEffortConfirmModal(true);
-    return;
-  }
-  setTimesheetCheckedToday(true);
-  setIsRemarkModalVisible(true);
-};
 
 
   if (!initialLoadComplete || isLoading) {
@@ -561,10 +456,12 @@ const handleCheckOutAttempt = async () => {
           <TouchableOpacity
             onPress={() => {
               if (previousDayUnchecked) {
+                // Show confirmation for yesterday's checkout
                 setIsConfirmModalVisible(true);
               } else {
+                // Handle today's checkout
                 setIsYesterdayCheckout(false);
-                handleCheckOutAttempt();
+                setIsRemarkModalVisible(true);
               }
             }}
             disabled={isCheckOutDisabled}
@@ -666,25 +563,6 @@ const handleCheckOutAttempt = async () => {
 
       {/* Loader */}
       <Loader visible={isLoading} />
-      <ErrorModal
-        visible={showTimesheetErrorModal}
-        message="You did not fill today's timesheet. Please fill it before checking out."
-        onClose={() => setShowTimesheetErrorModal(false)}
-      />
-      <ConfirmationModal
-        visible={showEffortConfirmModal}
-        headerTitle="Warning"
-        messageColor="#EF6C00"
-        message="Your timesheet hours seem unusual. Do you still want to check out ?"
-        onConfirm={() => {
-          setShowEffortConfirmModal(false);
-          setTimesheetCheckedToday(true);
-          setIsRemarkModalVisible(true);
-        }}
-        onCancel={() => setShowEffortConfirmModal(false)}
-        confirmText="Yes"
-        cancelText="No"
-      />
     </>
   );
 };
@@ -695,13 +573,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f7fa',
   },
-  distanceText: {
-  fontSize: 14,
-  fontFamily: 'Inter-Medium',
-  textAlign: 'center',
-  marginTop: 8,
-  color: '#666',
-},
   errorContainer: {
     flex: 1,
     justifyContent: 'center',

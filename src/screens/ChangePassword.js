@@ -20,21 +20,21 @@ const ResetPasswordScreen = () => {
   const [isFocusedConfirm, setIsFocusedConfirm] = useState(false);
   const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isMandatoryReset, setIsMandatoryReset] = useState(false);
+  // const [isMandatoryReset, setIsMandatoryReset] = useState(false);
 
   const shakeAnim = new Animated.Value(0);
   const router = useRouter();
 
   const handleCancel = async () => {
-    if (isMandatoryReset) {
-      Alert.alert(
-        'PIN Update Required',
-        'You must update your default PIN to continue using the app.',
-        [{ text: 'OK' }]
-      );
-    } else {
-      router.back();
-    }
+    // if (isMandatoryReset) {
+    //   Alert.alert(
+    //     'PIN Update Required',
+    //     'You must update your default PIN to continue using the app.',
+    //     [{ text: 'OK' }]
+    //   );
+    // } else {
+    router.back();
+    // }
   };
 
   const triggerShake = () => {
@@ -97,7 +97,7 @@ const ResetPasswordScreen = () => {
         await AsyncStorage.setItem('userPin', newPin);
         setIsLoading(false);
         setIsSuccessModalVisible(true);
-        setIsMandatoryReset(false); // Reset mandatory flag after successful update
+        // setIsMandatoryReset(false); // Reset mandatory flag after successful update
         // router.push({ pathname: 'home' });
       } else {
         const errorMsg = response?.message || 'Failed to update PIN. Please try again.';
@@ -140,12 +140,10 @@ const ResetPasswordScreen = () => {
             <View style={styles.headerSection}>
               <MaterialIcons name="lock" size={48} color={colors.primary} />
               <Text style={styles.title}>
-                {isMandatoryReset ? 'Update Your Default PIN' : 'Update Your PIN'}
+                Update Your PIN
               </Text>
               <Text style={styles.subtitle}>
-                {isMandatoryReset 
-                  ? 'For security reasons, you must change your default PIN to continue'
-                  : 'Create a new secure PIN for your account'}
+                Change the secure PIN for your account
               </Text>
             </View>
 
@@ -234,12 +232,12 @@ const ResetPasswordScreen = () => {
                 activeOpacity={0.8}
               >
                 <Text style={styles.submitText}>
-                  {isMandatoryReset ? 'UPDATE PIN (REQUIRED)' : 'Update PIN'}
+                  Update PIN
                 </Text>
                 <MaterialIcons name="arrow-forward" size={20} color={colors.white} />
               </TouchableOpacity>
               
-              {!isMandatoryReset && (
+              
                 <TouchableOpacity 
                   style={styles.cancelButton}
                   onPress={handleCancel}
@@ -247,7 +245,7 @@ const ResetPasswordScreen = () => {
                 >
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
-              )}
+              
             </View>
 
             <View style={styles.securityNote}>
