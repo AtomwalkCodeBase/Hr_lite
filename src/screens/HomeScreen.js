@@ -17,6 +17,7 @@ import SuccessModal from '../components/SuccessModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
 import useBackHandler from '../hooks/useBackHandler';
+import ErrorModal from '../components/ErrorModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,6 +51,10 @@ const HomePage = ({ navigation }) => {
   const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
   const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState({
+    message: "",
+    visible: false
+  })
 
   // Active events
   const [eventData, setEventData] = useState([]);
@@ -59,7 +64,6 @@ const HomePage = ({ navigation }) => {
   const fadeAnim = useState(new Animated.Value(0))[0];
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
-
 
   useLayoutEffect(() => {
     if (navigation) {
@@ -376,7 +380,8 @@ const HomePage = ({ navigation }) => {
       if (data === 'UPDATE') setRemark('');
     } catch (error) {
       console.error('Check in/out error:', error);
-      Alert.alert('Check Failure', 'Failed to Check.');
+      setErrorMessage({message: "Failed to Check.", visible: true})
+      // Alert.alert('Check Failure', 'Failed to Check.');
     } finally {
       setIsLoading(false);
     }
@@ -867,6 +872,12 @@ const HomePage = ({ navigation }) => {
         onCancel={() => setShowExitModal(false)}
         confirmText="Exit"
         cancelText="Cancel"
+      />
+
+      <ErrorModal
+        visible={errorMessage.visible}
+        message={errorMessage.message}
+        onClose={() => setErrorMessage({ message: "", visible: false })}
       />
 
       {/* Sidebar overlay (should be last to overlay everything) */}

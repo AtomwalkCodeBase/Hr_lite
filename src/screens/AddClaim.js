@@ -30,6 +30,7 @@ const AddClaim = (props) => {
   const [fileUri, setFileUri] = useState('');
   const [fileMimeType, setFileMimeType] = useState('');
   const [claimItem, setClaimItem] = useState([]);
+  const [expenseItemsData, setExpenseItemsData] = useState([]);
   const [empId, setEmpId] = useState('');
   const [projectList, setProjectList] = useState([]);
   const [item, setItem] = useState('');
@@ -106,6 +107,7 @@ const AddClaim = (props) => {
         value: item.id.toString() // Ensure string value for dropdown
       }));
       setClaimItem(formattedData);
+      setExpenseItemsData(response.data);
     } catch (error) {
       console.error("Error fetching expense items:", error);
     } finally {
@@ -179,10 +181,20 @@ const AddClaim = (props) => {
     }
 
     // File is only required for new claims or when updating without existing file
-    if (!fileUri && !parsedClaimData?.submitted_file_1) {
-      handleError('Please select a file', 'file');
-      isValid = false;
-    }
+      if (item) {
+        const selectedItem = expenseItemsData.find(i => i.id.toString() === item);
+        console.log("Selected Item:", selectedItem);
+        const billRequired = selectedItem?.is_exp_bill_required;
+
+        const fileProvided = !!fileUri || !!parsedClaimData?.submitted_file_1;
+
+        if (billRequired && !fileProvided) {
+          handleError('Please upload a bill for this expense item', 'file');
+          isValid = false;
+        } else {
+          handleError(null, 'file'); // clear error if not required or already provided
+        }
+      }
 
     if (isValid) {
       handleSubmit();
@@ -353,6 +365,10 @@ const AddClaim = (props) => {
               null
             }
             disabled={isViewMode}
+            required={(() => {
+              const selectedItem = expenseItemsData.find(i => i.id.toString() === item);
+              return selectedItem ? !!selectedItem.is_exp_bill_required : false;
+            })()}
           />
           
           <RemarksTextArea 

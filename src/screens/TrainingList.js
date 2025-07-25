@@ -106,9 +106,14 @@ const confirmButton = async (item) => {
       throw new Error(res?.data?.message || "Enrollment failed");
     }
   } catch (error) {
-    console.error("Enrollment Error:", error);
-    setErrorMessage(error.message || "An error occurred during enrollment");
+    // console.error("Enrollment Error:", error);
     setIsErrorVisiable(true);
+     if (error?.response?.data?.message.includes('Invalid request - ')) {
+          const msg = error?.response?.data?.message;
+          const afterText = msg.split('Invalid request -')[1]?.trim() || '';
+          setErrorMessage(afterText )
+     }
+    // setErrorMessage(error.message || "An error occurred during enrollment");
   } finally {
     setLoading(false);
   }

@@ -226,14 +226,14 @@ const AddHelp = (props) => {
         />
       ) : (
         <Container>
-          <DropdownPicker
+         <DropdownPicker
             label={call_type === 'H' ? "Help Category" : "Request Category"}
             data={filteredCategories.map(category => ({
               label: category.name,
               value: category.id.toString()
             }))}
             value={selectedCategory}
-            setValue={setSelectedCategory}
+            setValue={isUpdateMode ? () => {} : setSelectedCategory}
             error={errors.category}
             disabled={is_shift_request || isUpdateMode} // Disable in shift request or update mode
           />

@@ -22,7 +22,7 @@ const PickerContainer = styled.View`
   border-radius: 5px;
 `;
 
-const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActionStyle = false }) => {
+const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActionStyle = false, style = {}, disabled = false }) => {
   // Optional dynamic style logic
   const getSelectedStyle = () => {
     if (!enableDynamicActionStyle) return {};
@@ -54,9 +54,9 @@ const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActi
   const dynamicStyle = getSelectedStyle();
 
   return (
-    <FieldContainer>
+    <FieldContainer style={style}>
       <Label>{label}</Label>
-      <PickerContainer style={{ ...dynamicStyle, borderWidth: 1, borderRadius: 8 }}>
+      <PickerContainer style={{ ...dynamicStyle, borderWidth: 1, borderRadius: 8, opacity: disabled ? 0.6 : 1 }}>
         <Dropdown
           data={(data || []).map((item) => ({
             label: item.label,
@@ -71,6 +71,7 @@ const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActi
             padding: 10,
             ...dynamicStyle,
             borderRadius: 8,
+            backgroundColor: disabled ? '#f5f5f5' : dynamicStyle.backgroundColor || '#fff',
           }}
           placeholderStyle={{
             color: '#ccc',
@@ -78,7 +79,9 @@ const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActi
           }}
           selectedTextStyle={{
             fontSize: 16,
+            color: disabled ? '#888' : '#222',
           }}
+          disable={disabled}
         />
       </PickerContainer>
       {error && (

@@ -180,8 +180,10 @@ const TimeSheet = () => {
 
   useEffect(() => {
     fetchActivityCategories();
-    fetchProjectCategories();
-  }, []);
+    if (EmpId) {
+      fetchProjectCategories(EmpId);
+    }
+  }, [EmpId]);
 
   const fetchActivityCategories = async () => {
     try {
@@ -193,8 +195,7 @@ const TimeSheet = () => {
     }
   };
 
-  const fetchProjectCategories = async () => {
-    const empId = await AsyncStorage.getItem("empId");
+  const fetchProjectCategories = async (empId) => {
     try {
       const res = await getProjectlist(empId);
       setProjects(res.data);
