@@ -56,8 +56,6 @@ const AddAttendance = () => {
   const navigation = useNavigation();
   const router = useRouter();
 
-  const userToken = async() =>  await AsyncStorage.getItem('userToken');
-
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -121,10 +119,11 @@ const AddAttendance = () => {
           return;
         }
 
-        if (!userToken) {
-          console.log('You are loged out...',!userToken);
-          return;
-        }
+        const token = await AsyncStorage.getItem('userToken');
+      if (!token) {
+        console.log('You are logged out...');
+        return;
+      }
 
         setEmployeeData(profile);
 
