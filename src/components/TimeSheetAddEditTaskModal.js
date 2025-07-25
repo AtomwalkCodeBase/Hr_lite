@@ -202,7 +202,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               <TextInput
                 style={[
                   styles.input,
-                  editingTask && formData.startTime && formData.endTime && !timeManuallyChanged && styles.disabledInput
+                  editingTask && formData.startTime && formData.endTime ? styles.disabledInput : null
                 ]}
                 value={formData.hours}
                 onChangeText={(value) =>
@@ -211,7 +211,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
                 placeholder="Enter hours"
                 keyboardType="numeric"
                 placeholderTextColor="#999"
-                editable={!(editingTask && formData.startTime && formData.endTime && !timeManuallyChanged)}
+                editable={!(editingTask && formData.startTime && formData.endTime)}
               />
 
             </View>

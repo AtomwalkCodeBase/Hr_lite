@@ -27,6 +27,8 @@ export const EmployeeInfoCard = ({ employee }) => (
 // Table row for each day in the weekly summary
 export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusText, openDayDetail }) => {
   const isExceeding = dayData.totalHours > 9;
+  const projectCount = dayData.projects.size;
+  const taskCount = dayData.tasks.length;
   return (
     <TouchableOpacity
       style={[styles.tableRow, isExceeding && styles.exceedingRow]}
@@ -41,8 +43,10 @@ export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusTe
         <Text style={styles.hoursStatus}>{getStatusText(dayData.totalHours)}</Text>
       </View>
       <View style={styles.projectsColumn}>
-        {/* <Text style={styles.projectCount}>{dayData.projects.size}</Text>
-        <Text style={styles.projectLabel}>{dayData.projects.size === 1 ? 'project' : 'projects'}</Text> */}
+        <Text style={styles.projectLabel}>{`Projects: ${projectCount} `}</Text>
+        <Text style={styles.projectLabel}>{` Tasks: ${taskCount}`}</Text>
+      </View>
+      <View style={styles.projectsColumn}>
         <AntDesign name="eyeo" size={20} color="#a970ff" />
         <Text style={styles.projectLabel}>View</Text>
       </View>
@@ -266,7 +270,7 @@ export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, onDelete
 
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your task will be Deleted. Are you sure ?"
+        message="Your task will be Deleted. Are you sure you want to delete it ?"
        onConfirm={() => {
           onDelete(task);
           setIsConfirmModalVisible(false);
@@ -386,7 +390,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   projectLabel: {
-    fontSize: 10,
+    fontSize: 11,
     color: "#666",
     marginTop: 2,
   },

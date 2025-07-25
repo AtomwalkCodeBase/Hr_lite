@@ -27,7 +27,6 @@ const ModuleDetailsScreen = () => {
 const { item } = useLocalSearchParams();
 const data = JSON.parse(item); // Parse back into object
 
-console.log("Parsed item in ModuleDetailsScreen:", data);
 
 
   // Extract data from enrolled training

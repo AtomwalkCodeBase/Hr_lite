@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl
 } from 'react-native';
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { Ionicons } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
@@ -47,6 +47,7 @@ const FilterChip = ({ label, selected, onPress }) => (
 );
 
 const EventScreen = (props) => {
+  const navigate = useNavigation();
   const router = useRouter();
   const [eventData, setEventData] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
@@ -214,7 +215,7 @@ const handleClearFilters = () => {
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle="Event Updates" 
-        onBackPress={handleBackPress} 
+        onBackPress={() => navigate.goBack()} 
         icon1Name="filter"
         icon1OnPress={openFilterModal}
         filterCount={appliedFilterCount}

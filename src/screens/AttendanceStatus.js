@@ -2,12 +2,13 @@ import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Loader from '../components/old_components/Loader';
+import { StatusBar } from 'expo-status-bar';
 
 // Styled Components
 const MainContainer = styled(SafeAreaView)`
@@ -184,6 +185,7 @@ const AttendanceStatus = ({ id: empId }) => {
   
   const currentMonth = date.getMonth();
   const currentYear = date.getFullYear();
+  const router = useRouter();
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -326,11 +328,18 @@ const AttendanceStatus = ({ id: empId }) => {
     return days;
   };
 
+    const handleBackPress = () => {
+    router.push({
+      pathname: '/attendance' 
+    });
+  };
+
   return (
     <MainContainer>
+      <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       <HeaderComponent 
         headerTitle="Attendance Status" 
-        onBackPress={() => navigation.goBack()} 
+        onBackPress={handleBackPress} 
       />
       
       <Container>
@@ -354,7 +363,7 @@ const AttendanceStatus = ({ id: empId }) => {
           </WeekDaysContainer>
         </CalendarHeader>
 
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
           <CalendarGrid>
             {renderCalendarDays()}
           </CalendarGrid>
@@ -363,23 +372,23 @@ const AttendanceStatus = ({ id: empId }) => {
             <StatusGuideTitle>Status Guide</StatusGuideTitle>
             <StatusGuideItem>
               <StatusBullet status="P" />
-              <StatusLabel>Present</StatusLabel>
+              <StatusLabel>P - Present</StatusLabel>
             </StatusGuideItem>
             <StatusGuideItem>
               <StatusBullet status="L" />
-              <StatusLabel>On Leave</StatusLabel>
+              <StatusLabel>L - On Leave</StatusLabel>
             </StatusGuideItem>
             <StatusGuideItem>
               <StatusBullet status="C" />
-              <StatusLabel>Company Holiday</StatusLabel>
+              <StatusLabel>C - Company Holiday</StatusLabel>
             </StatusGuideItem>
             <StatusGuideItem>
               <StatusBullet status="H" />
-              <StatusLabel>Weekly Holiday</StatusLabel>
+              <StatusLabel>H - Weekly Holiday</StatusLabel>
             </StatusGuideItem>
             <StatusGuideItem>
               <StatusBullet status="N" />
-              <StatusLabel>Not Submitted</StatusLabel>
+              <StatusLabel>N - Not Submitted</StatusLabel>
             </StatusGuideItem>
           </StatusGuideContainer>
         </ScrollView>

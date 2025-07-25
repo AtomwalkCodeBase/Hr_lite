@@ -9,7 +9,6 @@ import {
   TextInput,
   Dimensions,
   StatusBar,
-  ScrollView,
 } from 'react-native';
 import { AntDesign, Feather, FontAwesome, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { getEmplyoeeList } from '../services/productServices';
@@ -24,7 +23,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const EmployeeListScreen = () => {
 	const navigate = useNavigation();
-	const route = useRouter();
+	const router = useRouter();
   const [employees, setEmployees] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('');
@@ -49,7 +48,7 @@ const EmployeeListScreen = () => {
   }, [employees, searchQuery,filters]);
   
 const handleTimesheetPress = (employee) => {
-  route.push({
+  router.push({
     pathname: 'TimeSheet',
     params: {
       employee: JSON.stringify(employee),

@@ -8,7 +8,7 @@ import {
   ScrollView,
   RefreshControl
 } from 'react-native';
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
@@ -26,6 +26,7 @@ const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
 const ResolveScreen = (props) => {
+  const navigate = useNavigation();
   const router = useRouter();
   const call_type = 'R';
   const [helpCategories, setHelpCategories] = useState([]);
@@ -188,7 +189,7 @@ const filterConfigs = useMemo(() => [
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle="Resolve Desk" 
-        onBackPress={handleBackPress} 
+        onBackPress={() => navigate.goBack()} 
         showActionButton={false}
         icon1Name="filter"
         icon1OnPress={openFilterModal}

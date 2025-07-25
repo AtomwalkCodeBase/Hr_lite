@@ -77,20 +77,20 @@ const HomePage = ({ navigation }) => {
 
 
   useFocusEffect(
-      useCallback(() => {
-        const onBackPress = () => {
-          setShowExitModal(true); // Show exit confirmation modal
-    return true; // Prevent default back behavior
-        };
-  
-        BackHandler.addEventListener('hardwareBackPress', onBackPress);
-        
-        return () => {
-          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-        };
-      }, [])
-    );
-  
+    useCallback(() => {
+      const onBackPress = () => {
+        setShowExitModal(true); // Show exit confirmation modal
+        return true; // Prevent default back behavior
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
+
 
 
   const setdatatime = async () => {
@@ -298,6 +298,16 @@ const HomePage = ({ navigation }) => {
         fetchAttendanceDetails(data);
       }
     }, [employeeData, refreshKey])
+  );
+  useFocusEffect(
+    useCallback(() => {
+      const fetchDataOnFocus = async () => {
+        await onRefresh();
+      };
+
+      fetchDataOnFocus();
+
+    }, [profile])
   );
 
   const onRefresh = async () => {

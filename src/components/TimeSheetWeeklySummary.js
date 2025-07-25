@@ -285,6 +285,12 @@ const TimeSheetWeeklySummary = ({
     setShowDetailModal(true);
   }, []);
 
+  // Wrap onDelete to close modal after delete
+  const handleDeleteAndClose = async (task) => {
+    await onDelete(task);
+    setShowDetailModal(false);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.summaryHeader}>
@@ -304,7 +310,7 @@ const TimeSheetWeeklySummary = ({
         <View style={styles.tableHeader}>
           <Text style={styles.tableHeaderText}>Day</Text>
           <Text style={styles.tableHeaderText}>Hours</Text>
-          {/* <Text style={styles.tableHeaderText}>Projects</Text> */}
+          <Text style={styles.tableHeaderText}>Projects / Tasks</Text>
           <Text style={styles.tableHeaderText}>Action</Text>
         </View>
         <ScrollView style={styles.tableBody} nestedScrollEnabled showsVerticalScrollIndicator={false}>
@@ -336,9 +342,11 @@ const TimeSheetWeeklySummary = ({
         formatDisplayDate={formatDisplayDate}
         isSelfView={isSelfView}
         onEdit={onEdit}
-        onDelete={onDelete}
+        onDelete={handleDeleteAndClose}
         onClose={() => setShowDetailModal(false)}
-        SelectedDayDetail={SelectedDayDetail}
+        SelectedDayDetail={(props) => (
+          <SelectedDayDetail {...props} onAnyActionClose={() => setShowDetailModal(false)} />
+        )}
         showAddModal={(date) => showAddModal(date)}
         showAddIcon={showAddIcon}
       />

@@ -27,7 +27,7 @@ const ShiftScreen = (props) => {
   const [isErrorVisible, setIsErrorVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const scrollViewRef = useRef();
-  const navigation = useNavigation();
+  const navigate = useNavigation();
   const router = useRouter();
 
   // Shift color mapping for better visibility
@@ -212,7 +212,7 @@ return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <HeaderComponent 
         headerTitle="My Shift Schedule" 
-        onBackPress={() => router.push('MoreScreen')} 
+        onBackPress={() => navigate.goBack()} 
       />
       
       <ScrollView 

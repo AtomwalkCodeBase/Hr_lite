@@ -28,6 +28,8 @@ import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
 import useBackHandler from '../hooks/useBackHandler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 
@@ -53,6 +55,8 @@ const AddAttendance = () => {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const navigation = useNavigation();
   const router = useRouter();
+
+  const userToken = async() =>  await AsyncStorage.getItem('userToken');
 
 
   useLayoutEffect(() => {
@@ -117,6 +121,11 @@ const AddAttendance = () => {
           return;
         }
 
+        if (!userToken) {
+          console.log('You are loged out...',!userToken);
+          return;
+        }
+
         setEmployeeData(profile);
 
         // 2. Load attendance data
@@ -136,7 +145,7 @@ const AddAttendance = () => {
 
       } catch (error) {
         console.error('Error loading initial data:', error);
-        Alert.alert('Error', 'Failed to load attendance data');
+        // Alert.alert('Error', 'Failed to load attendance data');
       } finally {
         setIsLoading(false);
       }
@@ -273,6 +282,7 @@ const AddAttendance = () => {
       // setCheckedIn(data === 'ADD');
       // setStartTime(currentTime);
       setRefreshKey((prevKey) => prevKey + 1);
+      router.replace('/attendance');
       setIsSuccessModalVisible(true);
       if (data === 'UPDATE') setRemark('');
     } catch (error) {
@@ -394,7 +404,9 @@ const AddAttendance = () => {
 
   return (
     <>
+    <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       <SafeAreaView>
+
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -512,7 +524,7 @@ const AddAttendance = () => {
           {/* Attendance History Button */}
           <TouchableOpacity
             style={styles.historyButton}
-            onPress={() => router.push({
+            onPress={() => router.replace({
               pathname: 'AttendanceStatusDisplay',
               params: employeeData
             })}

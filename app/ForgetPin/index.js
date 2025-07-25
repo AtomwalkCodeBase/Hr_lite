@@ -387,12 +387,12 @@ const Input = styled.TextInput`
 `;
 
 const SubmitButton = styled.TouchableOpacity`
-  background-color: ${props => props.disabled ? '#adb5bd' : '#6c63ff'};
+  background-color: ${props => props.disabled ? '#adb5bd' : '#a970ff'};
   padding: ${scaleHeight(16)}px;
   border-radius: ${scaleWidth(10)}px;
   align-items: center;
   margin-top: ${scaleHeight(25)}px;
-  shadow-color: #6c63ff;
+  shadow-color: #a970ff;
   shadow-offset: 0px 4px;
   shadow-opacity: 0.3;
   shadow-radius: 6px;

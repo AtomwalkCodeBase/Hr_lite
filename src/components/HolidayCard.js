@@ -102,7 +102,7 @@ const HolidayCard = ({ data, holiday, onOptClick, onCancelClick }) => {
           </HolidayButton>
         ) : (
           <HolidayButton color="#555" onPress={() => onOptClick(holiday.date)}>
-            <HolidayButtonText>Opt Holiday</HolidayButtonText>
+            <HolidayButtonText>Apply</HolidayButtonText>
           </HolidayButton>
         )
       )}

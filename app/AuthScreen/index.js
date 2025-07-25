@@ -340,7 +340,7 @@ const LoginScreen = () => {
                     onPress={handlePress}
                     disabled={isLoginDisabled}
                     style={{
-                      backgroundColor: isLoginDisabled ? "#fff" : "#007AFF",
+                      backgroundColor: isLoginDisabled ? "#fff" : "#a970ff",
                     }}
                   >
                     <LoginButtonText
@@ -574,8 +574,8 @@ const ErrorText = styled.Text`
 `;
 
 const LoginButton = styled.TouchableOpacity`
-  background-color: ${props => props.disabled ? '#fff' : '#0062cc'};
-  border: 1px solid #0062cc;
+  background-color: ${props => props.disabled ? '#fff' : '#a970ff'};
+  border: 1px solid #a970ff;
   padding: ${scaleHeight(15)}px;
   border-radius: ${scaleWidth(5)}px;
   align-items: center;

@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   Text
 } from 'react-native';
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
@@ -37,6 +37,7 @@ const responsiveHeight = (percentage) => height * (percentage / 100);
 
 const TrainingScreen = () => {
   const router = useRouter();
+  const navigate = useNavigation();
   const [trainingSessions, setTrainingSessions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,12 +59,6 @@ const TrainingScreen = () => {
     
     fetchData();
   }, []);
-
-  const handleBackPress = () => {
-    router.push({
-      pathname: 'MoreScreen' 
-    });
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -116,7 +111,7 @@ const showModuleDetailsAndCertificate = (item) => {
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle="My Trainings" 
-        onBackPress={handleBackPress} 
+        onBackPress={() => navigate.goBack()} 
         showActionButton={false}
       />
       <View style={styles.container}>

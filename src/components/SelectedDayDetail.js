@@ -65,6 +65,7 @@ const SelectedDayDetail = ({
   onDelete,
   showAddModal,
   showAddIcon,
+  onAnyActionClose,
 }) => {
   const { tasks, totalHours, projects } = selectedDay;
   const dominantStatusKey = useMemo(() => getDominantStatusKey(tasks), [tasks]);
@@ -101,8 +102,14 @@ const SelectedDayDetail = ({
               task={task}
               selectedDay={selectedDay}
               isSelfView={isSelfView}
-              onEdit={onEdit}
-              onDelete={onDelete}
+              onEdit={async (t) => {
+                await onEdit(t);
+                if (onAnyActionClose) onAnyActionClose();
+              }}
+              onDelete={async (t) => {
+                await onDelete(t);
+                if (onAnyActionClose) onAnyActionClose();
+              }}
               statusConfig={STATUS_CONFIG}
             />
           ))}
@@ -110,7 +117,10 @@ const SelectedDayDetail = ({
       </ScrollView>
       {showAddIcon && (
         <ApplyButton
-          onPress={() => showAddModal(selectedDay.date)}
+          onPress={() => {
+            showAddModal(selectedDay.date);
+            if (onAnyActionClose) onAnyActionClose();
+          }}
           buttonText={`Add New Task on ${formatDisplayDate(selectedDay.date)}`}
         />
       )}

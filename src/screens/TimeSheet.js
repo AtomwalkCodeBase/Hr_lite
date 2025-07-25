@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, StatusBar, Alert, BackHandler } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Text, StyleSheet, ScrollView, StatusBar, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from "../services/productServices";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Loader from "../components/old_components/Loader";
-import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import HeaderComponent from "../components/HeaderComponent";
 import TimeSheetCard from "../components/TimeSheetCard";
 import TimeSheetWeekNavigation from "../components/TimeSheetWeekNavigation";
@@ -47,7 +47,6 @@ const TimeSheet = () => {
   const [activeTab, setActiveTab] = useState('summary');
   const navigate = useNavigation();
   const route = useRouter();
-  const router = useRouter();
   const [SubmitConfirmModalVisible, setSubmitConfirmModalVisible] = useState(false);
   const [ApproveConfirmModalVisible, setApproveConfirmModalVisible] = useState(false);
 
@@ -67,21 +66,6 @@ const TimeSheet = () => {
       }
     })();
   }, []);
-
-  useFocusEffect(
-      useCallback(() => {
-        const onBackPress = () => {
-          router.replace('home');
-          return true;
-        };
-  
-        BackHandler.addEventListener('hardwareBackPress', onBackPress);
-  
-        return () => {
-          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-        };
-      }, [])
-    );
 
   const [formData, setFormData] = useState({
     project: "",
@@ -327,7 +311,7 @@ const TimeSheet = () => {
           });
           setShowAddModal(false);
           setEditingTask(null);
-          setActiveTab("timesheet")
+          // setActiveTab("timesheet")
         }
         getTimeSheetList();
       } else {
@@ -690,7 +674,7 @@ const TimeSheet = () => {
             ? `Once you submit timesheet you can not add new task for this week.${'\n\n'} Are you sure to submit it?`
             : "Are you sure you want to approve timesheet for this employee?"
         }
-        messageColor="#EC625F"
+        messageColor="#EF6C00"
         onConfirm={() => {
           handleWeeklySubmit(SubmitConfirmModalVisible ? "WEEKLY_SUBMIT" : "WEEKLY_APPROVE");
         }}

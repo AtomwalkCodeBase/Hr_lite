@@ -13,7 +13,8 @@ import {
     Dimensions,
     StatusBar,
     Image,
-    SafeAreaView
+    SafeAreaView,
+    ScrollView
 } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import Logos from '../../assets/images/Atom_walk_logo.jpg'
@@ -192,7 +193,7 @@ const AuthScreen = () => {
 
             <Loader visible={isLoading} />
 
-            <View style={styles.contentContainer}>
+            <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
                 {!showPinInput && !showFingerprint ? (
                     <View style={styles.card}>
                         <Text style={styles.loginOptionsText}>Login Options</Text>
@@ -363,7 +364,7 @@ const AuthScreen = () => {
                         Version {appVersion ? `${appVersion}` : '0.0.1'}
                     </Text>
                 </View>
-            </View>
+            </ScrollView>
 
             <ErrorModal
                 visible={isNetworkError}
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 10,
-        justifyContent: 'space-between',
+        // justifyContent: 'space-between',
     },
     card: {
         backgroundColor: '#fff',
@@ -536,7 +537,7 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
     submitButton: {
-        backgroundColor: '#007AFF',
+        backgroundColor: '#a970ff',
         paddingVertical: 15,
         paddingHorizontal: 50,
         borderRadius: 8,
