@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useState } from 'react';
 import {
   StyleSheet,
   FlatList,
@@ -10,11 +10,12 @@ import {
   Dimensions,
   Platform,
   Animated,
-  Easing
+  Easing,
+  BackHandler
 } from 'react-native';
 import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import ModalComponent from '../components/ModalComponent';
@@ -271,6 +272,22 @@ const ApproveClaim = () => {
     setActiveFilters(pendingFilters);
     setShowFilterModal(false);
   };
+
+   useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.replace('home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
+
 
   const handleClearFilters = () => {
     setPendingFilters({

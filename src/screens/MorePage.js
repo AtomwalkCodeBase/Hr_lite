@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons, Ionicons, Feather, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
 import HeaderComponent from '../components/HeaderComponent';
 import Loader from '../components/old_components/Loader';
@@ -100,7 +100,22 @@ const MorePage = () => {
         setLoading(false);
   }, []);
 
-  
+
+   useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.replace('home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
+
 
   const handlePressHelp = () => {  
     router.push({

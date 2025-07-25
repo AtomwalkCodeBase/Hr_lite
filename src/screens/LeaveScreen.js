@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { FlatList,Dimensions } from 'react-native';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
+import { FlatList,Dimensions, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
-import { usePathname, useRouter } from "expo-router";
+import { useFocusEffect, usePathname, useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
@@ -98,6 +98,21 @@ const LeaveScreen = () => {
   const [loading, setLoading] = useState(false); // Loader state
   const [totalLeaveSum, setTotalLeaveSum] = useState(0);
   const pathname = usePathname();
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.replace('home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
 
   const generateRandomValue = () => {
     return Math.floor(Math.random() * 100);

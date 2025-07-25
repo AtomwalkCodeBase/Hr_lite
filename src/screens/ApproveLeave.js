@@ -1,9 +1,9 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { FlatList, Text, View, TouchableOpacity, Dimensions } from 'react-native';
+import { FlatList, Text, View, TouchableOpacity, Dimensions, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Link, useRouter } from "expo-router";
+import { Link, useFocusEffect, useRouter } from "expo-router";
 import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -115,6 +115,22 @@ const LeaveScreen = (props) => {
       fetchLeaveData();
     }
   }, [empId, activeTab]);
+
+   useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          router.replace('home');
+          return true;
+        };
+  
+        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => {
+          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        };
+      }, [])
+    );
+  
 
   useEffect(() => {
     if (props?.data?.empNId) {

@@ -1,8 +1,8 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { ScrollView, View, TouchableOpacity, Alert, Text } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { ScrollView, View, TouchableOpacity, Alert, Text, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
 import { getEmpHoliday, postEmpLeave } from '../services/productServices';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import HeaderComponent from '../components/HeaderComponent';
 import HolidayCard from '../components/HolidayCard';
 import EmptyMessage from '../components/EmptyMessage';
@@ -136,6 +136,22 @@ const HolidayScreen = () => {
     };
     fetchEId();
   }, [retryCount]);
+
+   useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        router.replace('home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [])
+  );
+
 
   // Fetch data when eId is available
   useEffect(() => {

@@ -1,5 +1,5 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing, Dimensions } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, TextInput, Animated, Easing, Dimensions, BackHandler } from 'react-native';
 import { useFocusEffect, useNavigation, usePathname, useRouter } from 'expo-router';
 import { getEmpClaim, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -223,6 +223,22 @@ const periodOptions = [
       updateStatusSummary(allClaims);
     }
   }, [allClaims]);
+
+   useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          router.replace('home');
+          return true;
+        };
+  
+        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => {
+          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        };
+      }, [])
+    );
+  
 
 
   const getFilterCount = () => {
