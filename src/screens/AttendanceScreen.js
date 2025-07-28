@@ -18,7 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import RemarksInput from '../components/RemarkInput';
-import { getEmpAttendance, postCheckIn } from '../services/productServices';
+import { getEmpAttendance, getTimesheetData, postCheckIn } from '../services/productServices';
 import Loader from '../components/old_components/Loader';
 import SuccessModal from '../components/SuccessModal';
 import HeaderComponent from '../components/HeaderComponent';
@@ -245,9 +245,9 @@ const AddAttendance = () => {
   };
 
   // Add these constants at the top of your file
-const ORIGIN_LATITUDE = 12.973936; // Replace with your origin latitude
-const ORIGIN_LONGITUDE =  77.693608; // Replace with your origin longitude
-const ALLOWED_RADIUS = 10; // Radius in meters
+const ORIGIN_LATITUDE = 12.967820850448733; // Replace with your origin latitude
+const ORIGIN_LONGITUDE =  77.71338105153045; // Replace with your origin longitude
+const ALLOWED_RADIUS = 100; // Radius in meters
 
 // Add this utility function to calculate distance between coordinates
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -263,6 +263,39 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
   return R * c;
+};
+
+// Reusable function to validate location distance
+const validateLocationDistance = async () => {
+  try {
+    const location = await Location.getCurrentPositionAsync({});
+    const distance = calculateDistance(
+      ORIGIN_LATITUDE,
+      ORIGIN_LONGITUDE,
+      location.coords.latitude,
+      location.coords.longitude
+    );
+
+    if (distance > ALLOWED_RADIUS) {
+      setErrorMessage(
+        `You are ${Math.round(distance)} meters away from the allowed location.${'\n'}
+        Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
+      );
+      setshowErrorModal(true);
+      return { isValid: false, distance, coordinates: null };
+    }
+    return { 
+      isValid: true, 
+      distance, 
+      coordinates: {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      }
+    };
+  } catch (error) {
+    Alert.alert('Error', 'Unable to fetch location. Please try again.');
+    return { isValid: false, distance: 0, coordinates: null };
+  }
 };
 
 const MAX_DAILY_HOURS = 9;
@@ -301,35 +334,9 @@ const validateTimesheetForCheckout = async (empId, date) => {
     return;
   }
 
-  let location = null;
-
-  try {
-    location = await Location.getCurrentPositionAsync({});
-    
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      // Alert.alert(
-      //   'Location Out of Range',
-      //   `You are ${Math.round(distance)} meters away from the allowed location. ` +
-      //   `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      // );
-      setErrorMessage(
-        `You are ${Math.round(distance)} meters away from the allowed location.
-        Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      )
-      setshowErrorModal(true);
-      setIsLoading(false);
-      return;
-    }
-  } catch (error) {
-    Alert.alert('Error', 'Unable to fetch location. Please try again.');
+  // Validate location distance
+  const { isValid: locationValid, coordinates } = await validateLocationDistance();
+  if (!locationValid) {
     setIsLoading(false);
     return;
   }
@@ -345,8 +352,8 @@ const validateTimesheetForCheckout = async (empId, date) => {
     time: time,
     geo_type: data === 'ADD' ? 'I' : 'O',
     a_date: currentDate,
-    latitude_id: `${location?.coords?.latitude}`,
-    longitude_id: `${location?.coords?.longitude}`,
+    latitude_id: `${coordinates.latitude}`,
+    longitude_id: `${coordinates.longitude}`,
     remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
     id: attendanceId,
   };
@@ -416,34 +423,16 @@ const submitCheckout = async (payload) => {
       return;
     }
 
-    const location = await Location.getCurrentPositionAsync({});
-    if (!location) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Calculate distance from origin
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      Alert.alert(
-        'Location Out of Range',
-        `You are ${Math.round(distance)} meters away from the allowed location. ` +
-        `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-      );
+    // Validate location distance
+    const { isValid: locationValid, coordinates } = await validateLocationDistance();
+    if (!locationValid) {
       setIsLoading(false);
       return;
     }
 
     // Add location data to payload
-    payload.latitude_id = `${location.coords.latitude}`;
-    payload.longitude_id = `${location.coords.longitude}`;
+    payload.latitude_id = `${coordinates.latitude}`;
+    payload.longitude_id = `${coordinates.longitude}`;
 
     await postCheckIn(payload);
     setRefreshKey(prev => prev + 1);
@@ -489,12 +478,17 @@ const handleCheckOutAttempt = async () => {
     return;
   }
 
-  // Both mode - validate both timesheet and geo-location
-  if (geoLocationEnabled === "B") {
-    if (timesheetCheckedToday) {
-      setIsRemarkModalVisible(true);
+  // For "B" and "A" modes, FIRST check location permission
+  if (geoLocationEnabled === "B" || geoLocationEnabled === "A") {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Location permission is required to check out.');
       return;
     }
+  }
+
+  // Both mode - validate both timesheet and geo-location
+  if (geoLocationEnabled === "B") {
     const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
     if (notFilled) {
       setshowErrorModal(true);
@@ -505,41 +499,19 @@ const handleCheckOutAttempt = async () => {
       setShowEffortConfirmModal(true);
       return;
     }
-    setTimesheetCheckedToday(true);
   }
 
-  // For "B" and "A" modes, proceed with geo-location validation
+  // For "B" and "A" modes, proceed with geo-location distance validation
   if (geoLocationEnabled === "B" || geoLocationEnabled === "A") {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Location permission is required to check out.');
-      return;
-    }
-
-    try {
-      const location = await Location.getCurrentPositionAsync({});
-      const distance = calculateDistance(
-        ORIGIN_LATITUDE,
-        ORIGIN_LONGITUDE,
-        location.coords.latitude,
-        location.coords.longitude
-      );
-
-      if (distance > ALLOWED_RADIUS) {
-        Alert.alert(
-          'Location Out of Range',
-          `You are ${Math.round(distance)} meters away from the allowed location. ` +
-          `Maximum allowed distance is ${ALLOWED_RADIUS} meters.`
-        );
-        return;
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+    const { isValid: locationValid } = await validateLocationDistance();
+    if (!locationValid) {
+      setIsCheckOutInProgress(false);
       return;
     }
   }
 
   // If all validations pass, show remarks modal
+  setTimesheetCheckedToday(true);
   setIsRemarkModalVisible(true);
 };
 
