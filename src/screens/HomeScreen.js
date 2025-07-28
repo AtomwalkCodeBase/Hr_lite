@@ -18,32 +18,8 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
 import useBackHandler from '../hooks/useBackHandler';
 import ErrorModal from '../components/ErrorModal';
-import { getTimesheetData } from '../services/productServices';
 
 const { width, height } = Dimensions.get('window');
-
-const MAX_DAILY_HOURS = 9;
-
-// Utility to validate timesheet for check-out
-const validateTimesheetForCheckout = async (empId, date) => {
-  try {
-    const res = await getTimesheetData(empId, date, date);
-    const timesheetEntries = res.data || [];
-    if (!timesheetEntries.length) {
-      return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-    }
-    const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
-    const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
-    return {
-      notFilled: false,
-      totalEffort,
-      isEffortOutOfRange,
-      isValid: !isEffortOutOfRange,
-    };
-  } catch (e) {
-    return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
-  }
-};
 
 const HomePage = ({ navigation }) => {
   const router = useRouter();
@@ -79,9 +55,6 @@ const HomePage = ({ navigation }) => {
     message: "",
     visible: false
   })
-
-  const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
-  const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
 
   // Active events
   const [eventData, setEventData] = useState([]);
@@ -353,58 +326,6 @@ const HomePage = ({ navigation }) => {
     setErrors(prevState => ({ ...prevState, [input]: error }));
   };
 
-  const ORIGIN_LATITUDE = 12.967820850448733; // Replace with your origin latitude
-const ORIGIN_LONGITUDE = 77.71338105153045 ; // Replace with your origin longitude
-const ALLOWED_RADIUS = 100; // Radius in meters
-
-// Add this utility function to calculate distance between coordinates
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371e3; // Earth radius in meters
-  const φ1 = lat1 * Math.PI/180;
-  const φ2 = lat2 * Math.PI/180;
-  const Δφ = (lat2-lat1) * Math.PI/180;
-  const Δλ = (lon2-lon1) * Math.PI/180;
-
-  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-  return R * c;
-};
-
-// Reusable function to validate location distance
-const validateLocationDistance = async () => {
-  try {
-    const location = await Location.getCurrentPositionAsync({});
-    const distance = calculateDistance(
-      ORIGIN_LATITUDE,
-      ORIGIN_LONGITUDE,
-      location.coords.latitude,
-      location.coords.longitude
-    );
-
-    if (distance > ALLOWED_RADIUS) {
-      setErrorMessage({
-        message: `You are ${Math.round(distance)} meters away from the allowed location.${'\n \n'} Maximum allowed distance is ${ALLOWED_RADIUS} meters.`,
-        visible: true
-      });
-      return { isValid: false, distance, coordinates: null };
-    }
-    return {
-      isValid: true,
-      distance,
-      coordinates: {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude
-      }
-    };
-  } catch (error) {
-    Alert.alert('Error', 'Unable to fetch location. Please try again.');
-    return { isValid: false, distance: 0, coordinates: null };
-  }
-};
-
   const handleCheck = async (data) => {
     if (!employeeData) return;
 
@@ -418,42 +339,53 @@ const validateLocationDistance = async () => {
     }
 
     let location = null;
+    let retries = 0;
 
-  // Validate location distance
-  const { isValid: locationValid, coordinates } = await validateLocationDistance();
-  if (!locationValid) {
-    setIsLoading(false);
-    return;
-  }
+    while (!location && retries < 1) {
+      try {
+        location = await Location.getCurrentPositionAsync({});
+      } catch (error) {
+        retries += 1;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
 
-  const todayAttendance = attData.find((item) => item.a_date === currentDate);
-  const attendanceId = todayAttendance ? todayAttendance.id : null;
-  const time = await setdatatime();
-  
-  const checkPayload = {
-    emp_id: employeeData?.id,
-    call_mode: data,
-    time: time,
-    geo_type: data === 'ADD' ? 'I' : 'O',
-    a_date: currentDate,
-    latitude_id: `${coordinates.latitude}`,
-    longitude_id: `${coordinates.longitude}`,
-    remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-    id: attendanceId,
+    if (!location) {
+      Alert.alert('Error', 'Unable to fetch location. Please try again.');
+      setIsLoading(false);
+      return;
+    }
+
+    const todayAttendance = attData.find((item) => item.a_date === currentDate);
+    const attendanceId = todayAttendance ? todayAttendance.id : null;
+    const time = await setdatatime();
+
+    const checkPayload = {
+      emp_id: employeeData?.id,
+      call_mode: data,
+      time: time,
+      geo_type: data === 'ADD' ? 'I' : 'O',
+      a_date: currentDate,
+      latitude_id: `${location?.coords?.latitude}`,
+      longitude_id: `${location?.coords?.longitude}`,
+      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+      id: attendanceId,
+    };
+
+    try {
+      await postCheckIn(checkPayload);
+      setCheckedIn(data === 'ADD');
+      setRefreshKey((prevKey) => prevKey + 1);
+      setIsSuccessModalVisible(true);
+      if (data === 'UPDATE') setRemark('');
+    } catch (error) {
+      console.error('Check in/out error:', error);
+      setErrorMessage({message: "Failed to Check.", visible: true})
+      // Alert.alert('Check Failure', 'Failed to Check.');
+    } finally {
+      setIsLoading(false);
+    }
   };
-
-  try {
-    await postCheckIn(checkPayload);
-    setRefreshKey((prevKey) => prevKey + 1);
-    setIsSuccessModalVisible(true);
-    if (data === 'UPDATE') setRemark('');
-  } catch (error) {
-    console.error('Check in/out error:', error);
-    Alert.alert('Check Failure', 'Failed to Check.');
-  } finally {
-    setIsLoading(false);
-  }
-};
 
   const handleRemarkSubmit = () => {
     if (!remark.trim()) {
@@ -498,24 +430,21 @@ const validateLocationDistance = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== 'granted') {
-        setErrorMessage({
-          message: 'Location permission is required to check out.',
-          visible: true
-        })
+        Alert.alert('Permission denied', 'Location permission is required to check out.');
         setIsLoading(false);
         return;
       }
 
-      // Validate location distance
-      const { isValid: locationValid, coordinates } = await validateLocationDistance();
-      if (!locationValid) {
+      const location = await Location.getCurrentPositionAsync({});
+      if (!location) {
+        Alert.alert('Error', 'Unable to fetch location. Please try again.');
         setIsLoading(false);
         return;
       }
 
       // Add location data to payload
-      payload.latitude_id = `${coordinates.latitude}`;
-      payload.longitude_id = `${coordinates.longitude}`;
+      payload.latitude_id = `${location.coords.latitude}`;
+      payload.longitude_id = `${location.coords.longitude}`;
 
       await postCheckIn(payload);
       setRefreshKey(prev => prev + 1);
@@ -561,85 +490,6 @@ const validateLocationDistance = async () => {
   const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
   const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
 
-  const handleCheckOutAttempt = async () => {
-    if (!employeeData) return;
-
-    // Check if companyInfo is loaded
-    if (!companyInfo) {
-      console.log("companyInfo not loaded yet");
-      Alert.alert('Error', 'Company information not loaded. Please try again.');
-      return;
-    }
-
-    const geoLocationEnabled = companyInfo?.is_geo_location_enabled;
-
-
-    // No check mode - skip all validations, show remarks modal directly
-    if (geoLocationEnabled === "N") {
-      setIsRemarkModalVisible(true);
-      return;
-    }
-
-    // For "B" and "A" modes, FIRST check location permission
-    if (geoLocationEnabled === "B" || geoLocationEnabled === "A") {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to check out.');
-        return;
-      }
-    }
-
-    // Both mode - validate both timesheet and geo-location
-    if (geoLocationEnabled === "B") {
-      const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
-      if (notFilled) {
-        setErrorMessage({ message: "You did not fill today's timesheet. Please fill it before checking out.", visible: true });
-        return;
-      }
-      if (isEffortOutOfRange) {
-        setShowEffortConfirmModal(true);
-        return;
-      }
-    }
-
-    // For "B" and "A" modes, proceed with geo-location distance validation
-    if (geoLocationEnabled === "B" || geoLocationEnabled === "A") {
-      const { isValid: locationValid } = await validateLocationDistance();
-      if (!locationValid) {
-        return;
-      }
-    }
-
-    // If all validations pass, show remarks modal
-    setTimesheetCheckedToday(true);
-    setIsRemarkModalVisible(true);
-  };
-
-
-  const renderEventCard = ({ item }) => (
-    <View style={styles.eventCard}>
-      <LinearGradient
-        colors={['#a970ff', '#8a5bda']}
-        start={[0, 0]}
-        end={[1, 1]}
-        style={{
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          padding: 16
-        }}
-      >
-        <View style={styles.eventIconContainer}>
-          <MaterialIcons name={item.icon} size={28} color="#fff" />
-        </View>
-        <View style={styles.eventTextContainer}>
-          <Text style={styles.eventTitle}>{item.title}</Text>
-          <Text style={styles.eventDescription}>{item.description}</Text>
-          <Text style={styles.eventTime}>{item.time}</Text>
-        </View>
-      </LinearGradient>
-    </View>
-  );
 
   const menuItems = [
     {
@@ -818,7 +668,7 @@ const validateLocationDistance = async () => {
                         setIsConfirmModalVisible(true);
                       } else {
                         setIsYesterdayCheckout(false);
-                        handleCheckOutAttempt();
+                        setIsRemarkModalVisible(true);
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -1012,42 +862,23 @@ const validateLocationDistance = async () => {
         cancelText="Cancel"
       />
 
-      <ErrorModal
-        visible={errorMessage.visible}
-        message={errorMessage.message}
-        onClose={() => setErrorMessage({ ...errorMessage, visible: false })}
-      />
-      <ConfirmationModal
-        visible={showEffortConfirmModal}
-        headerTitle="Warning"
-        messageColor="#EF6C00"
-        message="Your timesheet hours seem unusual. Do you still want to check out ?"
-        onConfirm={() => {
-          setShowEffortConfirmModal(false);
-          setTimesheetCheckedToday(true);
-          setIsRemarkModalVisible(true);
-        }}
-        onCancel={() => setShowEffortConfirmModal(false)}
-        confirmText="Yes"
-        cancelText="No"
-      />
-
       <ConfirmationModal
         visible={showExitModal}
         message="Are you sure you want to exit the app?"
         onConfirm={() => {
-          setShowExitModal(false); // Close the modal
-          setTimeout(() => {
-            BackHandler.exitApp(); // Exit app after short delay
-          }, 200); // Delay for modal to close (adjust if needed)
+          setShowExitModal(false);
+          BackHandler.exitApp();
         }}
         onCancel={() => setShowExitModal(false)}
         confirmText="Exit"
         cancelText="Cancel"
-        color="#FF3B30"
-        messageColor="#333"
       />
 
+      <ErrorModal
+        visible={errorMessage.visible}
+        message={errorMessage.message}
+        onClose={() => setErrorMessage({ message: "", visible: false })}
+      />
 
       {/* Sidebar overlay (should be last to overlay everything) */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} style={styles.sidebarOverlay} />
@@ -1060,13 +891,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f5ff',
   },
-    distanceText: {
-  fontSize: 14,
-  fontFamily: 'Inter-Medium',
-  textAlign: 'center',
-  marginTop: 8,
-  color: '#666',
-},
   headerContainer: {
     overflow: 'visible',
     zIndex: 10,
