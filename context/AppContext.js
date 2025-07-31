@@ -6,6 +6,10 @@ import { getCompanyInfo, getEmployeeInfo } from '../src/services/authServices';
 import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import NetworkErrorModal from '../src/components/NetworkErrorModal';
+import moment from 'moment';
+import * as Location from 'expo-location';
+import { getEmpAttendance, postCheckIn } from '../src/services/productServices';
+import { Alert } from 'react-native';
 
 const AppContext = createContext();
 
@@ -19,7 +23,178 @@ const AppProvider = ({ children }) => {
     const [reLoad, setReload] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
 
+    // Attendance related states
+    const [employeeData, setEmployeeData] = useState(null);
+    const [currentDate, setCurrentDate] = useState(moment().format('DD-MM-YYYY'));
+    const [currentTimeStr, setCurrentTimeStr] = useState('');
+    const [currentTime, setCurrentTime] = useState('');
+    const [checkedIn, setCheckedIn] = useState(false);
+    const [attendance, setAttendance] = useState(null);
+    const [attData, setAttData] = useState([]);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [remark, setRemark] = useState('');
+    const [errors, setErrors] = useState({});
+    const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
+    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+    const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
+    const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
+    const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const [attendanceErrorMessage, setAttendanceErrorMessage] = useState({
+        message: "",
+        visible: false
+    });
+
+    // Geolocation related states
+    const [geoLocationConfig, setGeoLocationConfig] = useState({
+        isEnabled: false,
+        allowedRadius: 100,
+        originLatitude: null,
+        originLongitude: null,
+        mode: null // "T", "N", "A"
+    });
+    const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
+    const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
+
     const router = useRouter();
+
+    // Geolocation utility functions
+    const parseGeoLocationString = (geoString) => {
+        if (!geoString || typeof geoString !== 'string') {
+            return { latitude: null, longitude: null };
+        }
+        const parts = geoString.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+            const latitude = parseFloat(parts[0]);
+            const longitude = parseFloat(parts[1]);
+            if (!isNaN(latitude) && !isNaN(longitude)) {
+                return { latitude, longitude };
+            }
+        }
+        return { latitude: null, longitude: null };
+    };
+
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = lat1 * Math.PI/180;
+        const φ2 = lat2 * Math.PI/180;
+        const Δφ = (lat2-lat1) * Math.PI/180;
+        const Δλ = (lon2-lon1) * Math.PI/180;
+
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+        return R * c;
+    };
+
+    const validateLocationDistance = async () => {
+        try {
+            const location = await Location.getCurrentPositionAsync({});
+            const distance = calculateDistance(
+                geoLocationConfig.originLatitude,
+                geoLocationConfig.originLongitude,
+                location.coords.latitude,
+                location.coords.longitude
+            );
+
+            if (distance > geoLocationConfig.allowedRadius) {
+                setAttendanceErrorMessage({
+                    message: `You are ${Math.round(distance)} meters away from the allowed location.\n\nMaximum allowed distance is ${geoLocationConfig.allowedRadius} meters.`,
+                    visible: true
+                });
+                return { isValid: false, distance };
+            }
+            return { isValid: true, distance };
+        } catch (error) {
+            setAttendanceErrorMessage({
+                message: 'Unable to fetch location. Please try again.',
+                visible: true
+            });
+            return { isValid: false, distance: 0 };
+        }
+    };
+
+    const validateTimesheetForCheckout = async (empId, date) => {
+        try {
+            const { getTimesheetData } = await import('../src/services/productServices');
+            const res = await getTimesheetData(empId, date, date);
+            const timesheetEntries = res.data || [];
+            const MAX_DAILY_HOURS = 9;
+            
+            if (!timesheetEntries.length) {
+                return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+            }
+            const totalEffort = timesheetEntries.reduce((sum, entry) => sum + (parseFloat(entry.effort) || 0), 0);
+            const isEffortOutOfRange = totalEffort < 2 || totalEffort > MAX_DAILY_HOURS;
+            return {
+                notFilled: false,
+                totalEffort,
+                isEffortOutOfRange,
+                isValid: !isEffortOutOfRange,
+            };
+        } catch (e) {
+            return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
+        }
+    };
+
+    const initializeGeoLocationConfig = (companyData, profileData) => {
+        try {
+            // Extract company geolocation settings
+            const companyGeoEnabled = companyData?.is_geo_location_enabled;
+            const companyAllowedDistance = companyData?.geo_allowed_distance || 100;
+            let companyOriginLat = null;
+            let companyOriginLon = null;
+
+            // Parse company geo_location_data if present
+            if (companyData?.geo_location_data) {
+                const { latitude, longitude } = parseGeoLocationString(companyData.geo_location_data);
+                companyOriginLat = latitude;
+                companyOriginLon = longitude;
+            }
+
+            // Check profile data for override
+            let finalOriginLat = companyOriginLat;
+            let finalOriginLon = companyOriginLon;
+
+            if (profileData && Array.isArray(profileData) && profileData.length > 0) {
+                const profile = profileData[0];
+                if (profile.geo_location_data) {
+                    const { latitude, longitude } = parseGeoLocationString(profile.geo_location_data);
+                    // Only override if profile data is valid
+                    if (latitude !== null && longitude !== null) {
+                        finalOriginLat = latitude;
+                        finalOriginLon = longitude;
+                    }
+                }
+            }
+
+            // Validate geolocation configuration
+            if ((companyGeoEnabled === "T" || companyGeoEnabled === "A") && (!finalOriginLat || !finalOriginLon)) {
+                setAttendanceErrorMessage({
+                    message: "You did not set company geo location data in company parameter",
+                    visible: true
+                });
+                return false;
+            }
+
+            // Set geolocation configuration
+            setGeoLocationConfig({
+                isEnabled: !!companyGeoEnabled,
+                allowedRadius: companyAllowedDistance,
+                originLatitude: finalOriginLat,
+                originLongitude: finalOriginLon,
+                mode: companyGeoEnabled
+            });
+
+            return true;
+        } catch (error) {
+            console.error('Error initializing geolocation config:', error);
+            return false;
+        }
+    };
 
     const checkNetwork = async () => {
         const netState = await NetInfo.fetch();
@@ -277,6 +452,9 @@ const AppProvider = ({ children }) => {
                         getCompanyInfo()
                     ]);
 
+                    console.log("company data", companyRes.data)
+                    console.log("profile data", profileRes.data)
+
                     // Set profile data
                     if (profileRes?.data?.[0]) {
                         setProfile(profileRes.data[0]);
@@ -291,6 +469,9 @@ const AppProvider = ({ children }) => {
                         await AsyncStorage.setItem('companyInfo', JSON.stringify(companyRes.data));
                     }
 
+                    // Initialize geolocation configuration
+                    initializeGeoLocationConfig(companyRes?.data, profileRes?.data);
+
                     // Navigate to home
                     router.replace({ pathname: 'home' });
                 } catch (error) {
@@ -304,6 +485,337 @@ const AppProvider = ({ children }) => {
             fetchData();
         }
     }, [reLoad]);
+
+    // Attendance functions
+    const setdatatime = async () => {
+        let time = moment().format('hh:mm A');
+        if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
+            time = time.replace(/^12/, '00');
+        }
+        return time;
+    };
+
+    const checkPreviousDayAttendance = (attendanceData) => {
+        if (profile) {
+            if (!profile?.is_shift_applicable) {
+                setPreviousDayUnchecked(false);
+                return;
+            }
+        }
+
+        const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
+        const yesterdayAttendance = attendanceData.find(item =>
+            item.a_date === yesterday &&
+            item.attendance_type !== "L" &&
+            item.end_time === null
+        );
+
+        setPreviousDayUnchecked(!!yesterdayAttendance);
+    };
+
+    const processAttendanceData = (data) => {
+        const today = currentDate;
+        const todayAttendance = data.find(item =>
+            item.a_date === today &&
+            item.attendance_type !== "L"
+        );
+
+        if (todayAttendance) {
+            setCheckedIn(todayAttendance.end_time === null);
+            setAttendance(todayAttendance);
+        } else {
+            setCheckedIn(false);
+            setAttendance(null);
+        }
+    };
+
+    const handleError = (error, input) => {
+        setErrors(prevState => ({ ...prevState, [input]: error }));
+    };
+
+    // Common location access utility function
+    const getLocationWithPermission = async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+
+        if (status !== 'granted') {
+            setAttendanceErrorMessage({
+                message: 'Location permission is required to check in/out. Please enable location access in settings.',
+                visible: true
+            });
+            return null;
+        }
+
+        let location = null;
+        let retries = 0;
+
+        while (!location && retries < 1) {
+            try {
+                location = await Location.getCurrentPositionAsync({});
+            } catch (error) {
+                retries += 1;
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+        }
+
+        if (!location) {
+            setAttendanceErrorMessage({
+                message: 'Unable to fetch location. Please check your GPS settings and try again.',
+                visible: true
+            });
+            return null;
+        }
+
+        return location;
+    };
+
+    const handleCheck = async (data) => {
+        if (!employeeData) return;
+
+        setIsLoading(true);
+        
+        // Check geolocation validation for check-in
+        if (data === 'ADD' && geoLocationConfig.isEnabled && geoLocationConfig.mode !== "N") {
+            const { isValid } = await validateLocationDistance();
+            if (!isValid) {
+                setIsLoading(false);
+                return;
+            }
+        }
+
+        const location = await getLocationWithPermission();
+        
+        if (!location) {
+            setIsLoading(false);
+            return;
+        }
+
+        const todayAttendance = attData.find((item) => item.a_date === currentDate);
+        const attendanceId = todayAttendance ? todayAttendance.id : null;
+        const time = await setdatatime();
+
+        const checkPayload = {
+            emp_id: employeeData?.id,
+            call_mode: data,
+            time: time,
+            geo_type: data === 'ADD' ? 'I' : 'O',
+            a_date: currentDate,
+            latitude_id: `${location?.coords?.latitude}`,
+            longitude_id: `${location?.coords?.longitude}`,
+            remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
+            id: attendanceId,
+        };
+
+        try {
+            await postCheckIn(checkPayload);
+            setCheckedIn(data === 'ADD');
+            setRefreshKey((prevKey) => prevKey + 1);
+            setIsSuccessModalVisible(true);
+            if (data === 'UPDATE') setRemark('');
+            
+            // Refresh attendance data to update UI immediately
+            await refreshData();
+        } catch (error) {
+            console.error('Check in/out error:', error);
+            setAttendanceErrorMessage({message: "Failed to Check.", visible: true});
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleRemarkSubmit = () => {
+        if (!remark.trim()) {
+            handleError('Remark cannot be empty', 'remarks');
+            return;
+        }
+
+        setIsRemarkModalVisible(false);
+
+        if (isYesterdayCheckout) {
+            // Handle yesterday's checkout
+            const yesterdayRecord = attData.find(item =>
+                item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
+                item.end_time === null
+            );
+
+            if (!yesterdayRecord) {
+                setAttendanceErrorMessage({message: "No pending checkout found for yesterday", visible: true});
+                return;
+            }
+
+            const payload = {
+                emp_id: employeeData.id,
+                call_mode: 'UPDATE',
+                time: currentTimeStr,
+                geo_type: 'O',
+                e_date: currentDate,
+                id: yesterdayRecord.id,
+                remarks: remark || 'Check-out from Mobile (completed next day)'
+            };
+
+            submitCheckout(payload);
+        } else {
+            // Handle today's checkout
+            handleCheck('UPDATE');
+        }
+    };
+
+    const submitCheckout = async (payload) => {
+        try {
+            setIsLoading(true);
+            const location = await getLocationWithPermission();
+            
+            if (!location) {
+                setIsLoading(false);
+                return;
+            }
+
+            // Add location data to payload
+            payload.latitude_id = `${location.coords.latitude}`;
+            payload.longitude_id = `${location.coords.longitude}`;
+
+            await postCheckIn(payload);
+            setRefreshKey(prev => prev + 1);
+            setIsSuccessModalVisible(true);
+            setRemark('');
+            setIsYesterdayCheckout(false);
+            
+            // Refresh attendance data to update UI immediately
+            await refreshData();
+        } catch (error) {
+            console.error('Checkout error:', error);
+            setAttendanceErrorMessage({message: "Failed to complete checkout", visible: true});
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleYesterdayCheckout = async () => {
+        setIsYesterdayCheckout(true);
+        setIsRemarkModalVisible(true);
+    };
+
+    const handleCheckOutAttempt = async () => {
+        if (!employeeData) return;
+
+        // Check if companyInfo is loaded
+        if (!companyInfo) {
+            console.log("companyInfo not loaded yet");
+            setAttendanceErrorMessage({
+                message: 'Company information not loaded. Please try again.',
+                visible: true
+            });
+            return;
+        }
+
+        const geoLocationEnabled = geoLocationConfig.mode;
+        
+        // No check mode - skip all validations, show remarks modal directly
+        if (geoLocationEnabled === "N") {
+            setIsRemarkModalVisible(true);
+            return;
+        }
+
+        // For "T" and "A" modes, FIRST check location permission
+        if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setAttendanceErrorMessage({
+                    message: 'Location permission is required to check out.',
+                    visible: true
+                });
+                return;
+            }
+        }
+
+        // Both mode - validate both timesheet and geo-location
+        if (geoLocationEnabled === "T") {
+            const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
+            if (notFilled) {
+                setAttendanceErrorMessage({ 
+                    message: "You did not fill today's timesheet. Please fill it before checking out.", 
+                    visible: true 
+                });
+                return;
+            }
+            if (isEffortOutOfRange) {
+                setShowEffortConfirmModal(true);
+                return;
+            }
+        }
+
+        // For "T" and "A" modes, proceed with geo-location distance validation
+        if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
+            const { isValid } = await validateLocationDistance();
+            if (!isValid) {
+                return;
+            }
+        }
+
+        // If all validations pass, show remarks modal
+        setTimesheetCheckedToday(true);
+        setIsRemarkModalVisible(true);
+    };
+
+    const loadInitialData = async () => {
+        try {
+            setIsLoading(true);
+            setDataLoaded(false);
+
+            if (!profile) {
+                throw new Error("Employee profile data not found.");
+            }
+
+            setEmployeeData(profile);
+
+            // Set current date and time
+            const now = moment();
+            setCurrentDate(now.format('DD-MM-YYYY'));
+            const time = await setdatatime();
+            setCurrentTime(time);
+
+            // Fetch attendance data
+            const data = {
+                eId: profile.id,
+                month: now.format('MM'),
+                year: now.format('YYYY'),
+            };
+
+            const res = await getEmpAttendance(data);
+            setAttData(res.data);
+            processAttendanceData(res.data);
+            checkPreviousDayAttendance(res.data);
+
+            setDataLoaded(true);
+            setInitialLoadComplete(true);
+        } catch (error) {
+            console.error("Error loading initial data:", error);
+            setAttData([]);
+            setAttendance(null);
+            setDataLoaded(true);
+            setInitialLoadComplete(true);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const refreshData = async () => {
+        if (!employeeData?.id) return;
+
+        try {
+            const data = {
+                eId: employeeData.id,
+                month: moment().format('MM'),
+                year: moment().format('YYYY'),
+            };
+
+            const res = await getEmpAttendance(data);
+            setAttData(res.data);
+            processAttendanceData(res.data);
+            checkPreviousDayAttendance(res.data);
+        } catch (error) {
+            console.error("Error refreshing data:", error);
+        }
+    };
 
     return (
         <AppContext.Provider value={{
@@ -321,7 +833,68 @@ const AppProvider = ({ children }) => {
             profile,
             setReload,
             errorMessage,
-            setErrorMessage
+            setErrorMessage,
+            // Attendance states
+            employeeData,
+            setEmployeeData,
+            currentDate,
+            setCurrentDate,
+            currentTimeStr,
+            setCurrentTimeStr,
+            currentTime,
+            setCurrentTime,
+            checkedIn,
+            setCheckedIn,
+            attendance,
+            setAttendance,
+            attData,
+            setAttData,
+            refreshKey,
+            setRefreshKey,
+            remark,
+            setRemark,
+            errors,
+            setErrors,
+            isRemarkModalVisible,
+            setIsRemarkModalVisible,
+            isSuccessModalVisible,
+            setIsSuccessModalVisible,
+            previousDayUnchecked,
+            setPreviousDayUnchecked,
+            isYesterdayCheckout,
+            setIsYesterdayCheckout,
+            isConfirmModalVisible,
+            setIsConfirmModalVisible,
+            dataLoaded,
+            setDataLoaded,
+            initialLoadComplete,
+            setInitialLoadComplete,
+            attendanceErrorMessage,
+            setAttendanceErrorMessage,
+            // Geolocation states
+            geoLocationConfig,
+            setGeoLocationConfig,
+            showEffortConfirmModal,
+            setShowEffortConfirmModal,
+            timesheetCheckedToday,
+            setTimesheetCheckedToday,
+            // Attendance functions
+            setdatatime,
+            checkPreviousDayAttendance,
+            processAttendanceData,
+            handleError,
+            getLocationWithPermission,
+            handleCheck,
+            handleRemarkSubmit,
+            submitCheckout,
+            handleYesterdayCheckout,
+            handleCheckOutAttempt,
+            validateLocationDistance,
+            validateTimesheetForCheckout,
+            calculateDistance,
+            initializeGeoLocationConfig,
+            loadInitialData,
+            refreshData
         }}>
             {children}
             <NetworkErrorModal

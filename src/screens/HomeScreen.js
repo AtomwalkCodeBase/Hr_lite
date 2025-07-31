@@ -5,12 +5,11 @@ import { AppContext } from '../../context/AppContext';
 import { useRouter } from "expo-router";
 import Loader from '../components/old_components/Loader';
 import NetInfo from '@react-native-community/netinfo';
-import * as Location from 'expo-location';
 import moment from 'moment';
 import { useLayoutEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons, FontAwesome5, Feather, MaterialCommunityIcons, } from '@expo/vector-icons';
-import { getEmpAttendance, getEvents, postCheckIn } from '../services/productServices';
+import { getEvents } from '../services/productServices';
 import Modal from 'react-native-modal';
 import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
@@ -23,7 +22,65 @@ const { width, height } = Dimensions.get('window');
 
 const HomePage = ({ navigation }) => {
   const router = useRouter();
-  const { profile, setReload, companyInfo, isLoading } = useContext(AppContext);
+  const { 
+    profile, 
+    setReload, 
+    companyInfo, 
+    isLoading,
+    // Attendance states from context
+    employeeData,
+    setEmployeeData,
+    currentDate,
+    setCurrentDate,
+    currentTimeStr,
+    setCurrentTimeStr,
+    checkedIn,
+    setCheckedIn,
+    attendance,
+    setAttendance,
+    attData,
+    setAttData,
+    refreshKey,
+    setRefreshKey,
+    remark,
+    setRemark,
+    errors,
+    setErrors,
+    isRemarkModalVisible,
+    setIsRemarkModalVisible,
+    isSuccessModalVisible,
+    setIsSuccessModalVisible,
+    previousDayUnchecked,
+    setPreviousDayUnchecked,
+    isYesterdayCheckout,
+    setIsYesterdayCheckout,
+    isConfirmModalVisible,
+    setIsConfirmModalVisible,
+    attendanceErrorMessage,
+    setAttendanceErrorMessage,
+    // Geolocation states from context
+    geoLocationConfig,
+    setGeoLocationConfig,
+    showEffortConfirmModal,
+    setShowEffortConfirmModal,
+    timesheetCheckedToday,
+    setTimesheetCheckedToday,
+    // Attendance functions from context
+    setdatatime,
+    checkPreviousDayAttendance,
+    processAttendanceData,
+    handleError,
+    handleCheck,
+    handleRemarkSubmit,
+    submitCheckout,
+    handleYesterdayCheckout,
+    handleCheckOutAttempt,
+    validateLocationDistance,
+    validateTimesheetForCheckout,
+    calculateDistance,
+    initializeGeoLocationConfig,
+    refreshData
+  } = useContext(AppContext);
   const [loading, setIsLoading] = useState(false);
   // const [profile, setProfile] = useState({});
   const [company, setCompany] = useState({});
@@ -35,26 +92,6 @@ const HomePage = ({ navigation }) => {
   const [isBirthday, setIsBirthday] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Attendance related states
-  const [employeeData, setEmployeeData] = useState(null);
-  const [currentDate, setCurrentDate] = useState(moment().format('DD-MM-YYYY'));
-  const [currentTimeStr, setCurrentTimeStr] = useState('');
-  const [checkedIn, setCheckedIn] = useState(false);
-  const [attendance, setAttendance] = useState(null);
-  const [attData, setAttData] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [remark, setRemark] = useState('');
-  const [errors, setErrors] = useState({});
-  const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
-  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-  const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
-  const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
-  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState({
-    message: "",
-    visible: false
-  })
 
   // Active events
   const [eventData, setEventData] = useState([]);
@@ -94,68 +131,6 @@ const HomePage = ({ navigation }) => {
       };
     }, [])
   );
-
-
-
-  const setdatatime = async () => {
-    let time = moment().format('hh:mm A');
-    if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
-      time = time.replace(/^12/, '00');
-    }
-    return time;
-  };
-
-  const checkPreviousDayAttendance = (attendanceData) => {
-    if (employeeData) {
-      if (!employeeData?.is_shift_applicable) {
-        setPreviousDayUnchecked(false);
-        return;
-      }
-    }
-
-    const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item =>
-      item.a_date === yesterday &&
-      item.attendance_type !== "L" &&
-      item.end_time === null
-    );
-
-    setPreviousDayUnchecked(!!yesterdayAttendance);
-  };
-
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-
-      if (!profile) throw new Error("Employee profile data not found.");
-
-      setEmployeeData(profile);
-      setEmpId(profile.emp_id);
-      setEmpNId(profile.id);
-      setIsManager(profile?.is_manager || false);
-
-      // Set current date and time
-      const now = moment();
-      setCurrentDate(now.format('DD-MM-YYYY'));
-      setCurrentTimeStr(await setdatatime());
-
-      // Fetch attendance data only after profile is set
-      const data = {
-        eId: profile.id,
-        month: now.format('MM'),
-        year: now.format('YYYY'),
-      };
-      await fetchAttendanceDetails(data);
-
-    } catch (error) {
-      // console.error("Error fetching data", error);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  };
-
 
   const fetchEvents = async () => {
     try {
@@ -220,45 +195,26 @@ const HomePage = ({ navigation }) => {
     }
   };
 
-  const handlePressApproveLeave = () => {
-    router.push({
-      pathname: 'ApproveLeaves',
-      params: { empNId },
-    });
-  };
-
-  const fetchAttendanceDetails = async (data) => {
-    try {
-      const res = await getEmpAttendance(data);
-      setAttData(res.data);
-      processAttendanceData(res.data);
-      checkPreviousDayAttendance(res.data);
-    } catch (error) {
-      // console.error("Error fetching attendance", error);
-      setAttData([]);
-      setCheckedIn(false);
-      setAttendance(null);
-    }
-  };
-
-  const processAttendanceData = (data) => {
-    const today = currentDate;
-    const todayAttendance = data.find(item =>
-      item.a_date === today &&
-      item.attendance_type !== "L"
-    );
-
-    if (todayAttendance) {
-      setCheckedIn(todayAttendance.end_time === null);
-      setAttendance(todayAttendance);
-    } else {
-      setCheckedIn(false);
-      setAttendance(null);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
+    // Initialize profile data and fetch events
+    const initializeData = async () => {
+      if (!profile) return;
+      
+      setEmployeeData(profile);
+      setEmpId(profile.emp_id);
+      setEmpNId(profile.id);
+      setIsManager(profile?.is_manager || false);
+
+      // Set current date and time
+      const now = moment();
+      setCurrentDate(now.format('DD-MM-YYYY'));
+      setCurrentTimeStr(await setdatatime());
+
+      // Fetch events
+      await fetchEvents();
+    };
+
+    initializeData();
 
     const updateGreeting = () => {
       const currentHour = new Date().getHours();
@@ -280,7 +236,8 @@ const HomePage = ({ navigation }) => {
 
     const netInfoUnsubscribe = NetInfo.addEventListener(state => {
       if (!isConnected && state.isConnected) {
-        fetchData();
+        // Refresh events when network is restored
+        fetchEvents();
       }
       setIsConnected(state.isConnected);
     });
@@ -294,178 +251,26 @@ const HomePage = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       if (employeeData?.id) {
-        const data = {
-          eId: employeeData.id,
-          month: moment().format('MM'),
-          year: moment().format('YYYY'),
-        };
-        fetchAttendanceDetails(data);
+        refreshData();
       }
     }, [employeeData, refreshKey])
   );
-  useFocusEffect(
-    useCallback(() => {
-      const fetchDataOnFocus = async () => {
-        await onRefresh();
-      };
 
-      fetchDataOnFocus();
 
-    }, [profile])
-  );
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchEvents();
     setRefreshKey((prevKey) => prevKey + 1);
-    fetchData();
+    // fetchData() is no longer needed since attendance data is handled by context
     setRefreshing(false);
   };
 
-  const handleError = (error, input) => {
-    setErrors(prevState => ({ ...prevState, [input]: error }));
-  };
-
-  const handleCheck = async (data) => {
-    if (!employeeData) return;
-
-    setIsLoading(true);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Location permission is required to check.');
-      setIsLoading(false);
-      return;
-    }
-
-    let location = null;
-    let retries = 0;
-
-    while (!location && retries < 1) {
-      try {
-        location = await Location.getCurrentPositionAsync({});
-      } catch (error) {
-        retries += 1;
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-
-    if (!location) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
-      setIsLoading(false);
-      return;
-    }
-
-    const todayAttendance = attData.find((item) => item.a_date === currentDate);
-    const attendanceId = todayAttendance ? todayAttendance.id : null;
-    const time = await setdatatime();
-
-    const checkPayload = {
-      emp_id: employeeData?.id,
-      call_mode: data,
-      time: time,
-      geo_type: data === 'ADD' ? 'I' : 'O',
-      a_date: currentDate,
-      latitude_id: `${location?.coords?.latitude}`,
-      longitude_id: `${location?.coords?.longitude}`,
-      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-      id: attendanceId,
-    };
-
-    try {
-      await postCheckIn(checkPayload);
-      setCheckedIn(data === 'ADD');
-      setRefreshKey((prevKey) => prevKey + 1);
-      setIsSuccessModalVisible(true);
-      if (data === 'UPDATE') setRemark('');
-    } catch (error) {
-      console.error('Check in/out error:', error);
-      setErrorMessage({message: "Failed to Check.", visible: true})
-      // Alert.alert('Check Failure', 'Failed to Check.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemarkSubmit = () => {
-    if (!remark.trim()) {
-      handleError('Remark cannot be empty', 'remarks');
-      return;
-    }
-
-    setIsRemarkModalVisible(false);
-
-    if (isYesterdayCheckout) {
-      // Handle yesterday's checkout
-      const yesterdayRecord = attData.find(item =>
-        item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
-        item.end_time === null
-      );
-
-      if (!yesterdayRecord) {
-        Alert.alert('Error', 'No pending checkout found for yesterday');
-        return;
-      }
-
-      const payload = {
-        emp_id: employeeData.id,
-        call_mode: 'UPDATE',
-        time: currentTimeStr,
-        geo_type: 'O',
-        e_date: currentDate,
-        id: yesterdayRecord.id,
-        remarks: remark || 'Check-out from Mobile (completed next day)'
-      };
-
-      submitCheckout(payload);
-    } else {
-      // Handle today's checkout
-      handleCheck('UPDATE');
-    }
-  };
-
-  const submitCheckout = async (payload) => {
-    try {
-      setIsLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to check out.');
-        setIsLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      if (!location) {
-        Alert.alert('Error', 'Unable to fetch location. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Add location data to payload
-      payload.latitude_id = `${location.coords.latitude}`;
-      payload.longitude_id = `${location.coords.longitude}`;
-
-      await postCheckIn(payload);
-      setRefreshKey(prev => prev + 1);
-      setIsSuccessModalVisible(true);
-      setRemark('');
-      setIsYesterdayCheckout(false);
-    } catch (error) {
-      console.error('Checkout error:', error);
-      Alert.alert('Error', 'Failed to complete checkout');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleYesterdayCheckout = async () => {
-    setIsYesterdayCheckout(true);
-    setIsRemarkModalVisible(true);
-  };
-
-  const closeSuccessModal = () => {
-    setIsSuccessModalVisible(false);
+  const handlePressApproveLeave = () => {
+    router.push({
+      pathname: 'ApproveLeaves',
+      params: { empNId },
+    });
   };
 
   const handleEventPress = (event) => {
@@ -668,7 +473,7 @@ const HomePage = ({ navigation }) => {
                         setIsConfirmModalVisible(true);
                       } else {
                         setIsYesterdayCheckout(false);
-                        setIsRemarkModalVisible(true);
+                        handleCheckOutAttempt();
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -846,7 +651,7 @@ const HomePage = ({ navigation }) => {
 
       <SuccessModal
         visible={isSuccessModalVisible}
-        onClose={closeSuccessModal}
+        onClose={() => setIsSuccessModalVisible(false)}
         message="Attendance recorded successfully"
       />
 
@@ -875,9 +680,24 @@ const HomePage = ({ navigation }) => {
       />
 
       <ErrorModal
-        visible={errorMessage.visible}
-        message={errorMessage.message}
-        onClose={() => setErrorMessage({ message: "", visible: false })}
+        visible={attendanceErrorMessage.visible}
+        message={attendanceErrorMessage.message}
+        onClose={() => setAttendanceErrorMessage({ message: "", visible: false })}
+      />
+
+      <ConfirmationModal
+        visible={showEffortConfirmModal}
+        headerTitle="Warning"
+        messageColor="#EF6C00"
+        message="Your timesheet hours seem unusual. Do you still want to check out ?"
+        onConfirm={() => {
+          setShowEffortConfirmModal(false);
+          setTimesheetCheckedToday(true);
+          setIsRemarkModalVisible(true);
+        }}
+        onCancel={() => setShowEffortConfirmModal(false)}
+        confirmText="Yes"
+        cancelText="No"
       />
 
       {/* Sidebar overlay (should be last to overlay everything) */}

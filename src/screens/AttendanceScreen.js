@@ -12,18 +12,18 @@ import {
   BackHandler
 } from 'react-native';
 import moment from 'moment';
-import * as Location from 'expo-location';
 import { useNavigation, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import RemarksInput from '../components/RemarkInput';
-import { getEmpAttendance, postCheckIn } from '../services/productServices';
+import { getEmpAttendance } from '../services/productServices';
 import Loader from '../components/old_components/Loader';
 import SuccessModal from '../components/SuccessModal';
 import HeaderComponent from '../components/HeaderComponent';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../components/ConfirmationModal';
+import ErrorModal from '../components/ErrorModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
@@ -34,41 +34,76 @@ import { StatusBar } from 'expo-status-bar';
 const { width } = Dimensions.get('window');
 
 const AddAttendance = () => {
-  const { profile } = useContext(AppContext);
-  const [currentDate, setCurrentDate] = useState('');
-  const [currentTime, setCurrentTime] = useState('');
-  const [attendance, setAttendance] = useState(null); // Changed from {} to null for better initial state
-  const [attData, setAttData] = useState([]);
-  const [employeeData, setEmployeeData] = useState(null); // Changed to null initially
-  // const [checkedIn, setCheckedIn] = useState(false);
-  // const [startTime, setStartTime] = useState(null);
-  const [remark, setRemark] = useState('');
-  const [errors, setErrors] = useState({});
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
-  const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false); // New state to track if all data is loaded
-  const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
-  const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const { 
+    profile,
+    // Attendance states from context
+    employeeData,
+    setEmployeeData,
+    currentDate,
+    setCurrentDate,
+    currentTime,
+    setCurrentTime,
+    attendance,
+    setAttendance,
+    attData,
+    setAttData,
+    refreshKey,
+    setRefreshKey,
+    remark,
+    setRemark,
+    errors,
+    setErrors,
+    isRemarkModalVisible,
+    setIsRemarkModalVisible,
+    isLoading,
+    setIsLoading,
+    isSuccessModalVisible,
+    setIsSuccessModalVisible,
+    previousDayUnchecked,
+    setPreviousDayUnchecked,
+    dataLoaded,
+    setDataLoaded,
+    isYesterdayCheckout,
+    setIsYesterdayCheckout,
+    isConfirmModalVisible,
+    setIsConfirmModalVisible,
+    initialLoadComplete,
+    setInitialLoadComplete,
+    attendanceErrorMessage,
+    setAttendanceErrorMessage,
+    // Geolocation states from context
+    geoLocationConfig,
+    setGeoLocationConfig,
+    showEffortConfirmModal,
+    setShowEffortConfirmModal,
+    timesheetCheckedToday,
+    setTimesheetCheckedToday,
+    // Attendance functions from context
+    setdatatime,
+    checkPreviousDayAttendance,
+    processAttendanceData,
+    handleError,
+    handleCheck,
+    handleRemarkSubmit,
+    submitCheckout,
+    handleYesterdayCheckout,
+    handleCheckOutAttempt,
+    validateLocationDistance,
+    validateTimesheetForCheckout,
+    calculateDistance,
+    initializeGeoLocationConfig,
+    loadInitialData,
+    refreshData
+  } = useContext(AppContext);
+  const [isConnected, setIsConnected] = useState(true);
   const navigation = useNavigation();
   const router = useRouter();
-
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   }, [navigation]);
-
-  //   const homeBackHandler = useCallback(() => {
-  //    router.replace('home');
-  //         return true;
-  //  }, []);
-
-  //  useBackHandler(homeBackHandler);
 
   useFocusEffect(
     useCallback(() => {
@@ -85,20 +120,10 @@ const AddAttendance = () => {
     }, [])
   );
 
-
-  const setdatatime = async () => {
-    let time = moment().format('hh:mm A');
-    if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
-      time = time.replace(/^12/, '00');
-    }
-    return time;
-  }
-
   // Initialize date and time
   useEffect(() => {
     const date = moment().format('DD-MM-YYYY');
     let time = moment().format('hh:mm A');
-
     if (moment().isBetween(moment().startOf('day').add(12, 'hours').add(1, 'minute'), moment().startOf('day').add(13, 'hours'))) {
       time = time.replace(/^12/, '00');
     }
@@ -107,274 +132,21 @@ const AddAttendance = () => {
     setCurrentTime(time);
   }, []);
 
-  // Load employee data and then attendance data
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setIsLoading(true);
-
-        // 1. First ensure we have employee data
-        if (!profile) {
-          console.log('Waiting for profile data...');
-          return;
-        }
-        const token = await AsyncStorage.getItem('userToken');
-      if (!token) {
-        console.log('You are logged out...');
-        return;
-      }
-
-        setEmployeeData(profile);
-
-        // 2. Load attendance data
-        const data = {
-          eId: profile.id,
-          month: moment().format('MM'),
-          year: moment().format('YYYY'),
-        };
-
-        const attRes = await getEmpAttendance(data);
-        setAttData(attRes.data);
-        processAttendanceData(attRes.data);
-        checkPreviousDayAttendance(attRes.data);
-
-        setDataLoaded(true);
-        setInitialLoadComplete(true);
-
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-        // Alert.alert('Error', 'Failed to load attendance data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialData();
-  }, [profile]);
+    if (profile && !initialLoadComplete) {
+      loadInitialData();
+    }
+  }, [profile, initialLoadComplete]);
 
   useFocusEffect(
     useCallback(() => {
-      if (initialLoadComplete && employeeData) {
-        const refreshData = async () => {
-          try {
-            setIsLoading(true);
-            const data = {
-              eId: employeeData.id,
-              month: moment().format('MM'),
-              year: moment().format('YYYY'),
-            };
-
-            const attRes = await getEmpAttendance(data);
-            setAttData(attRes.data);
-            processAttendanceData(attRes.data);
-            checkPreviousDayAttendance(attRes.data);
-          } catch (error) {
-            console.error('Error refreshing data:', error);
-          } finally {
-            setIsLoading(false);
-          }
-        };
-
+      if (employeeData?.id && dataLoaded) {
         refreshData();
       }
-    }, [initialLoadComplete, employeeData])
+    }, [employeeData, refreshKey])
   );
 
-  // const fetchAttendanceDetails = (data) => {
-  //   setIsLoading(true);
-  //   getEmpAttendance(data)
-  //     .then((res) => {
-  //       setAttData(res.data);
-  //       processAttendanceData(res.data);
-  //       checkPreviousDayAttendance(res.data);
-  //     })
-  //     .catch((error) => {
-  //       console.error('Error fetching attendance:', error);
-  //       Alert.alert('Error', 'Failed to fetch attendance details');
-  //     })
-  //     .finally(() => {
-  //       setIsLoading(false);
-  //     });
-  // };
-
-  const checkPreviousDayAttendance = (attendanceData) => {
-    if (!employeeData?.is_shift_applicable) {
-      setPreviousDayUnchecked(false);
-      return;
-    }
-
-    const yesterday = moment().subtract(1, 'day').format('DD-MM-YYYY');
-    const yesterdayAttendance = attendanceData.find(item =>
-      item.a_date === yesterday &&
-      item.attendance_type !== "L" &&
-      item.end_time === null
-    );
-
-    setPreviousDayUnchecked(!!yesterdayAttendance);
-  };
-
-
-
-  const processAttendanceData = (data) => {
-    const today = currentDate;
-    const todayAttendance = data.find(item =>
-      item.a_date === today &&
-      item.attendance_type !== "L"
-    );
-
-    if (todayAttendance) {
-      // setCheckedIn(todayAttendance.end_time === null);
-      // setStartTime(todayAttendance.start_time);
-      setAttendance(todayAttendance);
-    } else {
-      // setCheckedIn(false);
-      // setStartTime(null);
-      setAttendance(null);
-    }
-  };
-
-  const handleError = (error, input) => {
-    setErrors(prevState => ({ ...prevState, [input]: error }));
-  };
-
-  const handleCheck = async (data) => {
-    if (!employeeData) return;
-
-    setIsLoading(true);
-    const { status } = await Location.requestForegroundPermissionsAsync();
-
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'Location permission is required to check.');
-      setIsLoading(false);
-      return;
-    }
-
-    let location = null;
-
-    try {
-      location = await Location.getCurrentPositionAsync({});
-    } catch (error) {
-      Alert.alert('Error', 'Unable to fetch location. Please try again.');
-      setIsLoading(false);
-      return;
-    }
-
-    const todayAttendance = attData.find((item) => item.a_date === currentDate);
-    const attendanceId = todayAttendance ? todayAttendance.id : null;
-    const time = await setdatatime();
-
-    const checkPayload = {
-      emp_id: employeeData?.id,
-      call_mode: data,
-      time: time,
-      geo_type: data === 'ADD' ? 'I' : 'O',
-      a_date: currentDate,
-      latitude_id: `${location?.coords?.latitude}`,
-      longitude_id: `${location?.coords?.longitude}`,
-      remarks: data === 'ADD' ? 'Check-in from Mobile' : remark,
-      id: attendanceId,
-    };
-
-    try {
-      await postCheckIn(checkPayload);
-      // setCheckedIn(data === 'ADD');
-      // setStartTime(currentTime);
-      setRefreshKey((prevKey) => prevKey + 1);
-      router.replace('/attendance');
-      setIsSuccessModalVisible(true);
-      if (data === 'UPDATE') setRemark('');
-    } catch (error) {
-      console.error('Check in/out error:', error);
-      Alert.alert('Check Failure', 'Failed to Check.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRemarkSubmit = () => {
-    if (!remark.trim()) {
-      handleError('Remark cannot be empty', 'remarks');
-      return;
-    }
-
-    setIsRemarkModalVisible(false);
-
-    if (isYesterdayCheckout) {
-      // Handle yesterday's checkout
-      const yesterdayRecord = attData.find(item =>
-        item.a_date === moment().subtract(1, 'day').format('DD-MM-YYYY') &&
-        item.end_time === null
-      );
-
-      if (!yesterdayRecord) {
-        Alert.alert('Error', 'No pending checkout found for yesterday');
-        return;
-      }
-
-      const payload = {
-        emp_id: employeeData.id,
-        call_mode: 'UPDATE',
-        time: currentTime,
-        geo_type: 'O',
-        e_date: currentDate,
-        id: yesterdayRecord.id,
-        remarks: remark || 'Check-out from Mobile (completed next day)'
-      };
-
-      submitCheckout(payload);
-    } else {
-      // Handle today's checkout
-      handleCheck('UPDATE');
-    }
-  };
-
-
-  const submitCheckout = async (payload) => {
-    try {
-      setIsLoading(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required to check out.');
-        setIsLoading(false);
-        return;
-      }
-
-      const location = await Location.getCurrentPositionAsync({});
-      if (!location) {
-        Alert.alert('Error', 'Unable to fetch location. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Add location data to payload
-      payload.latitude_id = `${location.coords.latitude}`;
-      payload.longitude_id = `${location.coords.longitude}`;
-
-      await postCheckIn(payload);
-      setRefreshKey(prev => prev + 1);
-      setIsSuccessModalVisible(true);
-      setRemark('');
-      setIsYesterdayCheckout(false);
-    } catch (error) {
-      console.error('Checkout error:', error);
-      Alert.alert('Error', 'Failed to complete checkout');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const closeSuccessModal = () => {
-    setIsSuccessModalVisible(false);
-  };
-
   // Determine button states - now with additional checks for data availability
-
-  const handleYesterdayCheckout = async () => {
-    setIsYesterdayCheckout(true);
-    setIsRemarkModalVisible(true);
-  };
-
   const isCheckInDisabled = !dataLoaded ||
     !employeeData ||
     (attendance && attendance.start_time && !attendance.end_time) ||
@@ -383,7 +155,6 @@ const AddAttendance = () => {
   const isCheckOutDisabled = !dataLoaded ||
     !employeeData ||
     (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
-
 
   if (!initialLoadComplete || isLoading) {
     return <Loader visible={true} />;
@@ -496,7 +267,7 @@ const AddAttendance = () => {
                       } else {
                         // Handle today's checkout
                         setIsYesterdayCheckout(false);
-                        setIsRemarkModalVisible(true);
+                        handleCheckOutAttempt();
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -581,7 +352,7 @@ const AddAttendance = () => {
       {/* Success Modal */}
       <SuccessModal
         visible={isSuccessModalVisible}
-        onClose={closeSuccessModal}
+        onClose={() => setIsSuccessModalVisible(false)}
         message="Attendance recorded successfully"
       />
       <ConfirmationModal
@@ -594,6 +365,28 @@ const AddAttendance = () => {
         onCancel={() => setIsConfirmModalVisible(false)}
         confirmText="Check Out"
         cancelText="Cancel"
+      />
+
+      {/* Error Modal */}
+      <ErrorModal
+        visible={attendanceErrorMessage.visible}
+        message={attendanceErrorMessage.message}
+        onClose={() => setAttendanceErrorMessage({ message: "", visible: false })}
+      />
+
+      <ConfirmationModal
+        visible={showEffortConfirmModal}
+        headerTitle="Warning"
+        messageColor="#EF6C00"
+        message="Your timesheet hours seem unusual. Do you still want to check out ?"
+        onConfirm={() => {
+          setShowEffortConfirmModal(false);
+          setTimesheetCheckedToday(true);
+          setIsRemarkModalVisible(true);
+        }}
+        onCancel={() => setShowEffortConfirmModal(false)}
+        confirmText="Yes"
+        cancelText="No"
       />
 
       {/* Loader */}
