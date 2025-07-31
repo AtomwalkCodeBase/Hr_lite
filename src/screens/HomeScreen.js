@@ -53,6 +53,8 @@ const HomePage = ({ navigation }) => {
     // Geolocation states from context
     geoLocationConfig,
     setGeoLocationConfig,
+    geoLocationDataMissing,
+    setGeoLocationDataMissing,
     showEffortConfirmModal,
     setShowEffortConfirmModal,
     timesheetCheckedToday,
@@ -296,10 +298,11 @@ const HomePage = ({ navigation }) => {
   const isCheckInDisabled = !employeeData ||
     (attendance && attendance.start_time && !attendance.end_time) ||
     (attendance && attendance.geo_status === 'O') ||
-    previousDayUnchecked;
+    previousDayUnchecked ||
+    geoLocationDataMissing;
 
   const hasCheckedOut = attendance && typeof attendance.end_time === 'string' && attendance.end_time !== '';
-  const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut);
+  const isCheckOutDisabled = !employeeData || (!checkedIn && !previousDayUnchecked) || (!previousDayUnchecked && hasCheckedOut) || geoLocationDataMissing;
 
 
   const menuItems = [

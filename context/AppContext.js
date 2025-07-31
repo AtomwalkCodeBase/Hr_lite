@@ -47,6 +47,7 @@ const AppProvider = ({ children }) => {
         originLongitude: null,
         mode: null // "T", "N", "A"
     });
+    const [geoLocationDataMissing, setGeoLocationDataMissing] = useState(false);
     const [showEffortConfirmModal, setShowEffortConfirmModal] = useState(false);
     const [timesheetCheckedToday, setTimesheetCheckedToday] = useState(false);
 
@@ -165,11 +166,14 @@ const AppProvider = ({ children }) => {
 
             // Validate geolocation configuration
             if ((companyGeoEnabled === "T" || companyGeoEnabled === "A") && (!finalOriginLat || !finalOriginLon)) {
+                setGeoLocationDataMissing(true);
                 setErrorModal({
                     message: "You did not set company geo location data in company parameter",
                     visible: true
                 });
                 return false;
+            } else {
+                setGeoLocationDataMissing(false);
             }
 
             // Set geolocation configuration
@@ -853,6 +857,8 @@ const AppProvider = ({ children }) => {
             // Geolocation states
             geoLocationConfig,
             setGeoLocationConfig,
+            geoLocationDataMissing,
+            setGeoLocationDataMissing,
             showEffortConfirmModal,
             setShowEffortConfirmModal,
             timesheetCheckedToday,

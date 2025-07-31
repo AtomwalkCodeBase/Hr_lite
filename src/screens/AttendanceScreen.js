@@ -67,6 +67,8 @@ const AddAttendance = () => {
     // Geolocation states from context
     geoLocationConfig,
     setGeoLocationConfig,
+    geoLocationDataMissing,
+    setGeoLocationDataMissing,
     showEffortConfirmModal,
     setShowEffortConfirmModal,
     timesheetCheckedToday,
@@ -156,11 +158,13 @@ const AddAttendance = () => {
   const isCheckInDisabled = !dataLoaded ||
     !employeeData ||
     (attendance && attendance.start_time && !attendance.end_time) ||
-    (attendance && attendance.geo_status === 'O');
+    (attendance && attendance.geo_status === 'O') ||
+    geoLocationDataMissing;
 
   const isCheckOutDisabled = !dataLoaded ||
     !employeeData ||
-    (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null)));
+    (!previousDayUnchecked && (!attendance || (attendance.end_time && attendance.end_time !== "" && attendance.end_time !== null))) ||
+    geoLocationDataMissing;
 
   if (!initialLoadComplete || isLoading) {
     return <Loader visible={true} />;
