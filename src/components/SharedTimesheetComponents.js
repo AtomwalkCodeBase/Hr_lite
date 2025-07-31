@@ -263,18 +263,16 @@ useEffect(() => {
             {((parseFloat(task.effort) || 0) / selectedDay.totalHours * 100).toFixed(1)}% of day
           </Text>
         </View>
-        {isSelfView && (String(task.status || 'n').toLowerCase() === 'n') && (
+        {isSelfView && (String(task.status || 'n').toLowerCase() === 'n') && companyInfo.is_geo_location_enabled !== "T" && (
           <View style={{flexDirection: "row", gap: 8}}>
           <TouchableOpacity style={[styles.editButton, {backgroundColor: "#FFEBEE"}]} onPress={() => setIsConfirmModalVisible(true)}>
             <MaterialIcons name="delete-outline" size={16} color="#f44336" />
             <Text style={[styles.editButtonText, {color: "#f44336"}]}>Delete</Text>
           </TouchableOpacity>
-        {companyInfo.is_geo_location_enabled !== "T" &&
           <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
             <Ionicons name="create-outline" size={16} color="#a970ff" />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
-}
           </View>
         )}
       </View>

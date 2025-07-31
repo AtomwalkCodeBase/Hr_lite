@@ -256,7 +256,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
       </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
-        message="Your task will be in Draft mode. You can edit and submit it later."
+        message="Are you sure ? Do you want to save this task"
         onConfirm={() => {
           validateAndSubmit("ADD_AND_SAVE");
           setIsConfirmModalVisible(false);

@@ -54,8 +54,6 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
     setIsDetailsModalVisible(true);
   };
 
-  console.log("skugdfcjk", EditView)
-
   return (
     <View style={[styles.taskCard, { borderLeftColor: status.borderColor }]}>
       {/* Header with Project and Status */}
@@ -124,9 +122,8 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
-        {isSelfView && !["s", "a", "r"].includes(statusKey) && (
+        {isSelfView && !["s", "a", "r"].includes(statusKey) && EditView !== "T" && (
           <View style={{ flexDirection: "row", gap: 10 }}>
-            {EditView !== "T" && (
               <TouchableOpacity
                 style={styles.editButton}
                 onPress={() => onEdit(task)}
@@ -134,7 +131,6 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
                 <Ionicons name="create-outline" size={20} color="#fff" />
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
-            )}
 
             {isSelfView && ["n"].includes(statusKey) && (
               <TouchableOpacity

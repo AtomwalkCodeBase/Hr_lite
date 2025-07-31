@@ -686,12 +686,12 @@ const AppProvider = ({ children }) => {
         setRemarkModal(true);
     };
 
-    const handleCheckOutAttempt = async (setRemarkModal, setErrorModal, setShowEffortConfirmModal) => {
-      
-        setIsLoading(true)
+   const handleCheckOutAttempt = async (setRemarkModal, setErrorModal, setShowEffortConfirmModal) => {
+    setIsLoading(true);
+    try {
         const geoLocationEnabled = geoLocationConfig.mode;
 
-        // For "T" and "A" modes, FIRST check location permission
+        // Step 1: Ask for location permission if required
         if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
@@ -699,46 +699,49 @@ const AppProvider = ({ children }) => {
                     message: 'Location permission is required to check out.',
                     visible: true
                 });
-                setIsLoading(false);
                 return;
             }
         }
 
-        // Both mode - validate both timesheet and geo-location
+        // Step 2: Timesheet validations (only in "T")
         if (geoLocationEnabled === "T") {
             const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
+
             if (notFilled) {
-                setErrorModal({ 
-                    message: "You did not fill today's timesheet. Please fill it before checking out.", 
-                    visible: true 
+                setErrorModal({
+                    message: "You did not fill today's timesheet. Please fill it before checking out.",
+                    visible: true
                 });
-                setIsLoading(false);
                 return;
             }
+
             if (isEffortOutOfRange) {
                 setShowEffortConfirmModal(true);
-                setIsLoading(false);
                 return;
             }
         }
 
-        // For "T" and "A" modes, proceed with geo-location distance validation
+        // Step 3: Geo-distance validation
         if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
             const { isValid } = await validateLocationDistance(setErrorModal);
-            if (!isValid) {
-                return;
-            }
-        setIsLoading(false);
-
+            if (!isValid) return;
         }
 
-          // If all validations pass, show remarks modal
+        // Step 4: If all passed, show remark modal
         setTimesheetCheckedToday(true);
         setRemarkModal(true);
-
-        setIsLoading(false);
-
+        
+        } catch (error) {
+            console.error("Error during check-out attempt:", error);
+            setErrorModal({
+                message: 'Something went wrong. Please try again.',
+                visible: true
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
+
 
     const loadInitialData = async () => {
         try {
