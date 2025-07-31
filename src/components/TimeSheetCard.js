@@ -4,7 +4,7 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import ConfirmationModal from "./ConfirmationModal";
 import TaskDetailsModal from "./TaskDetailsModal ";
 
-const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete }) => {
+const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete, EditView }) => {
 
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
    const [isDetailsModalVisible, setIsDetailsModalVisible] = useState(false);
@@ -54,6 +54,8 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
     setIsDetailsModalVisible(true);
   };
 
+  console.log("skugdfcjk", EditView)
+
   return (
     <View style={[styles.taskCard, { borderLeftColor: status.borderColor }]}>
       {/* Header with Project and Status */}
@@ -61,10 +63,18 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
         <View style={styles.projectSection}>
           <Text style={styles.projectCode}>{task.project_code}</Text>
           <Text style={styles.projectTitle} numberOfLines={1}>
-            {task.project_title || 'Project Title'}
+            {task.project_title || "Project Title"}
           </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: status.bgColor, borderColor: status.borderColor }]}>
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: status.bgColor,
+              borderColor: status.borderColor,
+            },
+          ]}
+        >
           <MaterialIcons name={status.icon} size={16} color={status.color} />
           <Text style={[styles.statusText, { color: status.color }]}>
             {status.label}
@@ -89,7 +99,7 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
             <Text style={styles.timeValue}>{task.a_date}</Text>
           </View>
         </View>
-        
+
         <View style={styles.timeItem}>
           <View style={styles.timeIcon}>
             <Ionicons name="time" size={16} color="#a970ff" />
@@ -114,33 +124,42 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
 
       {/* Action Buttons */}
       <View style={styles.actionSection}>
-        {isSelfView && !['s','a','r'].includes(statusKey) && (
-          <View style={{flexDirection: "row", gap: 10}}>
-          <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
+        {isSelfView && !["s", "a", "r"].includes(statusKey) && (
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            {EditView !== "T" && (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => onEdit(task)}
+              >
+                <Ionicons name="create-outline" size={20} color="#fff" />
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
 
-          {isSelfView && ['n'].includes(statusKey) && 
-          <TouchableOpacity style={[styles.editButton, {backgroundColor: "#f44336"}]} onPress={() => setIsConfirmModalVisible(true)}>
-            <MaterialIcons name="delete-outline" size={20} color="#fff" />
-            <Text style={styles.editButtonText}>Delete</Text>
-          </TouchableOpacity>}
-         </View>
+            {isSelfView && ["n"].includes(statusKey) && (
+              <TouchableOpacity
+                style={[styles.editButton, { backgroundColor: "#f44336" }]}
+                onPress={() => setIsConfirmModalVisible(true)}
+              >
+                <MaterialIcons name="delete-outline" size={20} color="#fff" />
+                <Text style={styles.editButtonText}>Delete</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {showActionButtons && (
           <View style={styles.approvalButtons}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.rejectButton]} 
-              onPress={() => onReject(task, 'REJECT')}
+            <TouchableOpacity
+              style={[styles.actionButton, styles.rejectButton]}
+              onPress={() => onReject(task, "REJECT")}
             >
               <MaterialIcons name="close" size={18} color="#fff" />
               <Text style={styles.actionButtonText}>Reject</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.approveButton]} 
-              onPress={() => onApprove(task, 'APPROVE')}
+            <TouchableOpacity
+              style={[styles.actionButton, styles.approveButton]}
+              onPress={() => onApprove(task, "APPROVE")}
             >
               <MaterialIcons name="check" size={18} color="#fff" />
               <Text style={styles.actionButtonText}>Approve</Text>
@@ -148,16 +167,19 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
           </View>
         )}
 
-         <TouchableOpacity style={styles.tapIndicator} onPress={handleCardPress}>
+        <TouchableOpacity style={styles.tapIndicator} onPress={handleCardPress}>
           <Text style={styles.tapText}>Tap to view details</Text>
-          <Ionicons name="information-circle-outline" size={16} color="#a970ff" />
+          <Ionicons
+            name="information-circle-outline"
+            size={16}
+            color="#a970ff"
+          />
         </TouchableOpacity>
-        
       </View>
       <ConfirmationModal
         visible={isConfirmModalVisible}
         message="Your task will be Deleted. Are you sure ?"
-       onConfirm={() => {
+        onConfirm={() => {
           onDelete(task);
           setIsConfirmModalVisible(false);
         }}
@@ -167,7 +189,7 @@ const TimeSheetCard = ({ task, onEdit, isSelfView, onApprove, onReject, onDelete
         color="red"
       />
 
-       <TaskDetailsModal
+      <TaskDetailsModal
         visible={isDetailsModalVisible}
         onClose={() => setIsDetailsModalVisible(false)}
         task={task}

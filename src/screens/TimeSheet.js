@@ -49,6 +49,7 @@ const TimeSheet = () => {
   const route = useRouter();
   const [SubmitConfirmModalVisible, setSubmitConfirmModalVisible] = useState(false);
   const [ApproveConfirmModalVisible, setApproveConfirmModalVisible] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -64,6 +65,9 @@ const TimeSheet = () => {
         setEmpId(storedEmpId);
         setIsSelfView(true);
       }
+      const companyInfoData = await AsyncStorage.getItem("companyInfo");
+    const companyInfoObj = companyInfoData ? JSON.parse(companyInfoData) : {};
+    setCompanyInfo(companyInfoObj);
     })();
   }, []);
 
@@ -608,7 +612,7 @@ const TimeSheet = () => {
             />
           ) : (
             filteredTasks.map((task) => (
-              <TimeSheetCard key={task.id} task={task} onEdit={editTask} isSelfView={isSelfView} onApprove={handleApproveReject} onReject={handleApproveReject} onDelete={handleDelete} />
+              <TimeSheetCard key={task.id} task={task} onEdit={editTask} isSelfView={isSelfView} onApprove={handleApproveReject} onReject={handleApproveReject} onDelete={handleDelete} EditView={companyInfo.is_geo_location_enabled}/>
             ))
           )}
         </ScrollView>

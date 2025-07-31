@@ -36,6 +36,7 @@ const { width } = Dimensions.get('window');
 const AddAttendance = () => {
   const { 
     profile,
+    companyInfo,
     // Attendance states from context
     employeeData,
     setEmployeeData,
@@ -53,24 +54,16 @@ const AddAttendance = () => {
     setRemark,
     errors,
     setErrors,
-    isRemarkModalVisible,
-    setIsRemarkModalVisible,
     isLoading,
     setIsLoading,
-    isSuccessModalVisible,
-    setIsSuccessModalVisible,
     previousDayUnchecked,
     setPreviousDayUnchecked,
     dataLoaded,
     setDataLoaded,
     isYesterdayCheckout,
     setIsYesterdayCheckout,
-    isConfirmModalVisible,
-    setIsConfirmModalVisible,
     initialLoadComplete,
     setInitialLoadComplete,
-    attendanceErrorMessage,
-    setAttendanceErrorMessage,
     // Geolocation states from context
     geoLocationConfig,
     setGeoLocationConfig,
@@ -98,6 +91,15 @@ const AddAttendance = () => {
   const [isConnected, setIsConnected] = useState(true);
   const navigation = useNavigation();
   const router = useRouter();
+
+  // Local modal states
+  const [localRemarkModalVisible, setLocalRemarkModalVisible] = useState(false);
+  const [localSuccessModalVisible, setLocalSuccessModalVisible] = useState(false);
+  const [localConfirmModalVisible, setLocalConfirmModalVisible] = useState(false);
+  const [localAttendanceErrorMessage, setLocalAttendanceErrorMessage] = useState({
+    message: "",
+    visible: false
+  });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -135,8 +137,12 @@ const AddAttendance = () => {
   useEffect(() => {
     if (profile && !initialLoadComplete) {
       loadInitialData();
+      // Initialize geolocation configuration
+      if (profile && companyInfo) {
+        initializeGeoLocationConfig(companyInfo, [profile], setLocalAttendanceErrorMessage);
+      }
     }
-  }, [profile, initialLoadComplete]);
+  }, [profile, initialLoadComplete, companyInfo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -237,7 +243,7 @@ const AddAttendance = () => {
               ]}>
                 {/* Check In Button */}
                 <TouchableOpacity
-                  onPress={() => handleCheck('ADD')}
+                  onPress={() => handleCheck('ADD', setLocalSuccessModalVisible, setLocalAttendanceErrorMessage)}
                   disabled={isCheckInDisabled}
                   style={[
                     styles.attendanceButton,
@@ -263,11 +269,10 @@ const AddAttendance = () => {
                     onPress={() => {
                       if (previousDayUnchecked) {
                         // Show confirmation for yesterday's checkout
-                        setIsConfirmModalVisible(true);
+                        setLocalConfirmModalVisible(true);
                       } else {
                         // Handle today's checkout
-                        setIsYesterdayCheckout(false);
-                        handleCheckOutAttempt();
+                        handleCheckOutAttempt(setLocalRemarkModalVisible, setLocalAttendanceErrorMessage, setShowEffortConfirmModal);
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -317,7 +322,7 @@ const AddAttendance = () => {
       </SafeAreaView>
 
       {/* Remark Modal */}
-      <Modal transparent visible={isRemarkModalVisible} animationType="fade">
+      <Modal transparent visible={localRemarkModalVisible} animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -326,7 +331,7 @@ const AddAttendance = () => {
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setIsRemarkModalVisible(false)}
+                onPress={() => setLocalRemarkModalVisible(false)}
               >
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>
@@ -341,7 +346,7 @@ const AddAttendance = () => {
 
             <TouchableOpacity
               style={styles.modalSubmitButton}
-              onPress={handleRemarkSubmit}
+              onPress={() => handleRemarkSubmit(setLocalRemarkModalVisible, setLocalAttendanceErrorMessage, setLocalSuccessModalVisible)}
             >
               <Text style={styles.modalSubmitText}>Submit Check Out</Text>
             </TouchableOpacity>
@@ -351,27 +356,27 @@ const AddAttendance = () => {
 
       {/* Success Modal */}
       <SuccessModal
-        visible={isSuccessModalVisible}
-        onClose={() => setIsSuccessModalVisible(false)}
+        visible={localSuccessModalVisible}
+        onClose={() => setLocalSuccessModalVisible(false)}
         message="Attendance recorded successfully"
       />
       <ConfirmationModal
-        visible={isConfirmModalVisible}
+        visible={localConfirmModalVisible}
         message="You have an unfinished checkout from yesterday. Do you want to complete it?"
         onConfirm={() => {
-          setIsConfirmModalVisible(false);
-          handleYesterdayCheckout();
+          setLocalConfirmModalVisible(false);
+          handleYesterdayCheckout(setLocalRemarkModalVisible);
         }}
-        onCancel={() => setIsConfirmModalVisible(false)}
+        onCancel={() => setLocalConfirmModalVisible(false)}
         confirmText="Check Out"
         cancelText="Cancel"
       />
 
       {/* Error Modal */}
       <ErrorModal
-        visible={attendanceErrorMessage.visible}
-        message={attendanceErrorMessage.message}
-        onClose={() => setAttendanceErrorMessage({ message: "", visible: false })}
+        visible={localAttendanceErrorMessage.visible}
+        message={localAttendanceErrorMessage.message}
+        onClose={() => setLocalAttendanceErrorMessage({ message: "", visible: false })}
       />
 
       <ConfirmationModal
@@ -382,7 +387,7 @@ const AddAttendance = () => {
         onConfirm={() => {
           setShowEffortConfirmModal(false);
           setTimesheetCheckedToday(true);
-          setIsRemarkModalVisible(true);
+          setLocalRemarkModalVisible(true);
         }}
         onCancel={() => setShowEffortConfirmModal(false)}
         confirmText="Yes"

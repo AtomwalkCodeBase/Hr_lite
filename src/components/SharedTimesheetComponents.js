@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Image, StyleSheet } from 'react-native';
 import { MaterialIcons, Ionicons, Feather, AntDesign } from '@expo/vector-icons';
 import ConfirmationModal from './ConfirmationModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // import SelectedDayDetail from './SelectedDayDetail';
 
 // Employee info card for timesheet view
@@ -223,6 +224,15 @@ export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, onDelete
   const taskStatusKey = (task.status || 'n').toLowerCase();
   const taskStatus = statusConfig[taskStatusKey] || statusConfig.default;
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
+  const [companyInfo, setCompanyInfo] = useState({});
+useEffect(() => {
+  async function fetchCompanyInfo() {
+    const companyInfoData = await AsyncStorage.getItem("companyInfo");
+    const companyInfoObj = companyInfoData ? JSON.parse(companyInfoData) : {};
+    setCompanyInfo(companyInfoObj);
+  }
+  fetchCompanyInfo();
+}, []);
   return (
     <View style={styles.taskCard}>
       <View style={styles.taskHeader}>
@@ -259,11 +269,12 @@ export const TaskDetailCard = ({ task, selectedDay, isSelfView, onEdit, onDelete
             <MaterialIcons name="delete-outline" size={16} color="#f44336" />
             <Text style={[styles.editButtonText, {color: "#f44336"}]}>Delete</Text>
           </TouchableOpacity>
-
+        {companyInfo.is_geo_location_enabled !== "T" &&
           <TouchableOpacity style={styles.editButton} onPress={() => onEdit(task)}>
             <Ionicons name="create-outline" size={16} color="#a970ff" />
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
+}
           </View>
         )}
       </View>

@@ -46,18 +46,10 @@ const HomePage = ({ navigation }) => {
     setRemark,
     errors,
     setErrors,
-    isRemarkModalVisible,
-    setIsRemarkModalVisible,
-    isSuccessModalVisible,
-    setIsSuccessModalVisible,
     previousDayUnchecked,
     setPreviousDayUnchecked,
     isYesterdayCheckout,
     setIsYesterdayCheckout,
-    isConfirmModalVisible,
-    setIsConfirmModalVisible,
-    attendanceErrorMessage,
-    setAttendanceErrorMessage,
     // Geolocation states from context
     geoLocationConfig,
     setGeoLocationConfig,
@@ -92,6 +84,15 @@ const HomePage = ({ navigation }) => {
   const [isBirthday, setIsBirthday] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Local modal states
+  const [localRemarkModalVisible, setLocalRemarkModalVisible] = useState(false);
+  const [localSuccessModalVisible, setLocalSuccessModalVisible] = useState(false);
+  const [localConfirmModalVisible, setLocalConfirmModalVisible] = useState(false);
+  const [localAttendanceErrorMessage, setLocalAttendanceErrorMessage] = useState({
+    message: "",
+    visible: false
+  });
 
   // Active events
   const [eventData, setEventData] = useState([]);
@@ -209,6 +210,11 @@ const HomePage = ({ navigation }) => {
       const now = moment();
       setCurrentDate(now.format('DD-MM-YYYY'));
       setCurrentTimeStr(await setdatatime());
+
+      // Initialize geolocation configuration
+      if (profile && companyInfo) {
+        initializeGeoLocationConfig(companyInfo, [profile], setLocalAttendanceErrorMessage);
+      }
 
       // Fetch events
       await fetchEvents();
@@ -439,7 +445,7 @@ const HomePage = ({ navigation }) => {
                       isCheckInDisabled && styles.disabledButton,
                       checkedIn && styles.checkedInButton
                     ]}
-                    onPress={() => handleCheck('ADD')}
+                    onPress={() => handleCheck('ADD', setLocalSuccessModalVisible, setLocalAttendanceErrorMessage)}
                     disabled={isCheckInDisabled}
                   >
                     <MaterialCommunityIcons
@@ -470,10 +476,10 @@ const HomePage = ({ navigation }) => {
                     ]}
                     onPress={() => {
                       if (previousDayUnchecked) {
-                        setIsConfirmModalVisible(true);
+                        setLocalConfirmModalVisible(true);
                       } else {
-                        setIsYesterdayCheckout(false);
-                        handleCheckOutAttempt();
+                        // setIsYesterdayCheckout(false);
+                        handleCheckOutAttempt(setLocalRemarkModalVisible, setLocalAttendanceErrorMessage, setShowEffortConfirmModal);
                       }
                     }}
                     disabled={isCheckOutDisabled}
@@ -616,7 +622,7 @@ const HomePage = ({ navigation }) => {
       </ScrollView>
 
       {/* Remark Modal for checkout */}
-      <Modal transparent visible={isRemarkModalVisible} animationType="fade">
+      <Modal transparent visible={localRemarkModalVisible} animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -625,7 +631,7 @@ const HomePage = ({ navigation }) => {
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setIsRemarkModalVisible(false)}
+                onPress={() => setLocalRemarkModalVisible(false)}
               >
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>
@@ -641,7 +647,7 @@ const HomePage = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.modalSubmitButton}
-              onPress={handleRemarkSubmit}
+              onPress={() => handleRemarkSubmit(setLocalRemarkModalVisible, setLocalAttendanceErrorMessage, setLocalSuccessModalVisible)}
             >
               <Text style={styles.modalSubmitText}>Submit Check Out</Text>
             </TouchableOpacity>
@@ -650,19 +656,19 @@ const HomePage = ({ navigation }) => {
       </Modal>
 
       <SuccessModal
-        visible={isSuccessModalVisible}
-        onClose={() => setIsSuccessModalVisible(false)}
+        visible={localSuccessModalVisible}
+        onClose={() => setLocalSuccessModalVisible(false)}
         message="Attendance recorded successfully"
       />
 
       <ConfirmationModal
-        visible={isConfirmModalVisible}
+        visible={localConfirmModalVisible}
         message="You have an unfinished checkout from yesterday. Do you want to complete it"
         onConfirm={() => {
-          setIsConfirmModalVisible(false);
-          handleYesterdayCheckout();
+          setLocalConfirmModalVisible(false);
+          handleYesterdayCheckout(setLocalRemarkModalVisible);
         }}
-        onCancel={() => setIsConfirmModalVisible(false)}
+        onCancel={() => setLocalConfirmModalVisible(false)}
         confirmText="Check Out"
         cancelText="Cancel"
       />
@@ -671,18 +677,20 @@ const HomePage = ({ navigation }) => {
         visible={showExitModal}
         message="Are you sure you want to exit the app?"
         onConfirm={() => {
-          setShowExitModal(false);
-          BackHandler.exitApp();
-        }}
+          setShowExitModal(false); // Close the modal
+          setTimeout(() => {
+            BackHandler.exitApp(); // Exit app after short delay
+          }, 250); // Delay for modal to close (adjust if needed)
+          }}
         onCancel={() => setShowExitModal(false)}
         confirmText="Exit"
         cancelText="Cancel"
       />
 
       <ErrorModal
-        visible={attendanceErrorMessage.visible}
-        message={attendanceErrorMessage.message}
-        onClose={() => setAttendanceErrorMessage({ message: "", visible: false })}
+        visible={localAttendanceErrorMessage.visible}
+        message={localAttendanceErrorMessage.message}
+        onClose={() => setLocalAttendanceErrorMessage({ message: "", visible: false })}
       />
 
       <ConfirmationModal
@@ -693,7 +701,7 @@ const HomePage = ({ navigation }) => {
         onConfirm={() => {
           setShowEffortConfirmModal(false);
           setTimesheetCheckedToday(true);
-          setIsRemarkModalVisible(true);
+          setLocalRemarkModalVisible(true);
         }}
         onCancel={() => setShowEffortConfirmModal(false)}
         confirmText="Yes"

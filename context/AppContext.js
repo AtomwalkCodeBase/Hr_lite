@@ -8,7 +8,7 @@ import NetInfo from '@react-native-community/netinfo';
 import NetworkErrorModal from '../src/components/NetworkErrorModal';
 import moment from 'moment';
 import * as Location from 'expo-location';
-import { getEmpAttendance, postCheckIn } from '../src/services/productServices';
+import { getEmpAttendance, getTimesheetData, postCheckIn } from '../src/services/productServices';
 import { Alert } from 'react-native';
 
 const AppContext = createContext();
@@ -34,22 +34,15 @@ const AppProvider = ({ children }) => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [remark, setRemark] = useState('');
     const [errors, setErrors] = useState({});
-    const [isRemarkModalVisible, setIsRemarkModalVisible] = useState(false);
-    const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
     const [previousDayUnchecked, setPreviousDayUnchecked] = useState(false);
     const [isYesterdayCheckout, setIsYesterdayCheckout] = useState(false);
-    const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-    const [attendanceErrorMessage, setAttendanceErrorMessage] = useState({
-        message: "",
-        visible: false
-    });
 
     // Geolocation related states
     const [geoLocationConfig, setGeoLocationConfig] = useState({
         isEnabled: false,
-        allowedRadius: 100,
+        allowedRadius: undefined,
         originLatitude: null,
         originLongitude: null,
         mode: null // "T", "N", "A"
@@ -61,7 +54,7 @@ const AppProvider = ({ children }) => {
 
     // Geolocation utility functions
     const parseGeoLocationString = (geoString) => {
-        if (!geoString || typeof geoString !== 'string') {
+        if (!geoString || geoString === '' || geoString === null) {
             return { latitude: null, longitude: null };
         }
         const parts = geoString.split(',').map(s => s.trim());
@@ -90,7 +83,7 @@ const AppProvider = ({ children }) => {
         return R * c;
     };
 
-    const validateLocationDistance = async () => {
+    const validateLocationDistance = async (setErrorModal) => {
         try {
             const location = await Location.getCurrentPositionAsync({});
             const distance = calculateDistance(
@@ -101,7 +94,7 @@ const AppProvider = ({ children }) => {
             );
 
             if (distance > geoLocationConfig.allowedRadius) {
-                setAttendanceErrorMessage({
+                setErrorModal({
                     message: `You are ${Math.round(distance)} meters away from the allowed location.\n\nMaximum allowed distance is ${geoLocationConfig.allowedRadius} meters.`,
                     visible: true
                 });
@@ -109,7 +102,7 @@ const AppProvider = ({ children }) => {
             }
             return { isValid: true, distance };
         } catch (error) {
-            setAttendanceErrorMessage({
+            setErrorModal({
                 message: 'Unable to fetch location. Please try again.',
                 visible: true
             });
@@ -119,7 +112,6 @@ const AppProvider = ({ children }) => {
 
     const validateTimesheetForCheckout = async (empId, date) => {
         try {
-            const { getTimesheetData } = await import('../src/services/productServices');
             const res = await getTimesheetData(empId, date, date);
             const timesheetEntries = res.data || [];
             const MAX_DAILY_HOURS = 9;
@@ -140,11 +132,11 @@ const AppProvider = ({ children }) => {
         }
     };
 
-    const initializeGeoLocationConfig = (companyData, profileData) => {
+    const initializeGeoLocationConfig = (companyData, profileData, setErrorModal) => {
         try {
             // Extract company geolocation settings
             const companyGeoEnabled = companyData?.is_geo_location_enabled;
-            const companyAllowedDistance = companyData?.geo_allowed_distance || 100;
+            const companyAllowedDistance = companyData?.geo_allowed_distance;
             let companyOriginLat = null;
             let companyOriginLon = null;
 
@@ -173,7 +165,7 @@ const AppProvider = ({ children }) => {
 
             // Validate geolocation configuration
             if ((companyGeoEnabled === "T" || companyGeoEnabled === "A") && (!finalOriginLat || !finalOriginLon)) {
-                setAttendanceErrorMessage({
+                setErrorModal({
                     message: "You did not set company geo location data in company parameter",
                     visible: true
                 });
@@ -182,7 +174,7 @@ const AppProvider = ({ children }) => {
 
             // Set geolocation configuration
             setGeoLocationConfig({
-                isEnabled: !!companyGeoEnabled,
+                isEnabled: !!companyGeoEnabled && !!companyAllowedDistance, 
                 allowedRadius: companyAllowedDistance,
                 originLatitude: finalOriginLat,
                 originLongitude: finalOriginLon,
@@ -469,8 +461,8 @@ const AppProvider = ({ children }) => {
                         await AsyncStorage.setItem('companyInfo', JSON.stringify(companyRes.data));
                     }
 
-                    // Initialize geolocation configuration
-                    initializeGeoLocationConfig(companyRes?.data, profileRes?.data);
+                    // Initialize geolocation configuration - we'll handle this in individual screens
+                    // initializeGeoLocationConfig(companyRes?.data, profileRes?.data);
 
                     // Navigate to home
                     router.replace({ pathname: 'home' });
@@ -534,11 +526,11 @@ const AppProvider = ({ children }) => {
     };
 
     // Common location access utility function
-    const getLocationWithPermission = async () => {
+    const getLocationWithPermission = async (setErrorModal) => {
         const { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
-            setAttendanceErrorMessage({
+            setErrorModal({
                 message: 'Location permission is required to check in/out. Please enable location access in settings.',
                 visible: true
             });
@@ -558,7 +550,7 @@ const AppProvider = ({ children }) => {
         }
 
         if (!location) {
-            setAttendanceErrorMessage({
+            setErrorModal({
                 message: 'Unable to fetch location. Please check your GPS settings and try again.',
                 visible: true
             });
@@ -568,21 +560,21 @@ const AppProvider = ({ children }) => {
         return location;
     };
 
-    const handleCheck = async (data) => {
+    const handleCheck = async (data, setSuccessModal, setErrorModal) => {
         if (!employeeData) return;
 
         setIsLoading(true);
         
         // Check geolocation validation for check-in
-        if (data === 'ADD' && geoLocationConfig.isEnabled && geoLocationConfig.mode !== "N") {
-            const { isValid } = await validateLocationDistance();
+        if (data === 'ADD' && geoLocationConfig.isEnabled && (geoLocationConfig.mode === "T" || geoLocationConfig.mode === "A")) {
+            const { isValid } = await validateLocationDistance(setErrorModal);
             if (!isValid) {
                 setIsLoading(false);
                 return;
             }
         }
 
-        const location = await getLocationWithPermission();
+        const location = await getLocationWithPermission(setErrorModal);
         
         if (!location) {
             setIsLoading(false);
@@ -609,26 +601,26 @@ const AppProvider = ({ children }) => {
             await postCheckIn(checkPayload);
             setCheckedIn(data === 'ADD');
             setRefreshKey((prevKey) => prevKey + 1);
-            setIsSuccessModalVisible(true);
+            setSuccessModal(true);
             if (data === 'UPDATE') setRemark('');
             
             // Refresh attendance data to update UI immediately
             await refreshData();
         } catch (error) {
             console.error('Check in/out error:', error);
-            setAttendanceErrorMessage({message: "Failed to Check.", visible: true});
+            setErrorModal({message: "Failed to Check.", visible: true});
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleRemarkSubmit = () => {
+    const handleRemarkSubmit = (setRemarkModal, setErrorModal, setSuccessModal) => {
         if (!remark.trim()) {
             handleError('Remark cannot be empty', 'remarks');
             return;
         }
 
-        setIsRemarkModalVisible(false);
+        setRemarkModal(false);
 
         if (isYesterdayCheckout) {
             // Handle yesterday's checkout
@@ -638,7 +630,7 @@ const AppProvider = ({ children }) => {
             );
 
             if (!yesterdayRecord) {
-                setAttendanceErrorMessage({message: "No pending checkout found for yesterday", visible: true});
+                setErrorModal({message: "No pending checkout found for yesterday", visible: true});
                 return;
             }
 
@@ -652,17 +644,17 @@ const AppProvider = ({ children }) => {
                 remarks: remark || 'Check-out from Mobile (completed next day)'
             };
 
-            submitCheckout(payload);
+            submitCheckout(payload, setSuccessModal, setErrorModal);
         } else {
             // Handle today's checkout
-            handleCheck('UPDATE');
+            handleCheck('UPDATE', setSuccessModal, setErrorModal);
         }
     };
 
-    const submitCheckout = async (payload) => {
+    const submitCheckout = async (payload, setSuccessModal, setErrorModal) => {
         try {
             setIsLoading(true);
-            const location = await getLocationWithPermission();
+            const location = await getLocationWithPermission(setErrorModal);
             
             if (!location) {
                 setIsLoading(false);
@@ -675,7 +667,7 @@ const AppProvider = ({ children }) => {
 
             await postCheckIn(payload);
             setRefreshKey(prev => prev + 1);
-            setIsSuccessModalVisible(true);
+            setSuccessModal(true);
             setRemark('');
             setIsYesterdayCheckout(false);
             
@@ -683,46 +675,31 @@ const AppProvider = ({ children }) => {
             await refreshData();
         } catch (error) {
             console.error('Checkout error:', error);
-            setAttendanceErrorMessage({message: "Failed to complete checkout", visible: true});
+            setErrorModal({message: "Failed to complete checkout", visible: true});
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleYesterdayCheckout = async () => {
+    const handleYesterdayCheckout = async (setRemarkModal) => {
         setIsYesterdayCheckout(true);
-        setIsRemarkModalVisible(true);
+        setRemarkModal(true);
     };
 
-    const handleCheckOutAttempt = async () => {
-        if (!employeeData) return;
-
-        // Check if companyInfo is loaded
-        if (!companyInfo) {
-            console.log("companyInfo not loaded yet");
-            setAttendanceErrorMessage({
-                message: 'Company information not loaded. Please try again.',
-                visible: true
-            });
-            return;
-        }
-
+    const handleCheckOutAttempt = async (setRemarkModal, setErrorModal, setShowEffortConfirmModal) => {
+      
+        setIsLoading(true)
         const geoLocationEnabled = geoLocationConfig.mode;
-        
-        // No check mode - skip all validations, show remarks modal directly
-        if (geoLocationEnabled === "N") {
-            setIsRemarkModalVisible(true);
-            return;
-        }
 
         // For "T" and "A" modes, FIRST check location permission
         if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                setAttendanceErrorMessage({
+                setErrorModal({
                     message: 'Location permission is required to check out.',
                     visible: true
                 });
+                setIsLoading(false);
                 return;
             }
         }
@@ -731,29 +708,36 @@ const AppProvider = ({ children }) => {
         if (geoLocationEnabled === "T") {
             const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
             if (notFilled) {
-                setAttendanceErrorMessage({ 
+                setErrorModal({ 
                     message: "You did not fill today's timesheet. Please fill it before checking out.", 
                     visible: true 
                 });
+                setIsLoading(false);
                 return;
             }
             if (isEffortOutOfRange) {
                 setShowEffortConfirmModal(true);
+                setIsLoading(false);
                 return;
             }
         }
 
         // For "T" and "A" modes, proceed with geo-location distance validation
         if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
-            const { isValid } = await validateLocationDistance();
+            const { isValid } = await validateLocationDistance(setErrorModal);
             if (!isValid) {
                 return;
             }
+        setIsLoading(false);
+
         }
 
-        // If all validations pass, show remarks modal
+          // If all validations pass, show remarks modal
         setTimesheetCheckedToday(true);
-        setIsRemarkModalVisible(true);
+        setRemarkModal(true);
+
+        setIsLoading(false);
+
     };
 
     const loadInitialData = async () => {
@@ -855,22 +839,14 @@ const AppProvider = ({ children }) => {
             setRemark,
             errors,
             setErrors,
-            isRemarkModalVisible,
-            setIsRemarkModalVisible,
-            isSuccessModalVisible,
-            setIsSuccessModalVisible,
             previousDayUnchecked,
             setPreviousDayUnchecked,
             isYesterdayCheckout,
             setIsYesterdayCheckout,
-            isConfirmModalVisible,
-            setIsConfirmModalVisible,
             dataLoaded,
             setDataLoaded,
             initialLoadComplete,
             setInitialLoadComplete,
-            attendanceErrorMessage,
-            setAttendanceErrorMessage,
             // Geolocation states
             geoLocationConfig,
             setGeoLocationConfig,
