@@ -206,7 +206,6 @@ const ShiftScreen = (props) => {
     return `${startOfWeek} - ${endOfWeek}`;
   };
 
-  console.log("Shift data---",shiftData)
 
 return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>

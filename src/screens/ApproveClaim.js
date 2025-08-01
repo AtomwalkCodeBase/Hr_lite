@@ -491,8 +491,6 @@ const ApproveClaim = () => {
     return parseFloat(claim.expense_amt) || 0;
   };
 
-  // console.log("Claim Data==",claimData[2])
-
   const renderGroupedClaimItem = ({ item }) => {
   const masterStatus = item.expense_status;
   const masterStatusText = getClaimStatus(masterStatus);

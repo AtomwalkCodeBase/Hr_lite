@@ -206,8 +206,6 @@ const AttendanceStatus = ({ id: empId }) => {
           getEmpHoliday(data)
         ]);
         
-        console.log("Attendance Data:", attendanceRes.data);
-        console.log("Holiday Data:", holidayRes.data);
         
         processAttendanceData(attendanceRes.data);
         processHolidayData(holidayRes.data);

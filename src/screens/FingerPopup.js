@@ -14,8 +14,6 @@ const FingerPopup = () => {
             const hardwareSupported = await LocalAuthentication.hasHardwareAsync();
             const fingerprintsEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-            // console.log("hardwareSupported====",hardwareSupported,'fingerprintsEnrolled-----',fingerprintsEnrolled)
-
             if (!hardwareSupported || !fingerprintsEnrolled) {
                 await AsyncStorage.setItem('fingerprintSupported', 'false');
                 return; // Don't show the popup

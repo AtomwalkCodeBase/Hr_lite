@@ -347,7 +347,7 @@ const AppProvider = ({ children }) => {
             setProfile({});
             setReload(false);
         } catch (err) {
-            console.log("Logout error:", err);
+            console.error("Logout error:", err);
         } finally {
             setIsLoading(false);
         }
@@ -366,7 +366,7 @@ const AppProvider = ({ children }) => {
             setProfile({});
             setReload(false);
         } catch (err) {
-            console.log("Logout error:", err);
+            console.error("Logout error:", err);
         } finally {
             setIsLoading(false);
         }
@@ -420,7 +420,7 @@ const AppProvider = ({ children }) => {
                 setReload(true);
             }
         } catch (e) {
-            console.log('Login Status Error:', e);
+            console.error('Login Status Error:', e);
         } finally {
             setIsLoading(false);
         }
@@ -447,9 +447,6 @@ const AppProvider = ({ children }) => {
                         getEmployeeInfo(),
                         getCompanyInfo()
                     ]);
-
-                    console.log("company data", companyRes.data)
-                    console.log("profile data", profileRes.data)
 
                     // Set profile data
                     if (profileRes?.data?.[0]) {

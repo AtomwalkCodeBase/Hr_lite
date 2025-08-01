@@ -125,7 +125,7 @@ const SmallCard = ({data, navigation, colour, title, subTitle, date, dateTitle, 
 
       }
       else {
-        console.log('Not Valid screen call mode')
+        console.error('Not Valid screen call mode')
       }
 
     }

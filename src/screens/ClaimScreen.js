@@ -480,8 +480,6 @@ const filterClaims = () => {
   setActiveTab(tab);
 };
 
-  // console.log("Claim Data--",allClaims)
-
   const handleBackPress = () => {
     if (selectedImageUrl) {
       setSelectedImageUrl(null);
@@ -545,8 +543,6 @@ const filterClaims = () => {
     }
   });
 };
-
-  // console.log("Claim==",allClaims[3])
 
   const closeModal = () => {
     setModalVisible(false);

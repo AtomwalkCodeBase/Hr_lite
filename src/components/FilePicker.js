@@ -94,8 +94,6 @@ const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFile
                   "Permission Required",
                   "Camera permission is required to capture photos"
                 );
-        // Show custom permission modal instead of alert
-        console.log("Camera permission denied");
       }
     } catch (error) {
       console.error("Camera error:", error);

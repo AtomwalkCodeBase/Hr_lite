@@ -52,11 +52,6 @@ const AddClaim = (props) => {
   // Parse claim data if available
   const parsedClaimData = claimData ? JSON.parse(claimData) : null;
 
-  console.log("Received props data:", {
-    mode,
-    masterClaimId,
-    parsedClaimData
-  });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -101,7 +96,6 @@ const AddClaim = (props) => {
     setIsLoading(true);
     try {
       const response = await getExpenseItem();
-      console.log("Item List--",response.data)
       const formattedData = response.data.map(item => ({
         label: item.name,
         value: item.id.toString() // Ensure string value for dropdown
@@ -119,7 +113,6 @@ const AddClaim = (props) => {
     setIsLoading(true);
     try {
       const response = await getExpenseProjectList();
-      // console.log("Project list--",response.data)
       const formattedData = response.data.map(project => ({
         label: project.title,
         value: project.id.toString() // Ensure string value for dropdown
@@ -183,7 +176,6 @@ const AddClaim = (props) => {
     // File is only required for new claims or when updating without existing file
       if (item) {
         const selectedItem = expenseItemsData.find(i => i.id.toString() === item);
-        console.log("Selected Item:", selectedItem);
         const billRequired = selectedItem?.is_exp_bill_required;
 
         const fileProvided = !!fileUri || !!parsedClaimData?.submitted_file_1;

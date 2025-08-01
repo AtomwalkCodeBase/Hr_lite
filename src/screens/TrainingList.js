@@ -34,7 +34,6 @@ const TrainingListScreen = () => {
         setLoading(true);
         try {
           const res = await getTrainingData();
-          // console.log("data", res.data)
           setPrograms(res.data);
         } catch (error) {
           console.error("Error fetching training sessions:", error);
@@ -93,10 +92,7 @@ const confirmButton = async (item) => {
     formData.append("training_id", "");
     formData.append("remarks", "");
 
-    console.log("Data to be sent:", formData);
-
     const res = await EnrollEmpTraining(formData);
-    // console.log("API Response:", res);
 
     if (res.status === 200) {
       setIsSuccessModalVisible(true);

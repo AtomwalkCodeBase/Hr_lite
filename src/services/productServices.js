@@ -32,7 +32,6 @@ export async function postEmpLeave(leave_type) {
     if (claim_type) {
       data['claim_data'] = claim_type;
     }
-    console.log("Response Data to be pass--",data.claim_data)
     const url = await processClaim();
     return authAxiosPost(url, data);
   
@@ -55,7 +54,6 @@ export async function postEmpLeave(leave_type) {
     if (period){
         data['period'] = period;
     }
-    console.log("Data to be sent++--",data)
     const url = await getEmpClaimdata();
     return authAxios(url, data);
   }
@@ -76,7 +74,6 @@ export async function postEmpLeave(leave_type) {
       'a_emp_id': res.emp_id,
       'm_claim_id': res.m_claim_id,
     };
-    console.log("Claim Validation data to be pass--",data)
     const url = await validateApproveLimit();
     return authAxios(url, data);
   }
@@ -87,7 +84,6 @@ export async function postEmpLeave(leave_type) {
       'month':res.month,
       'year': res.year
     };
-    // console.log("At data to be pass--",data)
     const url = await getEmpAttendanceData();
     return authAxios(url, data);
   }
@@ -98,7 +94,6 @@ export async function postEmpLeave(leave_type) {
       'emp_id':res.eId,
     };
 
-    console.log("Data to pass--",data)
     const url = await getEmpHolidayData();
     return authAxios(url, data);
   }
@@ -110,7 +105,6 @@ export async function postEmpLeave(leave_type) {
     }
     const url = await empCheckData();
 
-    console.log("Check-in data pass===",data)
     return authAxiosPost(url, data);
   }
 
@@ -142,7 +136,6 @@ export async function postEmpLeave(leave_type) {
   }
 
   export async function postEmpRequest(request_data) {
-    console.log('Request Data to be sent:', request_data);
     const url = await processEmployeeRequest();
     return authAxiosFilePost(url, request_data);
   }
@@ -154,7 +147,6 @@ export async function postEmpLeave(leave_type) {
       event_type: params.event_type || "",
       date_range: params.date_range || 'ALL'
     };
-    console.log("Event fetching data--",data)
     const url = await getEventtList();
     return authAxios(url, data);
   }
@@ -188,14 +180,12 @@ export async function setUserPinView(o_pin, n_pin, employeeId) {
       user_type: "EMP",
     };
 
-    // console.log("Data to be sent--->",data)
     const url = await setUserPinURL();
     return authAxiosPost(url, data);
   }
 
 
 export async function forgetUserPinView(data) {
-    console.log("Data to be sent--->", data);
     const url = await forgetEmpPinURL();
     return publicAxiosRequest.post(url, data);
 }
@@ -206,13 +196,11 @@ export async function getEmpShift(res) {
       'w_start':res.w_data,
       // 'year': res.year
     };
-    // console.log("At data to be pass--",data)
     const url = await getEmpShiftData();
     return authAxiosPost(url, data);
   }
 
   export async function getTrainingData() {
-    // console.log("Data to be sent--->", data);
     const url = await getTrainingModuleData();
     return authAxios(url);
 }
@@ -221,7 +209,6 @@ export async function getEmpShift(res) {
     let data ={
       'emp_id': response
     }
-    console.log("Data to be sent--->", data);
     const url = await getEmpTrainingListData();
     return authAxios(url, data);
 }
@@ -231,7 +218,6 @@ export async function EnrollEmpTraining(res) {
     if (res) {
       data = res;
     }
-    // console.log("At data to be pass--",data)
     const url = await processEmpTraining();
     return authAxiosFilePost(url, data);
   }
@@ -242,7 +228,6 @@ export async function getTimesheetData(empid,start_date, end_date) {
     'start_date':start_date,
     'end_date': end_date,
   };
-    console.log('Data to be sent:', data);
   const url = await getTimeSheetList();
   return authAxios(url, data)
 }
@@ -252,7 +237,6 @@ export async function postTimeList(timedata) {
   if (timedata) {
     data['ts_data'] = timedata;
   }
-  console.log('Data to be sent:', data);
   const url = await addTimesheet()
   return authAxiosPost(url, data)
 }

@@ -23,8 +23,6 @@ export async function getEmployeeInfo() {
       if (emp_id) {
         data['emp_id'] = emp_id;
       }
-
-    //   console.log("Emp id+++",emp_id)
   
       return authAxios(url, data);
     } catch (error) {

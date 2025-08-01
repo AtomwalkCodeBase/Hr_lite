@@ -5,7 +5,6 @@ import { addEmpLeave, endpoint, getEmpLeavedata, newendpoint } from "../services
 
 export const authAxios = async (url, data) => {
     let token = await AsyncStorage.getItem('userToken');
-    // console.log('authaxios', token, data)
     return axios.create({
         baseURL: newendpoint,
         params: data,
@@ -17,7 +16,6 @@ export const authAxios = async (url, data) => {
 
 export const authAxiosGET = async (url, data) => {
   // let token = await AsyncStorage.getItem('userToken');
-  // console.log('authaxios', token, data)
   return axios.create({
       baseURL: newendpoint,
       params: data,
@@ -29,7 +27,6 @@ export const authAxiosGET = async (url, data) => {
 
 export const authAxiosPost = async (url, data) => {
   let token = await AsyncStorage.getItem('userToken');
-  // console.log('authaxios', token, url)
   return axios.create({
       baseURL: newendpoint,
       headers: {

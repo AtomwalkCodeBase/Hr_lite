@@ -125,7 +125,6 @@ const ApproveClaimDetails = () => {
                   approvalType: item.approval_type
                 };
               });
-              // console.log("uycsadcgbhjdk",validationResponse.data)
               setValidationResults(results);
               setValidationError(null);
             } else if (validationResponse.message) {
@@ -134,7 +133,6 @@ const ApproveClaimDetails = () => {
           }
         }
       } catch (error) {
-        console.log("uycsadcgbhjdk",error)
         if (isMounted) {
           console.error('Error:', error);
           if (error?.response?.data?.message.includes('Invalid request - ')) {
@@ -254,18 +252,14 @@ const validateForm = useCallback(() => {
 
   // Handle form submission
   const handleSubmit = useCallback(async () => {
-  console.log('Submit button clicked'); // Debug log
   
   const validationErrors = validateForm();
-  console.log('Validation errors:', validationErrors); // Debug log
   
   if (Object.keys(validationErrors).length > 0) {
-    console.log('Validation failed, not showing modal');
     setErrors(validationErrors);
     return;
   }
   
-  console.log('Setting confirmation modal to true');
   setShowConfirmationModal(true);
 }, [validateForm]);
 
@@ -283,9 +277,7 @@ const validateForm = useCallback(() => {
            
       // Always use getApproveType for the action
       const actionType = validationResult?.approvalType === 'F' ? 'FORWARD' : (item.action || 'APPROVE');
-        console.log("actionType", actionType)
       const approveType = getApproveType(actionType);
-          console.log("approveType", approveType)
       const itemPayload = {
         claim_id: originalItem.claim_id,
         approve_type: approveType,
@@ -311,8 +303,6 @@ const validateForm = useCallback(() => {
       call_mode: 'APPROVE_CLAIM',
       claim_list: claim_list
     };
-
-    // console.log("payload", payload)
 
     await postClaimAction(payload);
     setShowSuccessModal(true);

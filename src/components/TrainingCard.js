@@ -75,7 +75,6 @@ const TrainingCard = ({
 
   const statusConfig = getStatusConfig(item.training_status);
 
-  // console.log("Item Data===", item);
 
   return (
     <TouchableOpacity 

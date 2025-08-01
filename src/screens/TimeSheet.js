@@ -292,8 +292,6 @@ const TimeSheet = () => {
       }
     }
 
-    // console.log("submittedData", submittedData)
-
     try {
       const res = await postTimeList(submittedData);
       if (res.status === 200) {

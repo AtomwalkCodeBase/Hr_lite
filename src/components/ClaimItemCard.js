@@ -44,8 +44,6 @@ const ClaimItemCard = ({
     onRemarkChange(item.id, text);
   };
 
-  console.log("data", validationResult)
-
   return (
     <View style={[
       styles.itemContainer, 

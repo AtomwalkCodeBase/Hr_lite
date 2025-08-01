@@ -12,7 +12,6 @@ const PinPopup = () => {
     useEffect(() => {
         const checkPopupPreference = async () => {
             const userPin = await AsyncStorage.getItem('userPin');
-            console.log("Userr pin--",userPin)
             // Check if PIN is the default '9999'
             if (userPin === '9999') {
                 setIsMandatoryReset(true);

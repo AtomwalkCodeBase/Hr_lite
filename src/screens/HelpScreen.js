@@ -83,7 +83,6 @@ const HelpScreen = (props) => {
           request.request_type === 'H' && 
           request.emp_id === empId
       );
-      // console.log("filtered",filtered)
       setFilteredHelps(filtered);
     } catch (err) {
       console.error("Error fetching requests:", err);

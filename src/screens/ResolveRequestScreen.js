@@ -31,8 +31,6 @@ const ResolveRequestScreen = (props) => {
 	const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
 
-	//   console.log("itemdata", itemData);
-
 	const handleResolveRequest = async () => {
 		setIsLoading(true);
 
@@ -55,7 +53,6 @@ const ResolveRequestScreen = (props) => {
 
 		try {
 			const res = await postEmpRequest(formData); 
-			console.log("formData", formData);
 
 			if (res.status === 200) {
 				setIsSuccessModalVisible(true);
@@ -64,7 +61,6 @@ const ResolveRequestScreen = (props) => {
 			}
 		} catch (error) {
 			setErrorMessage(error.response?.data?.message)
-			console.log("error", error.response.data)
 		} finally {
 			setIsLoading(false);
 			setSubmitConfirmModalVisible(false);
