@@ -415,6 +415,7 @@ const ApproveClaim = () => {
       case 'F': return 'FORWARDED';
       case 'R': return 'REJECTED';
       case 'B': return 'Back To Claimant';
+      case 'P': return 'Sattled';
       default: return 'UNKNOWN';
     }
   };
@@ -519,20 +520,7 @@ const ApproveClaim = () => {
             >
               {item.master_claim_id}
             </GroupTitle>
-            {/* <View style={{ 
-              backgroundColor: `${masterStatusColor}20`, 
-              paddingHorizontal: 8, 
-              paddingVertical: 2, 
-              borderRadius: 10 
-            }}>
-              <Text style={{ 
-                fontSize: 10, 
-                fontWeight: 'bold', 
-                color: masterStatusColor 
-              }}>
-                {masterStatusText}
-              </Text>
-            </View> */}
+           
           </View>
           <GroupSubtitle>
             {item.claim_date}
@@ -591,18 +579,6 @@ const ApproveClaim = () => {
           {(isMasterSubmitted || isMasterForwarded) && (
             <View style={styles.masterButtonContainer}>
               
-              {/* <TouchableOpacity
-                style={[styles.masterActionButton, { backgroundColor: '#ffc107' }]}
-                onPress={() => handleApprove(item, 'Return', true)}
-              >
-                <MaterialIcons 
-                  name="undo" 
-                  size={18} 
-                  color="#fff" 
-                  style={styles.buttonIcon}
-                />
-                <Text style={[styles.buttonText, styles.actionButtonText]}>Return All</Text>
-              </TouchableOpacity> */}
               <TouchableOpacity
                 style={[styles.masterActionButton, { backgroundColor: '#a970ff' }]}
                 onPress={() => handleApprove(item, 'Approve', true)}
@@ -640,12 +616,7 @@ const ApproveClaim = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      {/* <HeaderComponent 
-        headerTitle={`Approve Claim List (${filteredData.length})`}
-        onBackPress={handleBackPress}
-        icon1Name="filter"
-        icon1OnPress={() => setShowFilterModal(true)}
-      /> */}
+
       
       <HeaderComponent 
   headerTitle={`Approve Claim List (${filteredData.length})`}

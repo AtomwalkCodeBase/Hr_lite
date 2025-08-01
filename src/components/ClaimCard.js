@@ -23,6 +23,7 @@ const ClaimCardContainer = styled.TouchableOpacity`
       case 'R': return '#F44336'; // Rejected - Red
       case 'B': return '#FF9800'; // Back to claimant - Orange
       case 'N': return '#FFA000'; // Draft - Yellow
+      case 'P': return '#00C853'; // Settled - Darker Green
       default: return '#9E9E9E'; // Default - Gray
     }
   }};
@@ -49,6 +50,7 @@ const StatusBadge = styled.View`
       case 'R': return '#FFEBEE'; // Rejected
       case 'B': return '#FFF3E0'; // Back to claimant
       case 'N': return '#FFF8E1'; // Draft - Light yellow
+      case 'P': return '#E8F5E9'; // Settled - Same as Approved
       default: return '#F5F5F5'; // Default
     }
   }};
@@ -66,6 +68,7 @@ const StatusText = styled.Text`
       case 'F': return '#7B1FA2'; // Forwarded
       case 'R': return '#C62828'; // Rejected
       case 'B': return '#EF6C00'; // Back to claimant
+      case 'P': return '#1B5E20'; // Settled - Darker Green
       default: return '#424242'; // Default
     }
   }};
@@ -99,6 +102,7 @@ const AmountContainer = styled.View`
       case 'F': return '#F3E5F5'; // Forwarded
       case 'R': return '#FFEBEE'; // Rejected
       case 'B': return '#FFF3E0'; // Back to claimant
+      case 'P': return '#E8F5E9'; // Settled - Same as Approved
       default: return '#F5F5F5'; // Default
     }
   }};
@@ -118,6 +122,7 @@ const AmountText = styled.Text`
       case 'F': return '#7B1FA2'; // Forwarded
       case 'R': return '#C62828'; // Rejected
       case 'B': return '#EF6C00'; // Back to claimant
+      case 'P': return '#1B5E20'; // Settled - Darker Green
       default: return '#424242'; // Default
     }
   }};
@@ -190,18 +195,14 @@ const ButtonContainer = styled.View`
 
 const ButtonContainer2 = styled.View`
   flex-direction: row;
-  /* margin-left: 10px; */
   justify-content: space-between;
   align-items: center;
 `;
 
 const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () => {}, onUpdate = () => {} }) => {
-
   const status = claim.expense_status;
   const statusText = getStatusText(status);
   const [showUpdate, setShowUpdate] = useState(false);
-
- 
 
   const employeeId = async() => {
       const EmpId = await AsyncStorage.getItem("empNoId")
@@ -214,35 +215,27 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
     employeeId()
   },[])
 
-  // const handleDelete = () => onDelete(claim.id);
   const formatIndianCurrency = (num) => {
-  if (!num && num !== 0) return null; // handles null, undefined, empty string
-  
-  // Convert to number to handle cases like "12.00"
-  const numberValue = Number(num);
-  if (isNaN(numberValue)) return null;
+    if (!num && num !== 0) return null;
+    const numberValue = Number(num);
+    if (isNaN(numberValue)) return null;
+    const isInteger = Number.isInteger(numberValue);
+    const numStr = isInteger ? numberValue.toString() : numberValue.toString();
+    const parts = numStr.split('.');
+    let integerPart = parts[0];
+    const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
+    const lastThree = integerPart.substring(integerPart.length - 3);
+    const otherNumbers = integerPart.substring(0, integerPart.length - 3);
+    
+    if (otherNumbers !== '') {
+      integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
+    } else {
+      integerPart = lastThree;
+    }
 
-  // Check if it's an integer (has no decimal or decimal is .00)
-  const isInteger = Number.isInteger(numberValue);
+    return `₹ ${integerPart}${decimalPart}`;
+  };
   
-  // Format the number based on whether it's an integer
-  const numStr = isInteger ? numberValue.toString() : numberValue.toString();
-  const parts = numStr.split('.');
-  let integerPart = parts[0];
-  const decimalPart = !isInteger && parts.length > 1 ? `.${parts[1]}` : '';
-
-  // Format the integer part with Indian comma separators
-  const lastThree = integerPart.substring(integerPart.length - 3);
-  const otherNumbers = integerPart.substring(0, integerPart.length - 3);
-  
-  if (otherNumbers !== '') {
-    integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree;
-  } else {
-    integerPart = lastThree;
-  }
-
-  return `₹ ${integerPart}${decimalPart}`;
-};
   const handleUpdate = () => onUpdate(claim);
 
   return (
@@ -255,14 +248,18 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
               status === 'A' ? 'check-circle' : 
               status === 'R' ? 'x-circle' : 
               status === 'B' ? 'corner-up-left' : 
-              status === 'F' ? 'share-2' : 'clock'
+              status === 'F' ? 'share-2' : 
+              status === 'P' ? 'dollar-sign' : // New icon for settled
+              'clock'
             } 
             size={14} 
             color={
               status === 'A' ? '#2E7D32' : 
               status === 'R' ? '#C62828' : 
               status === 'B' ? '#EF6C00' : 
-              status === 'F' ? '#7B1FA2' : '#1565C0'
+              status === 'F' ? '#7B1FA2' : 
+              status === 'P' ? '#1B5E20' : // New color for settled
+              '#1565C0'
             } 
           />
           <StatusText status={status}>{statusText}</StatusText>
@@ -271,20 +268,11 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
 
       <View style={{ flexDirection: 'row' }}>
         <View style={{ flex: 1 }}>
-          
-           {status !== 'N' && (
-          
-            
+          {status !== 'N' && (
             <DetailRow>
-            {/* <DetailLabel>Item Name:</DetailLabel> */}
-            <DetailValue>{claim.claim_id}</DetailValue>
-          </DetailRow>
-        )}
-
-          {/* <DetailRow>
-            <DetailLabel>Expense Date:</DetailLabel>
-            <DetailValue>{claim.expense_date}</DetailValue>
-          </DetailRow> */}
+              <DetailValue>{claim.claim_id}</DetailValue>
+            </DetailRow>
+          )}
 
           <DetailRow>
             <DetailLabel>Submitted:</DetailLabel>
@@ -292,16 +280,9 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
           </DetailRow>
         </View>
 
-        {/* Action buttons aligned to right of detail rows */}
         {status === 'N' && (
           <ButtonContainer>
-            
-            {/* {onDelete && (
-              <DeleteButton onPress={handleDelete}>
-                <Ionicons name="trash-outline" size={18} color="#fff" />
-                <DeleteButtonText>Delete</DeleteButtonText>
-              </DeleteButton>
-            )} */}
+            {/* Delete button placeholder */}
           </ButtonContainer>
         )}
       </View>
@@ -312,12 +293,6 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
         </AmountText>
       </AmountContainer>
 
-      {/* {claim.submitted_file_1 && (
-        <ViewFileButton onPress={() => onViewFile(claim.submitted_file_1)}>
-          <MaterialIcons name="insert-drive-file" size={18} color="#1976D2" />
-          <ViewFileText>View Attachment</ViewFileText>
-        </ViewFileButton>
-      )} */}
       <ButtonContainer2>
         {claim.submitted_file_1 && (
           <ViewFileButton onPress={() => onViewFile(claim.submitted_file_1)}>
@@ -328,12 +303,11 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
 
         {(status === 'N' || status === 'B' && showUpdate) && (
           <UpdateButton onPress={handleUpdate}>
-              <Ionicons name="create-outline" size={18} color="#fff" />
-              <UpdateButtonText>Update</UpdateButtonText>
-            </UpdateButton>
+            <Ionicons name="create-outline" size={18} color="#fff" />
+            <UpdateButtonText>Update</UpdateButtonText>
+          </UpdateButton>
         )}
       </ButtonContainer2>
-
 
       {(status === 'A' || status === 'R') && claim.approved_date && (
         <ApprovalInfo>
@@ -347,6 +321,14 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
         <ApprovalInfo>
           <ApprovalText>
             Forwarded by {claim.approved_by}
+          </ApprovalText>
+        </ApprovalInfo>
+      )}
+
+      {status === 'P' && claim.approved_date && (
+        <ApprovalInfo>
+          <ApprovalText>
+            Settled on {claim.approved_date}
           </ApprovalText>
         </ApprovalInfo>
       )}

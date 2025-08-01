@@ -1,7 +1,8 @@
 import React from 'react';
 import { Image, Modal } from 'react-native';
 import styled from 'styled-components/native';
-import { MaterialIcons } from '@expo/vector-icons';
+// import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Feather } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
 
 // Status configuration
@@ -12,6 +13,7 @@ const statusOptions = [
   { label: 'Rejected', value: 'R', color: '#EF4444' },
   { label: 'Back to Claimant', value: 'B', color: '#F59E0B' },
   { label: 'Draft', value: 'N', color: '#10B981' },
+  { label: 'Settled', value: 'P', color: '#00C853' }, // Added Settled status
 ];
 
 // Helper function to get status info
@@ -56,6 +58,8 @@ const ClaimModalComponent = ({
     return `₹${integerPart}${decimalPart}`;
   };
 
+  console.log("Claim Data==",claim)
+
   const renderClaimDetails = () => {
     if (!claim) return null;
     const statusInfo = getStatusInfo(claim.expense_status);
@@ -66,6 +70,9 @@ const ClaimModalComponent = ({
         {/* Header Section */}
         <ClaimHeader>
           <ClaimID>{claim.claim_id}</ClaimID>
+          <StatusBadge statusColor={statusInfo.color}>
+            <StatusText statusColor={statusInfo.color}>{statusInfo.label}</StatusText>
+          </StatusBadge>
         </ClaimHeader>
 
         <ItemName>{claim.item_name}</ItemName>
@@ -93,19 +100,7 @@ const ClaimModalComponent = ({
           <DetailItem>
             <DetailLabel>Remarks</DetailLabel>
             <RemarksText>{claim.remarks}</RemarksText>
-            </DetailItem>
-
-          {/* {showCost && (
-            <DetailItem>
-              <DetailLabel>Actual Cost</DetailLabel>
-              <DetailValue>{formatIndianCurrency(claim.expense_cost)}</DetailValue>
-            </DetailItem>
-          )} */}
-
-          {/* <DetailItem>
-            <DetailLabel>Quantity</DetailLabel>
-            <DetailValue>{claim.quantity}</DetailValue>
-          </DetailItem> */}
+          </DetailItem>
         </DetailGroup>
 
         {/* Claim Reference Section */}
@@ -124,8 +119,8 @@ const ClaimModalComponent = ({
           </DetailItem>
         </DetailGroup>
 
-        {/* Approval Details Section */}
-        {claim.expense_status === 'A' && (
+        {/* Approval/Settlement Details Section */}
+        {(claim.expense_status === 'A' || claim.expense_status === 'P') && (
           <>
             <SectionTitle>Approval Details</SectionTitle>
             <DetailGroup>
@@ -141,12 +136,12 @@ const ClaimModalComponent = ({
 
               <DetailItem>
               <DetailLabel>Approved Amount</DetailLabel>
-              <DetailValue>{formatIndianCurrency(claim.expense_cost)}</DetailValue>
-            </DetailItem>
+                <DetailValue>{formatIndianCurrency(claim.expense_cost)}</DetailValue>
+              </DetailItem>
               
               {claim.approval_remarks && (
                 <DetailItem>
-                  <DetailLabel>Approval Remarks</DetailLabel>
+                  <DetailLabel>{claim.expense_status === 'A' ? 'Approval' : 'Settlement'} Remarks</DetailLabel>
                   <RemarksText>{claim.approval_remarks}</RemarksText>
                 </DetailItem>
               )}
@@ -154,11 +149,55 @@ const ClaimModalComponent = ({
           </>
         )}
 
-        {/* Remarks Section */}
-        {claim.remarks && (
+        {/* Rejection Details Section */}
+        {claim.expense_status === 'R' && claim.approved_date && (
           <>
-            <SectionTitle>Remarks</SectionTitle>
-            <RemarksText>{claim.remarks}</RemarksText>
+            <SectionTitle>Rejection Details</SectionTitle>
+            <DetailGroup>
+              <DetailItem>
+                <DetailLabel>Rejected By</DetailLabel>
+                <DetailValue>{claim.approved_by}</DetailValue>
+              </DetailItem>
+              
+              <DetailItem>
+                <DetailLabel>Rejected Date</DetailLabel>
+                <DetailValue>{formatDate(claim.approved_date)}</DetailValue>
+              </DetailItem>
+              
+              {claim.approval_remarks && (
+                <DetailItem>
+                  <DetailLabel>Rejection Remarks</DetailLabel>
+                  <RemarksText>{claim.approval_remarks}</RemarksText>
+                </DetailItem>
+              )}
+            </DetailGroup>
+          </>
+        )}
+
+        {/* Forwarded Details Section */}
+        {claim.expense_status === 'F' && claim.approved_by && (
+          <>
+            <SectionTitle>Forwarded Details</SectionTitle>
+            <DetailGroup>
+              <DetailItem>
+                <DetailLabel>Forwarded To</DetailLabel>
+                <DetailValue>{claim.approved_by}</DetailValue>
+              </DetailItem>
+              
+              {claim.approved_date && (
+                <DetailItem>
+                  <DetailLabel>Forwarded Date</DetailLabel>
+                  <DetailValue>{formatDate(claim.approved_date)}</DetailValue>
+                </DetailItem>
+              )}
+              
+              {claim.approval_remarks && (
+                <DetailItem>
+                  <DetailLabel>Forward Remarks</DetailLabel>
+                  <RemarksText>{claim.approval_remarks}</RemarksText>
+                </DetailItem>
+              )}
+            </DetailGroup>
           </>
         )}
 
@@ -167,10 +206,19 @@ const ClaimModalComponent = ({
           <>
             <SectionTitle>Receipt</SectionTitle>
             <ImageContainer>
-              <ReceiptImage 
-                source={{ uri: claim.submitted_file_1 }} 
-                resizeMode="contain"
-              />
+              {claim.submitted_file_1.toLowerCase().includes('.pdf') ? (
+                <PdfContainer>
+                  <Feather name="file-text" size={32} color="#EF4444" />
+                  <PdfFileName>
+                    {claim.submitted_file_1.split('/').pop().split('?')[0]}
+                  </PdfFileName>
+                </PdfContainer>
+              ) : (
+                <ReceiptImage
+                  source={{ uri: claim.submitted_file_1 }}
+                  resizeMode="contain"
+                />
+              )}
             </ImageContainer>
           </>
         )}
@@ -210,7 +258,7 @@ const ClaimModalComponent = ({
   );
 };
 
-// Styled Components
+// Styled Components (remain the same as before)
 const ModalOverlay = styled.View`
   flex: 1;
   background-color: rgba(0, 0, 0, 0.5);
@@ -376,6 +424,20 @@ const ReceiptImage = styled.Image`
   width: 100%;
   height: 200px;
   background-color: #F3F4F6;
+`;
+
+const PdfContainer = styled.View`
+  padding: 20px;
+  align-items: center;
+  justify-content: center;
+  background-color: #F3F4F6;
+`;
+
+const PdfFileName = styled.Text`
+  margin-top: 8px;
+  font-size: 12px;
+  color: #374151;
+  text-align: center;
 `;
 
 export default ClaimModalComponent;
