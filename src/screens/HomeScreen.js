@@ -15,7 +15,6 @@ import RemarksInput from '../components/RemarkInput';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Sidebar from '../components/Sidebar';
-import useBackHandler from '../hooks/useBackHandler';
 import ErrorModal from '../components/ErrorModal';
 
 const { width, height } = Dimensions.get('window');

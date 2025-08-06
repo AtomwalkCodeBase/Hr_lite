@@ -51,6 +51,7 @@ const AuthScreen = () => {
     const [showPinInput, setShowPinInput] = useState(!showBiomatricOption);
     const [showFingerprint, setShowFingerprint] = useState(false);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+    const [hasFailedAttempt, setHasFailedAttempt] = useState(false);
     const appVersion = Constants.expoConfig?.version || '1.0.0';
     const maxAttempts = 5;
 
@@ -82,81 +83,92 @@ const AuthScreen = () => {
 
     const handleMPINChange = (text) => {
         setValue(text);
+        // Clear error messages and reset attempts when user starts typing
+        if (hasFailedAttempt || contextErrorMessage) {
+            setHasFailedAttempt(false);
+            setErrorMessage('');
+            setAttemptsRemaining(maxAttempts); // Reset attempts
+        }
     };
 
     const handleMPINSubmit = async () => {
-    const netInfo = await NetInfo.fetch();
-    if (!netInfo.isConnected) {
-        setIsNetworkError(true);
-        return;
-    }
+        const netInfo = await NetInfo.fetch();
+        if (!netInfo.isConnected) {
+            setIsNetworkError(true);
+            return;
+        }
 
-    const correctMPIN = await AsyncStorage.getItem('userPin');
-    const finalUsername = await AsyncStorage.getItem('empId');
-    const [token, expirationDateString] = await Promise.all([
-        AsyncStorage.getItem('userToken'),
-        AsyncStorage.getItem('tokenExpiration')
-    ]);
+        // Clear any previous errors
+        setErrorMessage('');
 
-    if (value === correctMPIN) {
-        try {
-            if (token && expirationDateString) {
-                const expirationDate = new Date(expirationDateString);
-                const now = new Date();
+        const correctMPIN = await AsyncStorage.getItem('userPin');
+        const finalUsername = await AsyncStorage.getItem('empId');
+        const [token, expirationDateString] = await Promise.all([
+            AsyncStorage.getItem('userToken'),
+            AsyncStorage.getItem('tokenExpiration')
+        ]);
 
-                if (now > expirationDate) {
+        if (value === correctMPIN) {
+            try {
+                setHasFailedAttempt(false);
+                if (token && expirationDateString) {
+                    const expirationDate = new Date(expirationDateString);
+                    const now = new Date();
+
+                    if (now > expirationDate) {
+                        await login(finalUsername, value, DbName);
+                    } else {
+                        await refreshProfileData();
+                    }
+                } else {
                     await login(finalUsername, value, DbName);
-                } else {
-                    // Explicitly wait for profile refresh before navigation
-                    await refreshProfileData();
                 }
-            } else {
-                await login(finalUsername, value, DbName);
+            } catch (error) {
+                console.error('Login error:', error);
+                setHasFailedAttempt(true);
             }
-        } catch (error) {
-            console.error('Login error:', error);
+        } else {
+            const remaining = attemptsRemaining - 1;
+            setAttemptsRemaining(remaining);
+            setHasFailedAttempt(true);
         }
-    } else {
-        const remaining = attemptsRemaining - 1;
-        setAttemptsRemaining(remaining);
-    }
-};
+    };
 
-   const handleBiometricAuthentication = async () => {
-    const finalUsername = await AsyncStorage.getItem('empId');
-    const userPassword = await AsyncStorage.getItem('userPin');
-    const [token, expirationDateString] = await Promise.all([
-        AsyncStorage.getItem('userToken'),
-        AsyncStorage.getItem('tokenExpiration')
-    ]);
+    const handleBiometricAuthentication = async () => {
+        const finalUsername = await AsyncStorage.getItem('empId');
+        const userPassword = await AsyncStorage.getItem('userPin');
+        const [token, expirationDateString] = await Promise.all([
+            AsyncStorage.getItem('userToken'),
+            AsyncStorage.getItem('tokenExpiration')
+        ]);
 
-    try {
-        const biometricAuth = await LocalAuthentication.authenticateAsync({
-            promptMessage: 'Authenticate to login',
-            fallbackLabel: 'Use PIN instead',
-        });
+        try {
+            const biometricAuth = await LocalAuthentication.authenticateAsync({
+                promptMessage: 'Authenticate to login',
+                fallbackLabel: 'Use PIN instead',
+            });
 
-        if (biometricAuth.success) {
-            if (token && expirationDateString) {
-                const expirationDate = new Date(expirationDateString);
-                const now = new Date();
+            if (biometricAuth.success) {
+                if (token && expirationDateString) {
+                    const expirationDate = new Date(expirationDateString);
+                    const now = new Date();
 
-                if (now > expirationDate) {
-                    // Token expired, perform fresh login which will fetch profile data
+                    if (now > expirationDate) {
+                        // Token expired, perform fresh login which will fetch profile data
+                        await login(finalUsername, userPassword, DbName);
+                    } else {
+                        // Token still valid, explicitly refresh profile data before navigation
+                        await refreshProfileData();
+                    }
+                } else {
+                    // No token found, perform fresh login
                     await login(finalUsername, userPassword, DbName);
-                } else {
-                    // Token still valid, explicitly refresh profile data before navigation
-                    await refreshProfileData();
                 }
-            } else {
-                // No token found, perform fresh login
-                await login(finalUsername, userPassword, DbName);
             }
+        } catch (err) {
+            console.error(err);
         }
-    } catch (err) {
-        console.error(err);
-    }
-};
+    };
 
     const handlePressForget = () => {
         router.push({
@@ -245,23 +257,32 @@ const AuthScreen = () => {
                             placeholderTextColor="#888"
                         />
 
-                        {contextErrorMessage && (
+                        {/* {contextErrorMessage && (
                             <View style={styles.errorContainer}>
                                 <Icon name="alert-circle-outline" size={16} color="#E02020" />
                                 <Text style={styles.errorText}>
                                     {contextErrorMessage}
                                 </Text>
                             </View>
+                        )} */}
+
+                        {(hasFailedAttempt || contextErrorMessage) && (
+                            <View style={styles.errorContainer}>
+                                <Icon name="alert-circle-outline" size={16} color="#E02020" />
+                                <Text style={styles.errorText}>
+                                    {contextErrorMessage || "Incorrect PIN. Please Try Again."}
+                                </Text>
+                            </View>
                         )}
 
-                        {attemptsRemaining < maxAttempts && !contextErrorMessage && (
+                        {/* {attemptsRemaining < maxAttempts && !contextErrorMessage && (
                             <View style={styles.errorContainer}>
                                 <Icon name="alert-circle-outline" size={16} color="#E02020" />
                                 <Text style={styles.errorText}>
                                     Incorrect PIN. Please Try Again.
                                 </Text>
                             </View>
-                        )}
+                        )} */}
 
                         <TouchableOpacity
                             style={[
@@ -288,9 +309,13 @@ const AuthScreen = () => {
                         {showBiomatricOption && (
                             <TouchableOpacity
                                 style={styles.backButton}
+                                // In the back button handlers:
                                 onPress={() => {
                                     setShowPinInput(false);
-                                    setErrorMessage(''); // Clear error when going back
+                                    setShowFingerprint(false);
+                                    setErrorMessage('');
+                                    setHasFailedAttempt(false);
+                                    setAttemptsRemaining(maxAttempts);
                                 }}
                             >
                                 <Icon name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
@@ -330,9 +355,13 @@ const AuthScreen = () => {
                         </Text>
                         <TouchableOpacity
                             style={styles.backButton}
+                            // In the back button handlers:
                             onPress={() => {
+                                setShowPinInput(false);
                                 setShowFingerprint(false);
-                                setErrorMessage(''); // Clear error when going back
+                                setErrorMessage('');
+                                setHasFailedAttempt(false);
+                                setAttemptsRemaining(maxAttempts);
                             }}
                         >
                             <Icon name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />

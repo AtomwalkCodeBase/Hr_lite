@@ -236,7 +236,14 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
     return `₹ ${integerPart}${decimalPart}`;
   };
   
-  const handleUpdate = () => onUpdate(claim);
+  // const handleUpdate = () => onUpdate(claim);
+
+  const handleUpdate = () => {
+  onUpdate({
+    ...claim,
+    isResubmit: status === 'B'
+  });
+};
 
   return (
     <ClaimCardContainer onPress={() => onPress(claim)} status={status}>
@@ -301,12 +308,12 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
           </ViewFileButton>
         )}
 
-        {(status === 'N' || status === 'B' && showUpdate) && (
-          <UpdateButton onPress={handleUpdate}>
-            <Ionicons name="create-outline" size={18} color="#fff" />
-            <UpdateButtonText>Update</UpdateButtonText>
-          </UpdateButton>
-        )}
+        {(status === 'N' || (status === 'B' && showUpdate)) && (
+  <UpdateButton onPress={handleUpdate}>
+    <Ionicons name={status === 'B' ? "repeat-outline" : "create-outline"} size={18} color="#fff" />
+    <UpdateButtonText>{status === 'B' ? "Resubmit" : "Update"}</UpdateButtonText>
+  </UpdateButton>
+)}
       </ButtonContainer2>
 
       {(status === 'A' || status === 'R') && claim.approved_date && (

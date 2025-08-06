@@ -27,8 +27,6 @@ import ErrorModal from '../components/ErrorModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
-import useBackHandler from '../hooks/useBackHandler';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');

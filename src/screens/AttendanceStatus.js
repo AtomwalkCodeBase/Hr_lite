@@ -1,8 +1,8 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
+import { BackHandler, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
@@ -191,6 +191,23 @@ const AttendanceStatus = ({ id: empId }) => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
+  useFocusEffect(
+      useCallback(() => {
+        const onBackPress = () => {
+          router.push({
+      pathname: '/attendance' 
+    });
+          return true;
+        };
+  
+        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+        return () => {
+          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+        };
+      }, [])
+    );
+
   useEffect(() => {
     const fetchData = async () => {
       const data = {
@@ -212,7 +229,7 @@ const AttendanceStatus = ({ id: empId }) => {
 
         setLastValidDate(new Date(currentYear, currentMonth, 1));
       } catch (error) {
-        setIsErrorVisible(true);
+        setIsErrorVisiable(true);
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);

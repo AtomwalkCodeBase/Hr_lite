@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, ScrollView, Switch } from 'react-native';
-import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppContext } from '../../context/AppContext';
 import { useNavigation, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,14 +15,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = () => {
-  const { profile, isLoading , logout } = useContext(AppContext);
+  const { profile, isLoading, logout } = useContext(AppContext);
   const [userPin, setUserPin] = useState(null);
   // const [isLoading, setIsLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-const [useFingerprint, setUseFingerprint] = useState(false);  // actual setting
-const [pendingValue, setPendingValue] = useState(null);        // for storing new value
-const [modalVisible, setModalVisible] = useState(false);       // controls confirmation modal
+  const [useFingerprint, setUseFingerprint] = useState(false);  // actual setting
+  const [pendingValue, setPendingValue] = useState(null);        // for storing new value
+  const [modalVisible, setModalVisible] = useState(false);       // controls confirmation modal
 
   const appVersion = Constants.expoConfig?.version || '0.0.1';
 
@@ -40,34 +40,34 @@ const [modalVisible, setModalVisible] = useState(false);       // controls confi
   }, []);
 
   useEffect(() => {
-  const fetchFingerprintPreference = async () => {
-    const stored = await AsyncStorage.getItem('useFingerprint');
-    if (stored !== null) {
-      const value = stored === 'true';
-      setUseFingerprint(value);
-    }
+    const fetchFingerprintPreference = async () => {
+      const stored = await AsyncStorage.getItem('useFingerprint');
+      if (stored !== null) {
+        const value = stored === 'true';
+        setUseFingerprint(value);
+      }
+    };
+    fetchFingerprintPreference();
+  }, []);
+
+
+  const handleSwitchToggle = (newValue) => {
+    setPendingValue(newValue); // Store intended value
+    setModalVisible(true);     // Show confirmation modal
   };
-  fetchFingerprintPreference();
-}, []);
-
-
-const handleSwitchToggle = (newValue) => {
-  setPendingValue(newValue); // Store intended value
-  setModalVisible(true);     // Show confirmation modal
-};
 
   const handleConfirm = async () => {
-  setUseFingerprint(pendingValue);
-  await AsyncStorage.setItem('useFingerprint', pendingValue.toString());
-  setModalVisible(false);
-  setPendingValue(null);
-};
+    setUseFingerprint(pendingValue);
+    await AsyncStorage.setItem('useFingerprint', pendingValue.toString());
+    setModalVisible(false);
+    setPendingValue(null);
+  };
 
-// Called when user cancels in modal
-const handleCancel = () => {
-  setModalVisible(false);
-  setPendingValue(null);
-};
+  // Called when user cancels in modal
+  const handleCancel = () => {
+    setModalVisible(false);
+    setPendingValue(null);
+  };
 
 
   const handlePressPassword = () => router.push({ pathname: 'ResetPassword' });
@@ -84,177 +84,177 @@ const handleCancel = () => {
     return require('../../assets/images/default-profile.jpg'); // Make sure you have this asset
   };
 
-  
+
   return (
     <>
-    <SafeAreaView>
-      <HeaderComponent headerTitle="Employee Profile" onBackPress={()=> navigate.goBack()} />
-      {isLoading ? (
-        <Loader visible={isLoading} />
-      ) : (
-        <ScrollView contentContainerStyle={styles.container}>
-          {/* Profile Header */}
-          <View style={styles.profileHeader}>
-            <TouchableOpacity 
-              style={styles.avatarContainer}
-              onPress={handleQRPress}>
-              <Image
-                source={profile?.image ? { uri: profile.image } : require('../../assets/images/default-profile.jpg')}
-                style={styles.profileImage}
-                onPress={handleQRPress}
-                onError={handleImageError}
-                defaultSource={require('../../assets/images/default-profile.jpg')}
-              />
-            </TouchableOpacity>
-            <View style={styles.profileTitle}>
-              <Text style={styles.userName}>{profile?.name || 'Employee Name'}</Text>
-              <Text style={styles.userPosition}>{profile?.grade_name || 'Position'}</Text>
-            </View>
-          </View>
-
-          {/* Action Buttons in Top Right */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity 
-              style={[styles.actionButtonSmall, styles.qrButton]}
-              onPress={() => router.push('IdCard')}>
-              {/* < size={24} color="#a970ff" /> */}
-              <MaterialIcons name="contact-page" size={20} color="#a970ff" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButtonSmall, styles.editButton]}
-              onPress={handlePressPassword}>
-              <MaterialIcons name="lock" size={20} color="#3498db" />
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButtonSmall, styles.logoutButton]}
-              onPress={() => setIsLogoutModalVisible(true)}>
-              <MaterialIcons name="logout" size={20} color="#FF0031" />
-            </TouchableOpacity>
-          </View>
-
-
-          {/* Employee Details Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>EMPLOYEE DETAILS</Text>
-            
-            <InfoRow 
-              icon="badge" 
-              label="Employee ID" 
-              value={profile?.emp_id || 'EMP-007'} 
-            />
-            <InfoRow 
-              icon="business" 
-              label="Department" 
-              value={profile?.department_name || 'BLR OFFICE'} 
-            />
-            {profile?.date_of_join && 
-            <InfoRow 
-              icon="date-range" 
-              label="Date of Joining" 
-              value={formatDate(profile?.date_of_join)} 
-            />}
-
-          </View>
-
-          {/* Contact Information Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>CONTACT INFORMATION</Text>
-            
-            <InfoRow 
-              icon="mail" 
-              label="Email" 
-              value={profile?.email_id || 'mail@gmail.com'} 
-            />
-            {profile?.mobile_number && <InfoRow 
-              icon="phone" 
-              label="Mobile" 
-              value={profile?.mobile_number} 
-            />}
-          </View>
-
-          {/* Leave Information */}
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>LEAVE INFORMATION</Text>
-            <InfoRow 
-              icon="event-available" 
-              label="Total Leaves" 
-              value={profile?.max_no_leave || 17} 
-            />
-          </View>
-          {/* Bio Matric switch */}
-
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>SECURITY SETTINGS</Text>
-            <View style={styles.switchRow}>
-              <MaterialIcons name="fingerprint" size={20} color="#7f8c8d" style={styles.infoIcon} />
-              <View style={styles.switchLabelContainer}>
-                <Text style={styles.bioLabel}>Use Fingerprint for Login</Text>
+      <SafeAreaView>
+        <HeaderComponent headerTitle="Employee Profile" onBackPress={() => navigate.goBack()} />
+        {isLoading ? (
+          <Loader visible={isLoading} />
+        ) : (
+          <ScrollView contentContainerStyle={styles.container}>
+            {/* Profile Header */}
+            <View style={styles.profileHeader}>
+              <TouchableOpacity
+                style={styles.avatarContainer}
+                onPress={handleQRPress}>
+                <Image
+                  source={profile?.image ? { uri: profile.image } : require('../../assets/images/default-profile.jpg')}
+                  style={styles.profileImage}
+                  onPress={handleQRPress}
+                  onError={handleImageError}
+                  defaultSource={require('../../assets/images/default-profile.jpg')}
+                />
+              </TouchableOpacity>
+              <View style={styles.profileTitle}>
+                <Text style={styles.userName}>{profile?.name || 'Employee Name'}</Text>
+                <Text style={styles.userPosition}>{profile?.grade_name || 'Position'}</Text>
               </View>
-              <Switch
-                value={useFingerprint}
-                onValueChange={handleSwitchToggle}
-                trackColor={{ false: "#dcdcdc", true: "#a970ff" }}
-                thumbColor={useFingerprint ? "#fff" : "#f4f3f4"}
+            </View>
+
+            {/* Action Buttons in Top Right */}
+            <View style={styles.actionButtonsContainer}>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, styles.qrButton]}
+                onPress={() => router.push('IdCard')}>
+                {/* < size={24} color="#a970ff" /> */}
+                <MaterialIcons name="contact-page" size={20} color="#a970ff" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, styles.editButton]}
+                onPress={handlePressPassword}>
+                <MaterialIcons name="lock" size={20} color="#3498db" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, styles.logoutButton]}
+                onPress={() => setIsLogoutModalVisible(true)}>
+                <MaterialCommunityIcons name="exit-run" size={24} color="#FF0031" />
+              </TouchableOpacity>
+            </View>
+
+
+            {/* Employee Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>EMPLOYEE DETAILS</Text>
+
+              <InfoRow
+                icon="badge"
+                label="Employee ID"
+                value={profile?.emp_id || 'EMP-007'}
               />
+              <InfoRow
+                icon="business"
+                label="Department"
+                value={profile?.department_name || 'BLR OFFICE'}
+              />
+              {profile?.date_of_join &&
+                <InfoRow
+                  icon="date-range"
+                  label="Date of Joining"
+                  value={formatDate(profile?.date_of_join)}
+                />}
 
             </View>
-          </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionContainer}>
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.primaryButton]}
-              onPress={handlePressPassword}
-            >
-              <MaterialIcons name="lock" size={20} color="#fff" />
-              <Text style={styles.buttonText}>{userPin ? 'UPDATE SECURITY PIN' : 'SET SECURITY PIN'}</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.secondaryButton]}
-              onPress={() => setIsLogoutModalVisible(true)}
-            >
-              <MaterialIcons name="logout" size={20} color="#e74c3c" />
-              <Text style={[styles.buttonText, styles.logoutText]}>LOGOUT</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.versionContainer}>
-          <Text style={styles.versionText}>
-            App Version: {appVersion}
-          </Text>
-        </View>
+            {/* Contact Information Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>CONTACT INFORMATION</Text>
 
-          {/* QR Modal */}
-          <QRModal
-            isVisible={isModalVisible}
-            onClose={handleCloseModal}
-            qrValue={profile?.emp_id || 'EMP-000'}
-          />
+              <InfoRow
+                icon="mail"
+                label="Email"
+                value={profile?.email_id || 'mail@gmail.com'}
+              />
+              {profile?.mobile_number && <InfoRow
+                icon="phone"
+                label="Mobile"
+                value={profile?.mobile_number}
+              />}
+            </View>
 
-          <ConfirmationModal
-            visible={isLogoutModalVisible}
-            message="Are you sure you want to logout?"
-            onConfirm={() => {
-              setIsLogoutModalVisible(false);
-              logout();
-            }}
-            onCancel={() => setIsLogoutModalVisible(false)}
-            confirmText="Logout"
-            cancelText="Cancel"
-          />
+            {/* Leave Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>LEAVE INFORMATION</Text>
+              <InfoRow
+                icon="event-available"
+                label="Total Leaves"
+                value={profile?.max_no_leave || 17}
+              />
+            </View>
+            {/* Bio Matric switch */}
 
-          <ConfirmationModal
-            visible={modalVisible}
-            message="Are you sure you want to change this setting?"
-            onConfirm={handleConfirm}
-            onCancel={handleCancel}
-          />
+            <View style={styles.section}>
+              <Text style={styles.sectionHeader}>SECURITY SETTINGS</Text>
+              <View style={styles.switchRow}>
+                <MaterialIcons name="fingerprint" size={20} color="#7f8c8d" style={styles.infoIcon} />
+                <View style={styles.switchLabelContainer}>
+                  <Text style={styles.bioLabel}>Use Fingerprint for Login</Text>
+                </View>
+                <Switch
+                  value={useFingerprint}
+                  onValueChange={handleSwitchToggle}
+                  trackColor={{ false: "#dcdcdc", true: "#a970ff" }}
+                  thumbColor={useFingerprint ? "#fff" : "#f4f3f4"}
+                />
+
+              </View>
+            </View>
+
+            {/* Action Buttons */}
+            <View style={styles.actionContainer}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.primaryButton]}
+                onPress={handlePressPassword}
+              >
+                <MaterialIcons name="lock" size={20} color="#fff" />
+                <Text style={styles.buttonText}>{userPin ? 'UPDATE SECURITY PIN' : 'SET SECURITY PIN'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton, styles.secondaryButton]}
+                onPress={() => setIsLogoutModalVisible(true)}
+              >
+                <MaterialCommunityIcons name="exit-run" size={20} color="#e74c3c" />
+                <Text style={[styles.buttonText, styles.logoutText]}>LOGOUT</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.versionContainer}>
+              <Text style={styles.versionText}>
+                App Version: {appVersion}
+              </Text>
+            </View>
+
+            {/* QR Modal */}
+            <QRModal
+              isVisible={isModalVisible}
+              onClose={handleCloseModal}
+              qrValue={profile?.emp_id || 'EMP-000'}
+            />
+
+            <ConfirmationModal
+              visible={isLogoutModalVisible}
+              message="Are you sure you want to logout?"
+              onConfirm={() => {
+                setIsLogoutModalVisible(false);
+                logout();
+              }}
+              onCancel={() => setIsLogoutModalVisible(false)}
+              confirmText="Logout"
+              cancelText="Cancel"
+            />
+
+            <ConfirmationModal
+              visible={modalVisible}
+              message="Are you sure you want to change this setting?"
+              onConfirm={handleConfirm}
+              onCancel={handleCancel}
+            />
 
 
-        </ScrollView>
-      )}
+          </ScrollView>
+        )}
       </SafeAreaView>
     </>
   );
@@ -404,15 +404,15 @@ const styles = StyleSheet.create({
   },
 
   switchRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingVertical: 10,
-},
-switchLabelContainer: {
-  flex: 1,
-  marginLeft: 15,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  switchLabelContainer: {
+    flex: 1,
+    marginLeft: 15,
+  },
 
   actionContainer: {
     padding: 20,
@@ -442,7 +442,7 @@ switchLabelContainer: {
   logoutText: {
     color: '#e74c3c',
   },
-   versionContainer: {
+  versionContainer: {
     padding: 5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -451,7 +451,7 @@ switchLabelContainer: {
     fontSize: 12,
     color: '#95a5a6',
   },
-  
+
 });
 
 export default ProfileScreen;

@@ -240,31 +240,30 @@ const HolidayScreen = () => {
     setHolidays(holidayMap);
   };
 
-  const handleHolidayAction = (date, actionType) => {
+  const handleHolidayAction = async (date, actionType) => {
     const [day, monthName, year] = date.split('-');
     const month = monthNameMap[monthName];
     const holidayDate = new Date(year, month, day);
     const currentDate = new Date();
-  
+
     // Check if the maximum optional holidays have already been opted
     const optedHolidaysCount = Object.values(holidays).flat().filter(holiday => holiday.is_opted).length;
     const maxOptionalHolidays = holidaydata?.no_optional_holidays;
-  
+
     if (actionType === 'opt' && optedHolidaysCount >= maxOptionalHolidays) {
       setErrorMessage("Already maximum optional holiday applied");
-      setErrorModalVisible(true); // Show error modal if max optional holidays reached
+      setErrorModalVisible(true);
       return;
     }
-  
+
     if (actionType === 'cancel' && holidayDate.setHours(0, 0, 0, 0) < currentDate.setHours(0, 0, 0, 0)) {
       setErrorMessage("You cannot cancel a holiday that has already passed.");
-      setErrorModalVisible(true); // Show ErrorModal if attempting to cancel a past holiday
+      setErrorModalVisible(true);
       return;
     }
-    
-  
+
     const formattedDate = `${day.padStart(2, '0')}-${(month + 1).toString().padStart(2, '0')}-${year}`;
-  
+
     const leavePayload = {
       emp_id: `${eId}`,
       from_date: formattedDate,
@@ -274,38 +273,34 @@ const HolidayScreen = () => {
       call_mode: actionType === 'opt' ? 'ADD' : 'CANCEL',
       hrm_lite: ''
     };
-  
+
     if (actionType === 'cancel') leavePayload.leave_id = '999999999';
-  
-    setIsLoading(true); // Set loader when action is initiated
-  
-    postEmpLeave(leavePayload)
-      .then(() => {
-        setSuccessMessage(`Holiday ${actionType === 'opt' ? 'applied successfully' : 'canceled successfully'}`);
-        setModalVisible(true); // Show success modal
-      })
-      .catch((error) => {
-        let errorMessage = 'Something went wrong. Please try again.';
-        
-        // If using Axios
-        if (error.response && error.response.data && error.response.data.message) {
-          errorMessage = error.response.data.message;
-        } 
-        // If using Fetch or generic error with a message
-        else if (error.message) {
-          errorMessage = error.message;
-        }
+
+    setIsLoading(true);
+
+    try {
+      await postEmpLeave(leavePayload);
+      setSuccessMessage(`Holiday ${actionType === 'opt' ? 'applied successfully' : 'canceled successfully'}`);
+      setModalVisible(true);
       
-        Alert.alert(
-          `Holiday ${actionType === 'opt' ? 'Application Failed' : 'Cancellation Failed'}`,
-          errorMessage
-        );
-      
-      })
-      
-      .finally(() => {
-        setIsLoading(false); // Reset loader after action completes
-      });
+      // Refetch data after successful action
+      const holidayRes = await getEmpHoliday({ year: currentYear, eId: String(eId) });
+      if (holidayRes.data) {
+        setHolidaydata(holidayRes.data);
+        processHolidayData(holidayRes.data);
+      }
+    } catch (error) {
+      let errorMessage = 'Something went wrong. Please try again.';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      setErrorMessage(errorMessage);
+      setErrorModalVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   
@@ -405,7 +400,7 @@ const HolidayScreen = () => {
         message={successMessage} 
         onClose={() => {
           setModalVisible(false);
-          router.push({ pathname: 'HolidayList' });
+          // router.push({ pathname: 'HolidayList' });
         }} 
       />
       <ErrorModal 

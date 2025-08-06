@@ -173,7 +173,6 @@ const ClaimScreen = (props) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [claimToDelete, setClaimToDelete] = useState(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  // const [selectedPeriod, setSelectedPeriod] = useState('CY'); // Default to Current Year
   const [pendingFilters, setPendingFilters] = useState({
   all: { status: null, claimId: null, period: 'CY' },
   drafts: { claimId: null, period: 'CY' }
@@ -255,13 +254,6 @@ const periodOptions = [
 const getCurrentFilters = () => {
   return activeTab === 'all' ? filters.all : filters.drafts;
 };
-
-// const setCurrentFilters = (newFilters) => {
-//   setFilters(prev => ({
-//     ...prev,
-//     [activeTab]: { ...prev[activeTab], ...newFilters }
-//   }));
-// };
 
   const updateStatusSummary = (claims) => {
     const summary = {
@@ -534,11 +526,17 @@ const filterClaims = () => {
     ? claim.claim_items[0] 
     : claim;
   
+  // Determine if this is a resubmission (status 'B')
+  const isResubmit = claimToEdit.expense_status === 'B';
+  
   router.push({
     pathname: 'ClaimApply',
     params: { 
       mode: 'EDIT',
-      claimData: JSON.stringify(claimToEdit),
+      claimData: JSON.stringify({
+        ...claimToEdit,
+        isResubmit // Add flag to indicate this is a resubmission
+      }),
       masterClaimId: claim.master_claim_id
     }
   });
@@ -739,33 +737,35 @@ const filterClaims = () => {
       </GroupHeader>
       
       {expandedGroups[item.master_claim_id] && (
-        <View style={{ padding: 12 }}>
-          {item.claim_items && item.claim_items.length > 0 ? (
-            item.claim_items.map((claimItem, index) => (
-              <ClaimCard 
-                key={`${claimItem.id}-${index}`}
-                claim={claimItem}
-                onPress={handleCardPress}
-                onViewFile={handleViewFile}
-                getStatusText={getStatusText}
-                onUpdate={() => promptUpdateClaim({
-                  ...claimItem,
-                  master_claim_id: item.master_claim_id
-                })}
-                style={{ 
-                  marginBottom: index === item.claim_items.length - 1 ? 0 : 8,
-                }}
-              />
-            ))
-          ) : (
-            <ClaimCard 
-              claim={item}
-              onPress={handleCardPress}
-              onViewFile={handleViewFile}
-              getStatusText={getStatusText}
-              onUpdate={() => promptUpdateClaim(item)}
-            />
-          )}
+    <View style={{ padding: 12 }}>
+      {item.claim_items && item.claim_items.length > 0 ? (
+        item.claim_items.map((claimItem, index) => (
+          <ClaimCard 
+            key={`${claimItem.id}-${index}`}
+            claim={claimItem}
+            onPress={handleCardPress}
+            onViewFile={handleViewFile}
+            getStatusText={getStatusText}
+            onUpdate={() => promptUpdateClaim({
+              ...claimItem,
+              master_claim_id: item.master_claim_id
+            })}
+            onDelete={() => promptDeleteClaim(claimItem)}
+            style={{ 
+              marginBottom: index === item.claim_items.length - 1 ? 0 : 8,
+            }}
+          />
+        ))
+      ) : (
+        <ClaimCard 
+          claim={item}
+          onPress={handleCardPress}
+          onViewFile={handleViewFile}
+          getStatusText={getStatusText}
+          onUpdate={() => promptUpdateClaim(item)}
+          onDelete={() => promptDeleteClaim(item)}
+        />
+      )}
           
           {isDraft && (
             <View style={{ flexDirection: 'row', marginTop: 12, gap: 8 }}>
