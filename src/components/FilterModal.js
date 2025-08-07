@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal, TouchableOpacity, View, Text, ScrollView, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DropdownPicker from "./DropdownPicker";
+import TabNavigation from "./TabNavigation";
 
 const FilterModal = ({
   visible,
@@ -12,6 +13,9 @@ const FilterModal = ({
   modalTitle = "Filters",
   applyButtonText = "Apply Filters",
   clearButtonText = "Clear Filters",
+  tabs = [],
+  activeTab,
+  setActiveTab,
 }) => {
   // Check if any filter has a selected value
   const hasSelectedFilters = filterConfigs.some(
@@ -34,10 +38,19 @@ const FilterModal = ({
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
+          
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
+            {tabs.length > 0 && (
+            <TabNavigation
+              tabs={tabs}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              style={styles.tabNavigation}
+            />
+          )}
             {filterConfigs.map((filter, index) => (
               <View key={index} style={styles.formGroup}>
                 <DropdownPicker
@@ -113,6 +126,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+  },
+  tabNavigation: {
+    marginBottom: 20,
   },
   formGroup: {
     marginBottom: 12,

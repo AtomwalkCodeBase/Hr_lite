@@ -319,21 +319,24 @@ const AttendanceStatus = ({ id: empId }) => {
     // Days of the current month
     for (let day = 1; day <= daysInMonth; day++) {
       const holidayStatus = holiday[day];
+      const attendanceStatus = attendance[day];
       let displayStatus = 'N';
       
-      if (holidayStatus === 'C') {
+      // Check if employee has checked in for this day first
+      if (attendanceStatus === 'A') {
+        displayStatus = 'P';
+      } else if (holidayStatus === 'C') {
         displayStatus = 'C';
       } else if (holidayStatus === 'H') {
         displayStatus = 'H';
       } else {
-        const attendanceStatus = attendance[day];
-        displayStatus = attendanceStatus === 'A' ? 'P' : attendanceStatus || 'N';
+        displayStatus = attendanceStatus || 'N';
       }
 
       days.push(
         <DayContainer key={day}>
           <DayText>{day}</DayText>
-          <StatusIndicator status={holidayStatus || attendance[day] || 'N'}>
+          <StatusIndicator status={displayStatus}>
             <StatusText>{displayStatus}</StatusText>
           </StatusIndicator>
         </DayContainer>

@@ -45,6 +45,9 @@ const TimeSheet = () => {
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [activeTab, setActiveTab] = useState('summary');
+  const [projectActiveTab, setProjectActiveTab] = useState('Assign Project');
+  const [filterActiveTab, setFilterActiveTab] = useState('Assign Project');
+  const [hasProjects, setHasProjects] = useState(false);
   const navigate = useNavigation();
   const route = useRouter();
   const [SubmitConfirmModalVisible, setSubmitConfirmModalVisible] = useState(false);
@@ -202,10 +205,23 @@ const TimeSheet = () => {
   const fetchProjectCategories = async (empId) => {
     try {
       const res = await getProjectlist(empId);
-      setProjects(res.data);
+      const data = res?.data || [];
+
+      if (data.length === 0 && empId) {
+        // No data for given EmpId → fallback to "Other Projects"
+        const fallbackRes = await getProjectlist(); // No empId
+        const fallbackData = fallbackRes?.data || [];
+        setProjects(fallbackData);
+        setHasProjects(false);
+        setProjectActiveTab('Other Projects');
+      } else {
+        setProjects(data);
+        setHasProjects(true);
+        setProjectActiveTab(empId ? 'Assign Project' : 'Other Projects');
+      }
     } catch (err) {
-      console.error("Error fetching projects:", err);
-      Alert.alert("Error", "Failed to fetch projects");
+      console.error("Error fetching project categories:", err);
+      Alert.alert("Error", "Failed to fetch project categories");
     }
   };
 
@@ -244,6 +260,11 @@ const TimeSheet = () => {
       getTimeSheetList();
     }
   }, [activeTab]);
+
+  // Sync filterActiveTab with projectActiveTab
+  useEffect(() => {
+    setFilterActiveTab(projectActiveTab);
+  }, [projectActiveTab]);
 
     const handleSubmit = async (callMode, timeFlags = {}) => {
       if (callMode !== 'APPROVE' && callMode !== 'REJECT') {
@@ -436,6 +457,7 @@ const TimeSheet = () => {
   const closeAddModal = () => {
     setShowAddModal(false);
     setEditingTask(null);
+    setProjectActiveTab('Assign Project');
     setFormData({
       project: "",
       activity: "",
@@ -501,7 +523,7 @@ const TimeSheet = () => {
       setValue: (value) => setPendingFilters((prev) => ({ ...prev, year: value, month: "" })),
     },
    
-  ], [pendingFilters, projects, activities, statuses, yearOptions, monthOptions]);
+  ], [pendingFilters, projects, activities, statuses, yearOptions, monthOptions, filterActiveTab]);
 
   useEffect(() => {
     let filtered = [...tasks];
@@ -628,7 +650,7 @@ const TimeSheet = () => {
         </View>
       )}
 
-      <AddEditTaskModal visible={showAddModal} onClose={closeAddModal} onSubmit={handleSubmit} isLoading={isLoading} formData={formData} setFormData={setFormData} editingTask={editingTask} projects={projects} activities={activities} />
+      <AddEditTaskModal visible={showAddModal} onClose={closeAddModal} onSubmit={handleSubmit} isLoading={isLoading} formData={formData} setFormData={setFormData} editingTask={editingTask} projects={projects} activities={activities} projectActiveTab={projectActiveTab} setProjectActiveTab={setProjectActiveTab} fetchProjectCategories={fetchProjectCategories} EmpId={EmpId} hasProjects={hasProjects} />
 
       <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
         onClearFilters={() => {
@@ -653,6 +675,21 @@ const TimeSheet = () => {
         onApplyFilters={() => {
           setFilters(pendingFilters);
           setShowFilterModal(false);
+        }}
+        tabs={hasProjects ? [
+          { label: 'Assign Project', value: 'Assign Project' },
+          { label: 'Other Projects', value: 'Other Projects' }
+        ] : []}
+        activeTab={filterActiveTab}
+        setActiveTab={(tab) => {
+          setProjectActiveTab(tab); // This will automatically sync filterActiveTab via useEffect
+          if (tab === 'Assign Project') {
+            fetchProjectCategories(EmpId); // With EmpId
+          } else {
+            fetchProjectCategories(""); // Without EmpId
+          }
+          // Clear the project filter when switching tabs
+          setPendingFilters(prev => ({ ...prev, project: "" }));
         }}
       />
 

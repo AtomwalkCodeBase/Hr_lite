@@ -7,10 +7,11 @@ import Loader from "./old_components/Loader";
 import ConfirmationModal from "./ConfirmationModal";
 import TimePicker from "./TimePicker";
 import ErrorModal from "./ErrorModal";
+import TabNavigation from "./TabNavigation";
 
 const { height } = Dimensions.get("window");
 
-const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, setFormData, editingTask, projects, activities }) => {
+const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, setFormData, editingTask, projects, activities, projectActiveTab, setProjectActiveTab, fetchProjectCategories, EmpId, hasProjects }) => {
   const [isConfirmModalVisible, setIsConfirmModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isErrorModalVisible, setIsErrorModalVisible] = useState(false);
@@ -144,10 +145,29 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
           </View>
+
+               
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
+            {hasProjects && (
+              <TabNavigation
+                tabs={[
+                  { label: 'Assign Project', value: 'Assign Project' },
+                  { label: 'Other Projects', value: 'Other Projects' }
+                ]}
+                activeTab={projectActiveTab}
+                setActiveTab={(tab) => {
+                  setProjectActiveTab(tab);
+                  if (tab === 'Assign Project') {
+                    fetchProjectCategories(EmpId); // With EmpId
+                  } else {
+                    fetchProjectCategories(""); // Without EmpId
+                  }
+                }}
+              />
+            )}  
             {projects.length > 0 && (
               <DropdownPicker
                 label="Project *"
@@ -297,7 +317,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
   modalTitle: {
     fontSize: 18,

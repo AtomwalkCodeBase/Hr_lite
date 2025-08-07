@@ -643,6 +643,8 @@ const filterClaims = () => {
         return 'BACK TO CLAIMANT';
       case 'R':
         return 'REJECTED';
+      case 'P':
+        return 'SETTLE';
       default:
         return status === 'A' ? 'APPROVED' : 'PENDING';
     }
