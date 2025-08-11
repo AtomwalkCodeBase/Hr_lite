@@ -38,6 +38,7 @@ export default function RootLayout() {
       <Stack.Screen name="EmployeeList/index" options={{headerShown:false}}/>
       <Stack.Screen name="ResolveScreen/index" options={{headerShown:false}}/>
       <Stack.Screen name="ResolveRequestScreen/index" options={{headerShown:false}}/>
+      <Stack.Screen name="TravelScreen/index" options={{headerShown:false}}/>
     </Stack>
     
     </AppProvider>

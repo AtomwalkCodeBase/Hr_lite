@@ -113,6 +113,12 @@ const MorePage = () => {
       params: { empId },
     });
   };
+  const handlePressTravelRequest = () => {  
+    router.push({
+      pathname: 'TravelScreen',
+      params: { empId },
+    });
+  };
 
   const handlePressRequest = () => {  
     router.push({
@@ -185,7 +191,7 @@ const handlePressProfile = () => {
     {
       title: "Help Desk",
       subTitle: "Raise your concern at Help Desk",
-      icon: <Feather name="help-circle" size={24} color="#7e57c2" />,
+      icon: <MaterialCommunityIcons name="handshake-outline" size={24} color="#7e57c2" />,
       action: handlePressHelp,
       show: true
     },
@@ -203,13 +209,13 @@ const handlePressProfile = () => {
       action: handlePressResolve,
       show: true
     },
-  // {
-  //   title: "Resolve Help & request",
-  //   subTitle: "Resolve your Help & request",
-  //   icon: <AntDesign name="customerservice" size={24} color="#7e57c2" />,
-  //   action: handlePressResolve,
-  //   show: true
-  // },
+    {
+    title: "Travel Request",
+    subTitle: "Submit and track your travel Request",
+    icon: <MaterialCommunityIcons name="airplane" size={24} color="#7e57c2" />,
+    action: handlePressTravelRequest,
+    show: true
+  },
   {
     title: "Event Updates",
     subTitle: "Get your recent updates and events",

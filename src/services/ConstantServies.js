@@ -96,6 +96,17 @@ export const getEmployeeRequestList = async () => {
   const db_name = await getDbName();
   return `${newendpoint}/get_employee_request/${db_name}/`;
 };
+
+export const getEmployeeTravelList = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_travel_request_list/${db_name}/`;
+};
+
+export const getTravelMode = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/travel_mode_list/${db_name}/`;
+};
+
 export const getEmployeeRequestCategory = async () => {
   const db_name = await getDbName();
   return `${newendpoint}/get_request_category/${db_name}/`;

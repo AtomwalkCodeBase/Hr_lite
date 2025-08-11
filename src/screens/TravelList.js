@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   Dimensions,
   StyleSheet,
@@ -12,12 +11,13 @@ import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
-import { getEmployeeRequest, getRequestCategory } from '../services/productServices';
+import { getEmployeeTravel } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
-import RequestCard from '../components/RequestCard';
 import ModalComponent from '../components/ModalComponent';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FilterModal from '../components/FilterModal';
+import TravelCard from '../components/TravelCard';
+import TravelModal from '../components/TravelModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,23 +25,26 @@ const responsiveWidth = (percentage) => width * (percentage / 100);
 const responsiveHeight = (percentage) => height * (percentage / 100);
 const responsiveFontSize = (percentage) => Math.round(width * (percentage / 100));
 
-const RequestScreen = (props) => {
+const TravelList = (props) => {
   const router = useRouter();
   const navigate = useNavigation();
-  const call_type = 'R';
-  const [helpCategories, setHelpCategories] = useState([]);
-  const [helpData, setHelpData] = useState([]);
-  const [filteredHelps, setFilteredHelps] = useState([]);
+  const [filteredTravels, setFilteredTravels] = useState([]);
   const [empId, setEmpId] = useState(props?.data?.empId || ""); 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filteredHelpCategories, setFilteredHelpCategories] = useState([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filters, setFilters] = useState({ category: "", status: "" });
-  const [pendingFilters, setPendingFilters] = useState({ category: "", status: "" });
-    
+  const [filters, setFilters] = useState({ 
+    status: "", 
+    mode: "",
+    project: "" 
+  });
+  const [pendingFilters, setPendingFilters] = useState({ 
+    status: "", 
+    mode: "",
+    project: ""
+  });
     
   const appliedFilterCount = Object.values(filters).filter(v => v && v !== "").length;
 
@@ -54,7 +57,7 @@ const RequestScreen = (props) => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      await Promise.all([fetchRequestCategory(), fetchRequest()]);
+      await fetchTravelRequest();
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -63,40 +66,22 @@ const RequestScreen = (props) => {
     }
   };
 
-  const fetchRequestCategory = async () => {
+  const fetchTravelRequest = async () => {
     try {
-      const res = await getRequestCategory();
-      setHelpCategories(res.data);
-      const filtered = res.data.filter(category => category.request_type === 'R');
-      setFilteredHelpCategories(filtered);
+      const res = await getEmployeeTravel(empId);
+      setFilteredTravels(res.data);
     } catch (err) {
-      console.error("Error fetching categories:", err);
-    }
-  };
-
-  const fetchRequest = async () => {
-    try {
-      const res = await getEmployeeRequest();
-      setHelpData(res.data);
-      const filtered = res.data.filter(
-        (request) => 
-          request.request_type === 'R' && 
-          request.emp_id === empId
-      );
-      setFilteredHelps(filtered);
-    } catch (err) {
-      console.error("Error fetching requests:", err);
+      console.error("Error fetching travel requests:", err);
     }
   };
 
   useFocusEffect(
     React.useCallback(() => {
       if (empId) {
-        fetchRequest();
+        fetchTravelRequest();
       }
     }, [empId])
   );
-
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -112,28 +97,35 @@ const RequestScreen = (props) => {
     setIsModalVisible(false);
     setSelectedRequest(null);
   };
+
+  const handleCancelRequest = () => {
+    setIsModalVisible(false);
+    setSelectedRequest(null);
+  };
   
-  const handleCreateRequest = () => {  
-    router.push({
-      pathname: 'AddHelp',
-      params: {
-        empId,
-        call_type
-      },
-    });
+  const handleTravelAction = (mode, travelId = null, travelData = null) => {
+  const params = {
+    mode: mode || 'ADD', // Default to ADD if no mode specified
+    empId: empId, // Always include the employee ID
   };
 
-  const handleUpdateRequest = (item) => {
-    router.push({
-      pathname: 'AddHelp',
-      params: {
-        empId,
-        call_type,
-        item: JSON.stringify(item),
-        headerTitle: "Update Request",
-      },
-    });
-  };
+  if (travelId) {
+    params.travelId = travelId;
+  }
+
+  if (travelData) {
+    params.travelData = JSON.stringify(travelData);
+  }
+
+  router.push({
+    pathname: 'TravelForm',
+    params
+  });
+};
+
+// Then you can use it for both create and update:
+const handleCreateRequest = () => handleTravelAction('ADD');
+const handleUpdateRequest = (item) => handleTravelAction('EDIT', item.travel_id, item);
 
 
   function getDropdownOptions(data, key) {
@@ -141,45 +133,70 @@ const RequestScreen = (props) => {
     return uniqueValues.map(value => ({ label: value, value }));
   }
 
-const displayedHelps = useMemo(() => {
-  return filteredHelps.filter(item => {
-    const matchesCategory = !filters.category || item.request_sub_type === filters.category;
-    const matchesStatus = !filters.status || item.status_display === filters.status;
+  function getProjectOptions(data) {
+  const projects = data.map(item => ({
+    label: `${item.project_name} (${item.project_code})`,
+    value: item.project_code
+  }));
+  
+  // Convert the Map values to an array
+  return Array.from(
+    new Map(projects.map(item => [item.value, item])).values()
+  );
+}
 
-    return matchesCategory && matchesStatus;
-  });
-}, [filteredHelps, filters]);
+  const displayedTravels = useMemo(() => {
+    return filteredTravels.filter(item => {
+      const matchesStatus = !filters.status || item.status_display === filters.status;
+      const matchesMode = !filters.mode || item.travel_mode === filters.mode;
+      const matchesProject = !filters.project || item.project_code === filters.project;
 
+      return matchesStatus && matchesMode && matchesProject;
+    });
+  }, [filteredTravels, filters]);
 
-const filterConfigs = useMemo(() => [
-  {
-    label: "Category",
-    options: getDropdownOptions(filteredHelpCategories, "name"),
-    value: pendingFilters.category,
-    setValue: (value) => setPendingFilters((prev) => ({ ...prev, category: value })),
-  },
-  {
-    label: "Status",
-    options: getDropdownOptions(filteredHelps, "status_display"),
-    value: pendingFilters.status,
-    setValue: (value) => setPendingFilters((prev) => ({ ...prev, status: value })),
-  }
-], [pendingFilters]);
-
+  const filterConfigs = useMemo(() => [
+    {
+      label: "Status",
+      options: getDropdownOptions(filteredTravels, "status_display"),
+      value: pendingFilters.status,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, status: value })),
+    },
+    {
+      label: "Travel Mode",
+      options: getDropdownOptions(filteredTravels, "travel_mode"),
+      value: pendingFilters.mode,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, mode: value })),
+    },
+    {
+      label: "Project",
+      options: [...getProjectOptions(filteredTravels)],
+      value: pendingFilters.project,
+      setValue: (value) => setPendingFilters((prev) => ({ ...prev, project: value })),
+    }
+  ], [pendingFilters, filteredTravels]);
 
   const openFilterModal = () => {
     setPendingFilters(filters);
     setShowFilterModal(true);
   };
 
+  const renderTravelCard = ({ item }) => (
+    <TravelCard 
+      item={item}
+      onPress={() => handleCardPress(item)}
+      onUpdate={() => handleUpdateRequest(item)}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-        headerTitle="Request Desk" 
+        headerTitle="Travel Requests" 
         onBackPress={() => navigate.goBack()} 
         showActionButton={false}
         icon1Name="filter"
-        icon1OnPress={openFilterModal}
+        icon1OnPress={filteredTravels.length > 0 ? openFilterModal : null} // Hide filter when no data
         filterCount={appliedFilterCount}
       />
       <View style={styles.container}>
@@ -197,26 +214,19 @@ const filterConfigs = useMemo(() => [
               />
             }
           >
-            {displayedHelps.length > 0 ? (
+            {displayedTravels.length > 0 ? (
               <FlatList
-                data={displayedHelps}
-                renderItem={({ item }) => (
-                  <RequestCard 
-                    item={item}
-                    onPress={() => handleCardPress(item)}
-                    onUpdate={() => handleUpdateRequest(item)}
-                    // onResolve={() => handleResolveRequest(item)}
-                  />
-                )}
-                keyExtractor={(item) => item.id.toString()}
+                data={displayedTravels}
+                renderItem={renderTravelCard}
+                keyExtractor={(item) => item.travel_id}
                 scrollEnabled={false}
                 contentContainerStyle={styles.listContent}
               />
             ) : (
               <EmptyMessage 
-                message="No help requests found"
-                subMessage="Tap the button below to create a new request"
-                iconName="help-circle"
+                message="No travel requests found"
+                subMessage="Tap the button below to create a new travel request"
+                iconName="flight"
               />
             )}
           </ScrollView>
@@ -224,30 +234,36 @@ const filterConfigs = useMemo(() => [
 
         <ApplyButton             
           onPress={handleCreateRequest}
-          buttonText="Create New Request"
+          buttonText="Create Travel Request"
           iconName="add"
         />
       </View>
       
-      <ModalComponent
+      <TravelModal
         isVisible={isModalVisible}
-        helpRequest={selectedRequest}
+        travelRequest={selectedRequest}
         onClose={closeModal}
+        onCancelRequest={handleCancelRequest}
+        showCancelButton={selectedRequest?.status_display === "Submitted"}
       />
 
-      <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
+      <FilterModal 
+        visible={showFilterModal} 
+        onClose={() => setShowFilterModal(false)}
         onClearFilters={() => {
           setPendingFilters({
-            category: "",
             status: "",
+            mode: "",
+            project: ""
           });
           setFilters({
-            category: "",
             status: "",
+            mode: "",
+            project: ""
           });
         }}
         filterConfigs={filterConfigs}
-        modalTitle="Filter TimeSheet"
+        modalTitle="Filter Travel Requests"
         onApplyFilters={() => {
           setFilters(pendingFilters);
           setShowFilterModal(false);
@@ -260,11 +276,11 @@ const filterConfigs = useMemo(() => [
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: responsiveWidth(4),
   },
   contentContainer: {
@@ -276,7 +292,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: responsiveHeight(2),
+    paddingTop: responsiveHeight(1),
   },
 });
 
-export default RequestScreen;
+export default TravelList;
