@@ -187,4 +187,9 @@ export const validateApproveLimit = async () => {
   return`${newendpoint}/get_claim_approve_limit_data/${db_name}/`;
 };
 
+export const postTravelRequest = async () => {
+  const db_name = await getDbName();
+  return`${newendpoint}/process_travel_request/${db_name}/`;
+};
+
 

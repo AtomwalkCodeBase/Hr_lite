@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet, profileDtlURL, validateApproveLimit, getEmployeeTravelList, getTravelMode } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet, profileDtlURL, validateApproveLimit, getEmployeeTravelList, getTravelMode, postTravelRequest } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
@@ -275,4 +275,14 @@ export async function getProjectlist(empId) {
 export async function getEmplyoeeList() {
   const url = await profileDtlURL();
   return authAxios(url);
+}
+
+export async function postTravel(res) {
+  let data = {};
+  if (res) {
+    data['travel_data'] = res;
+  }
+  const url = await postTravelRequest();
+  // console.log('Data to be sent:', data);
+  return authAxiosPost(url, data)
 }

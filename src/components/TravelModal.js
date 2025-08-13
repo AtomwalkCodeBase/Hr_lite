@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, View, StyleSheet } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../Styles/appStyle';
+import ConfirmationModal from './ConfirmationModal';
 
 const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showCancelButton }) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   // Format currency in Indian style
   const formatIndianCurrency = (num) => {
     if (!num && num !== 0) return null;
@@ -64,7 +67,7 @@ const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showC
         backgroundColor = '#E3F2FD';
         textColor = '#1565C0';
         break;
-      case 'pending':
+      case 'draft':
         backgroundColor = '#FFF8E1';
         textColor = '#FF8F00';
         break;
@@ -103,42 +106,56 @@ const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showC
     );
   };
 
+  // DRY method: Create travel payload with configurable call mode
+  const createTravelPayload = (callMode) => {
+    return {
+      call_mode: callMode,
+      emp_id: travelRequest.emp_id,
+      travel_mode: travelRequest.travel_mode,
+      to_city: travelRequest.to_city,
+      remarks: travelRequest.remarks,
+      start_date: travelRequest.start_date,
+      end_date: travelRequest.end_date,
+      is_accommodation: travelRequest.is_accommodation,
+      advance_required: travelRequest.advance_required,
+      advance_amt: travelRequest.advance_amt,
+      travel_purpose: travelRequest.travel_purpose,
+      project_code: travelRequest.project_code,
+      travel_id: travelRequest.travel_id
+    };
+  };
+
+  // Handle cancel request confirmation
+  const handleCancelConfirm = () => {
+    setShowConfirmModal(false);
+    const cancelPayload = createTravelPayload('CANCEL');
+    onCancelRequest(cancelPayload);
+    onClose();
+  };
+
   // Render all details in a compact layout
-  const renderDetails = () => {
+const renderDetails = () => {
   if (!travelRequest) return null;
 
   const detailConfigs = [
-    { 
-      label: 'Travel ID', 
-      value: travelRequest.travel_id,
-      isHeader: true
-    },
-    {
-      label: 'Employee',
-      value: travelRequest.employee_name,
-    },
-    {
-      label: 'Destination',
-      value: travelRequest.to_city,
-    },
+    { label: 'Travel ID', value: travelRequest.travel_id },
+    { label: 'Employee', value: travelRequest.employee_name },
+    { label: 'Destination', value: travelRequest.to_city },
     {
       label: 'Travel Mode',
-      value: renderTravelMode(),
+      value: renderTravelMode(), // JSX
       customComponent: true,
       isCompact: true
     },
     {
       label: 'Duration',
-      value: `${travelRequest.start_date} to ${travelRequest.end_date}`,
+      value: `${travelRequest.start_date} to ${travelRequest.end_date}`
     },
     {
       label: 'Project',
-      value: `${travelRequest.project_name} (${travelRequest.project_code})`,
+      value: `${travelRequest.project_name ? `${travelRequest.project_name} (${travelRequest.project_code})` : "--"}`
     },
-    {
-      label: 'Purpose',
-      value: travelRequest.travel_purpose,
-    },
+    { label: 'Purpose', value: travelRequest.travel_purpose },
     travelRequest.advance_required && {
       label: 'Advance Amount',
       value: formatIndianCurrency(travelRequest.advance_amt),
@@ -146,7 +163,6 @@ const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showC
     },
     {
       label: 'Status',
-      value: travelRequest.status_display,
       customComponent: true,
       component: renderStatusBadge(travelRequest.status_display)
     },
@@ -166,25 +182,32 @@ const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showC
     <DetailsContainer>
       {detailConfigs.map((item, index) => (
         <React.Fragment key={index}>
-          {item.isHeader && <HeaderDivider />}
           
+          {/* HEADER ROW */}
+          {item.isHeader && (
+            <>
+              {/* <HeaderDivider /> */}
+              <HeaderLabel>{item.label}</HeaderLabel>
+            </>
+          )}
+
+          {/* NORMAL DETAIL ROW */}
           <DetailRow compact={item.isCompact}>
             <DetailLabel>{item.label}:</DetailLabel>
-            {item.customComponent ? (
-              item.component || item.value
-            ) : (
-              <DetailValue isCurrency={item.isCurrency}>
-                {item.value}
-              </DetailValue>
-            )}
+            {item.customComponent
+              ? item.component || item.value
+              : <DetailValue isCurrency={item.isCurrency}>{item.value}</DetailValue>
+            }
           </DetailRow>
-          
-          {item.isFooter && <FooterDivider />}
+
+          {/* FOOTER ROW */}
+          {/* {item.isFooter && <FooterDivider />} */}
         </React.Fragment>
       ))}
     </DetailsContainer>
   );
 };
+
 
   // Action button logic
   const getActionButton = () => {
@@ -197,33 +220,46 @@ const TravelModal = ({ isVisible, travelRequest, onClose, onCancelRequest, showC
     }
 
     return (
-      <ActionButton onPress={() => { onCancelRequest(travelRequest); onClose(); }} danger>
+      <ActionButton onPress={() => setShowConfirmModal(true)} danger>
         <ActionButtonText>CANCEL REQUEST</ActionButtonText>
       </ActionButton>
     );
   };
 
   return (
-    <Modal visible={isVisible} transparent={true} animationType="fade">
-      <ModalOverlay>
-        <ModalContent>
-          <ModalHeader>
-            <ModalTitle>Travel Request Details</ModalTitle>
-            <CloseButton onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#6B7280" />
-            </CloseButton>
-          </ModalHeader>
+    <>
+      <Modal visible={isVisible} transparent={true} animationType="fade">
+        <ModalOverlay>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Travel Request Details</ModalTitle>
+              <CloseButton onPress={onClose}>
+                <MaterialIcons name="close" size={24} color="#6B7280" />
+              </CloseButton>
+            </ModalHeader>
 
-          <ModalBody>
-            {renderDetails()}
-          </ModalBody>
+            <ModalBody>
+              {renderDetails()}
+            </ModalBody>
 
-          <ModalFooter>
-            {getActionButton()}
-          </ModalFooter>
-        </ModalContent>
-      </ModalOverlay>
-    </Modal>
+            <ModalFooter>
+              {getActionButton()}
+            </ModalFooter>
+          </ModalContent>
+        </ModalOverlay>
+      </Modal>
+
+      <ConfirmationModal
+        visible={showConfirmModal}
+        message="Are you sure you want to cancel this travel request?"
+        onConfirm={handleCancelConfirm}
+        onCancel={() => setShowConfirmModal(false)}
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep"
+        color="#EF4444"
+        headerTitle="Cancel Travel Request"
+      />
+    </>
   );
 };
 
@@ -256,6 +292,14 @@ const ModalHeader = styled.View`
   border-bottom-width: 1px;
   border-bottom-color: #E5E7EB;
   background-color: #F9FAFB;
+`;
+
+const HeaderLabel = styled.Text`
+   fontSize: 18px;
+      fontWeight: bold;
+      marginBottom: 0.5rem;
+      borderBottom: 2px solid #ccc;
+      paddingBottom: 0.25rem
 `;
 
 const ModalTitle = styled.Text`

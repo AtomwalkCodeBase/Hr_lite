@@ -27,8 +27,8 @@ const SwitchContainer = styled.View`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 15px;
   background-color: #f5f5f5;
+  padding-horizontal: 5px;
   border-radius: 8px;
   margin-bottom: 15px;
   margin-top: 15px;
@@ -70,6 +70,33 @@ const ProcessTravel = (props) => {
         });
     }, [navigation]);
 
+    const parseTaskDate = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') {
+            console.log('parseTaskDate: Invalid date string:', dateStr);
+            return null;
+        }
+        const regex = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/;
+        const match = dateStr.match(regex); 
+        if (!match) {
+            console.log('parseTaskDate: Date format does not match DD-MMM-YYYY pattern');
+            return null;
+        }   
+        const [, day, mon, year] = match;
+        const monthMap = {
+          Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+          Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11,
+        };
+        const month = monthMap[mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase()];
+        if (month === undefined) {
+            return null;
+        } 
+        const parsedDate = new Date(Number(year), month, Number(day));
+        if (isNaN(parsedDate.getTime())) {
+            return null;
+        }
+        return parsedDate;
+    };
+
     useEffect(() => {
         fetchModeList();
         fetchProjectList();
@@ -85,17 +112,19 @@ const ProcessTravel = (props) => {
             setAdvanceRequired(parsedTravelData.advance_required || false);
             setAdvanceAmount(parsedTravelData.advance_amt || '');
 
-            // Parse dates from backend format (DD-MM-YYYY)
             if (parsedTravelData.start_date) {
-                const [day, month, year] = parsedTravelData.start_date.split('-');
-                setStartDate(new Date(year, month - 1, day));
+                const parsedStartDate = parseTaskDate(parsedTravelData.start_date);
+                if (parsedStartDate) {
+                    setStartDate(parsedStartDate);
+                }
             }
             if (parsedTravelData.end_date) {
-                const [day, month, year] = parsedTravelData.end_date.split('-');
-                setEndDate(new Date(year, month - 1, day));
+                const parsedEndDate = parseTaskDate(parsedTravelData.end_date);
+                if (parsedEndDate) {
+                    setEndDate(parsedEndDate);
+                }
             }
 
-            // Set project if available
             if (parsedTravelData.project_code) {
                 setProject(parsedTravelData.project_code);
             }
@@ -156,7 +185,7 @@ const handleBackPress = () => {
         setErrors(prevState => ({ ...prevState, [input]: error }));
     };
 
-    const validate = () => {
+    const validate = (mode) => {
         Keyboard.dismiss();
         let isValid = true;
 
@@ -196,56 +225,87 @@ const handleBackPress = () => {
         }
 
         if (isValid) {
-            handleSubmit();
+            handleSubmit(mode);
         }
     };
 
-//     setIsLoading(true);
+  const getButtonsConfig = (isEditMode, status) => {
+    // const safeStatus = status || "";
 
-//     const formatDate = (date) => {
-//         const day = date.getDate().toString().padStart(2, '0');
-//         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-//         const year = date.getFullYear();
-//         return `${day}-${month}-${year}`;
-//     };
+    if (isEditMode) {
+    //   if (safeStatus === "S") {
+    //     return [
+    //       { label: "Update", mode: "UPDATE_DRAFT" },
+    //       // { label: "Submit", mode: "UPDATE_SUBMIT" }
+    //     ];
+    //   }
+      return [
+        { label: "Save as Draft", mode: "UPDATE_DRAFT" },
+        { label: "Update and Submit", mode: "UPDATE_SUBMIT" }
+      ];
+    }
+    return [
+      { label: "Save as Draft", mode: "SAVE_DRAFT" },
+      { label: "Submit request", mode: "SUBMIT" }
+    ];
+  };
 
-//     const travelPayload = {
-//         call_mode: isEditMode ? 'UPDATE_SUBMIT' : 'SAVE_DRAFT',
-//         emp_id: empId,
-//         travel_mode: travelMode,
-//         to_city: toCity,
-//         remarks: remarks,
-//         start_date: formatDate(startDate),
-//         end_date: formatDate(endDate),
-//         is_accommodation: `${isAccommodation}`,
-//         advance_required: `${advanceRequired}`,
-//         advance_amt: advanceRequired ? advanceAmount : '0',
-//         travel_purpose: travelPurpose,
-//         project_code: project || '',
-//         a_emp_id: 'EMP_001'
-//     };
+  const getCallMode = (isEditMode, status, mode) => {
+    const safeStatus = status || "";
 
-//     if (isEditMode && parsedTravelData?.travel_id) {
-//         travelPayload.travel_id = parsedTravelData.travel_id;
-//     }
+    if (isEditMode) {
+      return safeStatus === "S" ? "UPDATE_SUBMIT" : "UPDATE_DRAFT";
+    }
+    return mode;
+  };
 
-//     try {
-//         const res = await postTravel({ travel_data: travelPayload });
-//         if (res.status === 200) {
-//             setIsSuccessModalVisible(true);
-//         } else {
-//             console.error('Unexpected response:', res);
-//             Alert.alert('Error', 'Failed to submit travel request');
-//         }
-//     } catch (error) {
-//         Alert.alert('Error', error.response?.data?.message || 'Failed to submit travel request');
-//     } finally {
-//         setIsLoading(false);
-//     }
-// };
+    const handleSubmit = async(mode) =>{
+        // Alert.alert('Submit clicked')
 
-    const handleSubmit = () =>{
-        Alert.alert('Submit clicked')
+    const formatDate = (date) => {
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    };
+
+    const travelPayload = {
+        call_mode: getCallMode(isEditMode, parsedTravelData ? parsedTravelData.status : "", mode),
+        emp_id: empId,
+        travel_mode: travelMode,
+        to_city: toCity,
+        remarks: remarks,
+        start_date: formatDate(startDate),
+        end_date: formatDate(endDate),
+        is_accommodation: isAccommodation,
+        advance_required: advanceRequired,
+        advance_amt: advanceRequired ? advanceAmount : '0',
+        travel_purpose: travelPurpose,
+        project_code: project || '',
+    };
+
+    if (isEditMode && parsedTravelData?.travel_id) {
+        travelPayload.travel_id = parsedTravelData.travel_id;
+    }
+
+    console.log(travelPayload)
+
+         setIsLoading(true);
+
+    try {
+        const res = await postTravel(travelPayload);
+        if (res.status === 200) {
+            setIsSuccessModalVisible(true);
+        // } else {
+        //     console.error('Unexpected response:', res);
+        //     Alert.alert('Error', 'Failed to submit travel request');
+        }
+    } catch (error) {
+        Alert.alert('Error', error.response.data?.message || 'Failed to submit travel request');
+        console.error(error.response.data?.message)
+    } finally {
+        setIsLoading(false);
+    }
     }
 
     return (
@@ -310,7 +370,7 @@ const handleBackPress = () => {
                         disabled={isViewMode}
                     />
 
-                    <Input
+                    {/* <Input
                         label="Destination City"
                         iconName="map-marker"
                         value={toCity}
@@ -318,9 +378,18 @@ const handleBackPress = () => {
                         error={errors.toCity}
                         editable={!isViewMode}
                         placeholder="Enter destination city"
-                    />
+                    /> */}
 
-                    <Input
+                              <RemarksTextArea
+                              labelFiled="Destination City"
+                              placeholder="Enter destination city"
+                                remark={toCity}
+                                setRemark={setToCity}
+                                error={errors.toCity}
+                                disabled={isViewMode}
+                            />
+
+                    {/* <Input
                         label="Travel Purpose"
                         iconName="text-subject"
                         value={travelPurpose}
@@ -328,7 +397,16 @@ const handleBackPress = () => {
                         error={errors.travelPurpose}
                         editable={!isViewMode}
                         placeholder="Enter purpose of travel"
-                    />
+                    /> */}
+
+                    <RemarksTextArea
+                              labelFiled="Travel Purpose"
+                              placeholder="Enter purpose of travel"
+                                remark={travelPurpose}
+                                setRemark={setTravelPurpose}
+                                error={errors.travelPurpose}
+                                disabled={isViewMode}
+                            />
 
                     <DatePicker
                         cDate={startDate}
@@ -384,15 +462,17 @@ const handleBackPress = () => {
                         disabled={isViewMode}
                         placeholder="Additional remarks (optional)"
                     />
-
-                    {!isViewMode && (
+                    <View style={{flexDirection: "row", gap: 10}}>
+                     {getButtonsConfig(isEditMode, parsedTravelData ? parsedTravelData.status : "").map(({ label, mode }) => (
                         <SubmitButton
-                            label={isEditMode ? "Update Request" : "Submit Request"}
-                            onPress={validate}
+                            key={`${label}+${mode}`}
+                            label={label}
+                            onPress={() => validate(mode)}
                             bgColor={colors.primary}
                             textColor="white"
                         />
-                    )}
+                    ))}
+                    </View>
                 </Container>
             )}
 

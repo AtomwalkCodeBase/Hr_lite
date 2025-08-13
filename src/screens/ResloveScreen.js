@@ -83,7 +83,6 @@ const ResolveScreen = (props) => {
           request.resolved_by === empId
       );
       setFilteredHelps(filtered);
-      console.log(filtered)
     } catch (err) {
       console.error("Error fetching requests:", err);
     }

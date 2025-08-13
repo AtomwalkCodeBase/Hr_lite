@@ -11,13 +11,15 @@ import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import HeaderComponent from '../components/HeaderComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
-import { getEmployeeTravel } from '../services/productServices';
+import { getEmployeeTravel, postTravel } from '../services/productServices';
 import ApplyButton from '../components/ApplyButton';
 import ModalComponent from '../components/ModalComponent';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import FilterModal from '../components/FilterModal';
 import TravelCard from '../components/TravelCard';
 import TravelModal from '../components/TravelModal';
+import SuccessModal from '../components/SuccessModal';
+import ErrorModal from '../components/ErrorModal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -45,6 +47,11 @@ const TravelList = (props) => {
     mode: "",
     project: ""
   });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isErrorModal, setIsErrorModal] = useState(false);
+  const [isSuccessModalVisible, setIsSuccessModalVisible] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
     
   const appliedFilterCount = Object.values(filters).filter(v => v && v !== "").length;
 
@@ -98,9 +105,25 @@ const TravelList = (props) => {
     setSelectedRequest(null);
   };
 
-  const handleCancelRequest = () => {
-    setIsModalVisible(false);
-    setSelectedRequest(null);
+  const handleCancelRequest = async (travelPayload) => {
+    try {
+      setIsLoading(true)
+      // console.log('Cancelling travel request with payload:', travelPayload);
+      const response = await postTravel(travelPayload);
+      
+      if (response.status === 200) {
+        setSuccessMessage('Travel request cancelled successfully');
+        setIsSuccessModalVisible(true);
+        fetchTravelRequest();
+      } else {
+        console.log('Unexpected response:', response);
+      }
+    } catch (error) {
+      setIsErrorModal(true)
+      console.error('Error cancelling travel request:', error);
+    }finally{
+      setIsLoading(false)
+    }
   };
   
   const handleTravelAction = (mode, travelId = null, travelData = null) => {
@@ -244,7 +267,7 @@ const handleUpdateRequest = (item) => handleTravelAction('EDIT', item.travel_id,
         travelRequest={selectedRequest}
         onClose={closeModal}
         onCancelRequest={handleCancelRequest}
-        showCancelButton={selectedRequest?.status_display === "Submitted"}
+        showCancelButton={selectedRequest?.status_display === "Draft"}
       />
 
       <FilterModal 
@@ -269,6 +292,17 @@ const handleUpdateRequest = (item) => handleTravelAction('EDIT', item.travel_id,
           setShowFilterModal(false);
         }}
       />
+
+      <SuccessModal
+        visible={isSuccessModalVisible}
+        onClose={() => setIsSuccessModalVisible(false)}
+        message={successMessage}
+      />
+
+      <ErrorModal visible={isErrorModal} message="Something went wrong , try again later" onClose={() => setIsErrorModal(false)} />
+
+      <Loader visible={isLoading} />
+
     </SafeAreaView>
   );
 };

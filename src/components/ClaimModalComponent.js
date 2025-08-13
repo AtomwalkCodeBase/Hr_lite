@@ -58,8 +58,6 @@ const ClaimModalComponent = ({
     return `₹${integerPart}${decimalPart}`;
   };
 
-  console.log("Claim Data==",claim)
-
   const renderClaimDetails = () => {
     if (!claim) return null;
     const statusInfo = getStatusInfo(claim.expense_status);

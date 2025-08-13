@@ -8,6 +8,7 @@ import ConfirmationModal from "./ConfirmationModal";
 import TimePicker from "./TimePicker";
 import ErrorModal from "./ErrorModal";
 import TabNavigation from "./TabNavigation";
+import { colors } from "../Styles/appStyle";
 
 const { height } = Dimensions.get("window");
 
@@ -127,6 +128,18 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
     return hasProject && hasActivity && hasDate && (hasEffort || (hasStart && hasEnd));
   };
 
+  // Helper to get form validation state
+  const getFormValidationState = () => {
+    const isValid = isFormValid();
+    return {
+      isValid,
+      showError: !isValid && !editingTask,
+      buttonDisabled: isLoading || !isValid
+    };
+  };
+
+  const formState = getFormValidationState();
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
@@ -218,7 +231,7 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
 
             </View>
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Efforts </Text>
+              <Text style={styles.label}>Efforts <Text style={{ fontSize: 12,color: '#888',fontWeight: '600',}}>(Please fill Start Time , End Time or Efforts)</Text></Text>
               <TextInput
                 style={[
                   styles.input,
@@ -254,9 +267,9 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             {editingTask ? (
               <View style={styles.addButtonsContainer}>
                 <TouchableOpacity
-                  style={[styles.addButton, styles.addOnlyButton, !isFormValid() && { opacity: 0.5 }]}
+                  style={[styles.addButton, styles.addOnlyButton, formState.buttonDisabled && { opacity: 0.5 }]}
                   onPress={() => validateAndSubmit("UPDATE")}
-                  disabled={isLoading || !isFormValid()}
+                  disabled={formState.buttonDisabled}
                 >
                   <Text style={styles.addButtonText}>Update</Text>
                 </TouchableOpacity>
@@ -264,12 +277,15 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             ) : (
               <View style={styles.addButtonsContainer}>
                 <TouchableOpacity
-                  style={[styles.addButton, styles.addOnlyButton, !isFormValid() && { opacity: 0.5 }]}
+                  style={[styles.addButton, styles.addOnlyButton, formState.buttonDisabled && { opacity: 0.5 }]}
                   onPress={() => setIsConfirmModalVisible(true)}
-                  disabled={isLoading || !isFormValid()}
+                  disabled={formState.buttonDisabled}
                 >
                   <Text style={styles.addButtonText}>Save</Text>
                 </TouchableOpacity>
+                {formState.showError && (
+                  <Text style={styles.errorMessage}>Please fill the * mark fields</Text>
+                )}
               </View>
             )}
         </View>
@@ -307,11 +323,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
     paddingTop: 30,
-    paddingBottom: 30,
+    // paddingBottom: 30,
     maxHeight: height * 0.95,
   },
   scrollContent: {
-    paddingBottom: 20,
+    // paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: "row",
@@ -353,10 +369,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
-    flex: 1,
   },
   addButtonsContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     gap: 12,
     marginVertical: 10,
   },
@@ -367,6 +382,11 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  errorMessage: {
+    textAlign: "center",
+    color: colors.red, 
+    fontSize: 12
   },
   disabledInput: {
   backgroundColor: "#f0f0f0", // light grey

@@ -113,7 +113,7 @@ const TravelCard = ({ item, onPress, onUpdate }) => {
     return statusConfig.default;
   })();
 
-  const isSubmitted = item.status_display?.toLowerCase().includes('submitted');
+  const isSubmitted = item.status_display?.toLowerCase().includes('draft');
   const travelMode = getTravelModeConfig(item.travel_mode);
   const TravelModeIcon = travelMode.iconSet;
 
@@ -185,10 +185,10 @@ const TravelCard = ({ item, onPress, onUpdate }) => {
               </Text>
             </View>
             
-            <View style={styles.detailItem}>
+           {item.project_name && <View style={styles.detailItem}>
               <MaterialIcons name="work" size={16} color="#607D8B" />
               <Text style={styles.detailText}>{item.project_name}</Text>
-            </View>
+            </View>}
           </View>
 
           {item.advance_required && (

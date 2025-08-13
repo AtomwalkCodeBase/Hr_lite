@@ -179,6 +179,7 @@ const UpdateButton = styled(TouchableOpacity)`
   padding: 6px 12px;
   border-radius: 6px;
   align-self: flex-start;
+  margin-left: auto;
 `;
 
 const UpdateButtonText = styled.Text`
@@ -195,7 +196,6 @@ const ButtonContainer = styled.View`
 
 const ButtonContainer2 = styled.View`
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
 `;
 
@@ -309,11 +309,11 @@ const ClaimCard = ({ claim, onPress, onViewFile, getStatusText, onDelete = () =>
         )}
 
         {(status === 'N' || (status === 'B' && showUpdate)) && (
-  <UpdateButton onPress={handleUpdate}>
-    <Ionicons name={status === 'B' ? "repeat-outline" : "create-outline"} size={18} color="#fff" />
-    <UpdateButtonText>{status === 'B' ? "Resubmit" : "Update"}</UpdateButtonText>
-  </UpdateButton>
-)}
+      <UpdateButton onPress={handleUpdate}>
+        <Ionicons name={status === 'B' ? "repeat-outline" : "create-outline"} size={18} color="#fff" />
+        <UpdateButtonText>{status === 'B' ? "Resubmit" : "Update"}</UpdateButtonText>
+      </UpdateButton>
+    )}
       </ButtonContainer2>
 
       {(status === 'A' || status === 'R') && claim.approved_date && (

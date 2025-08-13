@@ -259,10 +259,10 @@ const LeaveScreen = () => {
           <TabButton onPress={() => setSelectedTab('My Cancel Leave')}>
             {selectedTab === 'My Cancel Leave' ? (
               <TabButtonActive>
-                <TabTextActive>Canceled Leave</TabTextActive>
+                <TabTextActive>Cancelled Leave</TabTextActive>
               </TabButtonActive>
             ) : (
-              <TabText>Canceled Leave</TabText>
+              <TabText>Cancelled Leave</TabText>
             )}
           </TabButton>
         </TabContainer>

@@ -18,11 +18,11 @@ const Label = styled.Text`
   margin-bottom: 5px;
 `;
 
-const RemarksInput = ({ error, label = true, remark, setRemark, placeholder = "Remark" }) => {
+const RemarksInput = ({ error, label = true, labelFiled="Remarks :",remark, setRemark, placeholder = "Remark" }) => {
   return (
     <>
     {label !== false && (
-        <Label>Remarks :</Label>
+        <Label>{labelFiled}</Label>
       )}
       <TextArea
         placeholder={placeholder}

@@ -22,7 +22,7 @@ const PickerContainer = styled.View`
   border-radius: 5px;
 `;
 
-const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActionStyle = false, style = {}, disabled = false }) => {
+const DropdownPicker = ({ error, label, placeHolder, data, value, setValue, enableDynamicActionStyle = false, style = {}, disabled = false }) => {
   // Optional dynamic style logic
   const getSelectedStyle = () => {
     if (!enableDynamicActionStyle) return {};
@@ -64,7 +64,7 @@ const DropdownPicker = ({ error, label, data, value, setValue, enableDynamicActi
           }))}
           labelField="label"
           valueField="value"
-          placeholder={`Select ${label}`}
+          placeholder={`Select ${placeHolder? placeHolder : label}`}
           value={value}
           onChange={(item) => setValue(item.value)}
           style={{

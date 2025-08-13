@@ -273,7 +273,7 @@ const ClaimItemCard = ({
                     }))}
                     value={itemActions?.forwardManager}
                     setValue={handleForwardManagerChange}
-                    placeholder="Select manager"
+                    placeHolder="Manager"
                     style={styles.managerDropdown}
                     containerStyle={styles.dropdownContainer}
                     disabled={isDisabled}

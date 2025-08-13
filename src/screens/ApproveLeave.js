@@ -276,6 +276,11 @@ const LeaveScreen = (props) => {
             value={searchQuery}
             onChangeText={handleSearch}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <MaterialIcons name="clear" size={width * 0.06} color="black" style={{marginRight: 10}} />
+            </TouchableOpacity>
+          )}
         </SearchContainer>
         
         <Loader visible={isLoading || refreshing} />

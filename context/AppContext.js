@@ -9,7 +9,6 @@ import NetworkErrorModal from '../src/components/NetworkErrorModal';
 import moment from 'moment';
 import * as Location from 'expo-location';
 import { getEmpAttendance, getTimesheetData, postCheckIn } from '../src/services/productServices';
-import { Alert } from 'react-native';
 
 const AppContext = createContext();
 
@@ -69,6 +68,7 @@ const AppProvider = ({ children }) => {
         return { latitude: null, longitude: null };
     };
 
+    //calculate check in location and parameter location
     const calculateDistance = (lat1, lon1, lat2, lon2) => {
         const R = 6371e3; // Earth radius in meters
         const φ1 = lat1 * Math.PI/180;
@@ -84,7 +84,38 @@ const AppProvider = ({ children }) => {
         return R * c;
     };
 
+    //this function is required for location is allowed or not
+    const checkAndRequestLocationPermission = async (setErrorModal) => {
+        const { status, canAskAgain } = await Location.getForegroundPermissionsAsync();
+
+        if (status !== 'granted' && !canAskAgain) {
+            setErrorModal({
+                message: 'Location permission is permanently denied. Please enable it manually in settings.',
+                visible: true,
+                // onConfirm: () => Linking.openSettings(),
+            });
+            return false;
+        }
+
+        if (status !== 'granted') {
+            const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+            if (newStatus !== 'granted') {
+                setErrorModal({
+                    message: 'Location permission is required to proceed.',
+                    visible: true,
+                });
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    //this function validated check in location and parameter location is match or not
     const validateLocationDistance = async (setErrorModal) => {
+        const hasPermission = await checkAndRequestLocationPermission(setErrorModal);
+        if (!hasPermission) return { isValid: false, distance: 0 };
+
         try {
             const location = await Location.getCurrentPositionAsync({});
             const distance = calculateDistance(
@@ -97,15 +128,16 @@ const AppProvider = ({ children }) => {
             if (distance > geoLocationConfig.allowedRadius) {
                 setErrorModal({
                     message: `You are ${Math.round(distance)} meters away from the allowed location.\n\nMaximum allowed distance is ${geoLocationConfig.allowedRadius} meters.`,
-                    visible: true
+                    visible: true,
                 });
                 return { isValid: false, distance };
             }
+
             return { isValid: true, distance };
         } catch (error) {
             setErrorModal({
                 message: 'Unable to fetch location. Please try again.',
-                visible: true
+                visible: true,
             });
             return { isValid: false, distance: 0 };
         }
@@ -133,6 +165,7 @@ const AppProvider = ({ children }) => {
         }
     };
 
+    //this function check the the geo location mode and latitude, longitude.
     const initializeGeoLocationConfig = (companyData, profileData, setErrorModal) => {
         try {
             // Extract company geolocation settings
@@ -462,9 +495,6 @@ const AppProvider = ({ children }) => {
                         await AsyncStorage.setItem('companyInfo', JSON.stringify(companyRes.data));
                     }
 
-                    // Initialize geolocation configuration - we'll handle this in individual screens
-                    // initializeGeoLocationConfig(companyRes?.data, profileRes?.data);
-
                     // Navigate to home
                     router.replace({ pathname: 'home' });
                 } catch (error) {
@@ -528,37 +558,19 @@ const AppProvider = ({ children }) => {
 
     // Common location access utility function
     const getLocationWithPermission = async (setErrorModal) => {
-        const { status } = await Location.requestForegroundPermissionsAsync();
+        const hasPermission = await checkAndRequestLocationPermission(setErrorModal);
+        if (!hasPermission) return null;
 
-        if (status !== 'granted') {
-            setErrorModal({
-                message: 'Location permission is required to check in/out. Please enable location access in settings.',
-                visible: true
-            });
-            return null;
-        }
-
-        let location = null;
-        let retries = 0;
-
-        while (!location && retries < 1) {
-            try {
-                location = await Location.getCurrentPositionAsync({});
-            } catch (error) {
-                retries += 1;
-                await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-        }
-
-        if (!location) {
+        try {
+            const location = await Location.getCurrentPositionAsync({});
+            return location;
+        } catch (error) {
             setErrorModal({
                 message: 'Unable to fetch location. Please check your GPS settings and try again.',
-                visible: true
+                visible: true,
             });
             return null;
         }
-
-        return location;
     };
 
     const handleCheck = async (data, setSuccessModal, setErrorModal) => {
@@ -865,7 +877,6 @@ const AppProvider = ({ children }) => {
             checkPreviousDayAttendance,
             processAttendanceData,
             handleError,
-            getLocationWithPermission,
             handleCheck,
             handleRemarkSubmit,
             submitCheckout,
