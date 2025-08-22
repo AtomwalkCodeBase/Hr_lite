@@ -370,7 +370,7 @@ const HomePage = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-      {(loading || isLoading) && (
+      {(isLoading) && (
         <View style={styles.loaderContainer}>
           <Loader visible={true} />
         </View>
@@ -633,7 +633,7 @@ const HomePage = ({ navigation }) => {
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setLocalRemarkModalVisible(false)}
+                onPress={() => {setLocalRemarkModalVisible(false); setRemark("")}}
               >
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>

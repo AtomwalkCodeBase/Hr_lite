@@ -333,7 +333,7 @@ const AddAttendance = () => {
               </Text>
               <TouchableOpacity
                 style={styles.closeButton}
-                onPress={() => setLocalRemarkModalVisible(false)}
+                onPress={() => {setLocalRemarkModalVisible(false); setRemark("")}}
               >
                 <Feather name="x" size={24} color="#666" />
               </TouchableOpacity>

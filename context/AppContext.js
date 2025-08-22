@@ -579,7 +579,7 @@ const AppProvider = ({ children }) => {
         setIsLoading(true);
         
         // Check geolocation validation for check-in
-        if (data === 'ADD' && geoLocationConfig.isEnabled && (geoLocationConfig.mode === "T" || geoLocationConfig.mode === "A")) {
+        if (data === 'ADD' && geoLocationConfig.isEnabled && (geoLocationConfig.mode === "T" || geoLocationConfig.mode === "A") && profile.is_geo_disabled !== true) {
             const { isValid } = await validateLocationDistance(setErrorModal);
             if (!isValid) {
                 setIsLoading(false);
@@ -704,8 +704,8 @@ const AppProvider = ({ children }) => {
     try {
         const geoLocationEnabled = geoLocationConfig.mode;
 
-        // Step 1: Ask for location permission if required
-        if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
+        // Step 1: Ask for location permission if required (skip when geo disabled at profile)
+        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 setErrorModal({
@@ -734,8 +734,8 @@ const AppProvider = ({ children }) => {
             }
         }
 
-        // Step 3: Geo-distance validation
-        if (geoLocationEnabled === "T" || geoLocationEnabled === "A") {
+        // Step 3: Geo-distance validation (skip when geo disabled at profile)
+        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled == true) {
             const { isValid } = await validateLocationDistance(setErrorModal);
             if (!isValid) return;
         }
@@ -800,6 +800,7 @@ const AppProvider = ({ children }) => {
 
     const refreshData = async () => {
         if (!employeeData?.id) return;
+        setIsLoading(true)
 
         try {
             const data = {
@@ -814,6 +815,9 @@ const AppProvider = ({ children }) => {
             checkPreviousDayAttendance(res.data);
         } catch (error) {
             console.error("Error refreshing data:", error);
+        }
+        finally{
+            setIsLoading(false)
         }
     };
 

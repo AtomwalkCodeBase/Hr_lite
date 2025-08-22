@@ -178,7 +178,10 @@ const handleUpdateRequest = (item) => handleTravelAction('EDIT', item.travel_id,
     });
   }, [filteredTravels, filters]);
 
-  const filterConfigs = useMemo(() => [
+const projectOptions = getProjectOptions(filteredTravels).filter(opt => opt.value && opt.value !== "null" && opt.value !== null);
+
+const filterConfigs = useMemo(() => {
+  const configs = [
     {
       label: "Status",
       options: getDropdownOptions(filteredTravels, "status_display"),
@@ -190,14 +193,21 @@ const handleUpdateRequest = (item) => handleTravelAction('EDIT', item.travel_id,
       options: getDropdownOptions(filteredTravels, "travel_mode"),
       value: pendingFilters.mode,
       setValue: (value) => setPendingFilters((prev) => ({ ...prev, mode: value })),
-    },
-    {
+    }
+  ];
+
+  // Only add Project filter if there are valid project options
+  if (projectOptions.length > 0) {
+    configs.push({
       label: "Project",
-      options: [...getProjectOptions(filteredTravels)],
+      options: projectOptions,
       value: pendingFilters.project,
       setValue: (value) => setPendingFilters((prev) => ({ ...prev, project: value })),
-    }
-  ], [pendingFilters, filteredTravels]);
+    });
+  }
+
+  return configs;
+}, [pendingFilters, filteredTravels]);
 
   const openFilterModal = () => {
     setPendingFilters(filters);
