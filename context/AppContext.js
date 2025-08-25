@@ -735,7 +735,7 @@ const AppProvider = ({ children }) => {
         }
 
         // Step 3: Geo-distance validation (skip when geo disabled at profile)
-        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled == true) {
+        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
             const { isValid } = await validateLocationDistance(setErrorModal);
             if (!isValid) return;
         }
