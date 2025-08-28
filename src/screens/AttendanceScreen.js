@@ -10,6 +10,7 @@ import {
   ScrollView,
   Dimensions,
   BackHandler,
+  StatusBar,
   // BackHandler,
 } from 'react-native';
 import moment from 'moment';
@@ -28,7 +29,6 @@ import ErrorModal from '../components/ErrorModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
-import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 
@@ -194,10 +194,11 @@ const AddAttendance = () => {
 
   return (
     <>
-    {/* <StatusBar barStyle="light-content" backgroundColor="#a970ff" /> */}
-    <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-    <View style={styles.statusBarBackground}>
-      <SafeAreaView>
+  <StatusBar barStyle="light-content" />
+  {/* Status bar background only */}
+  <View style={styles.statusBarBackground} />
+  
+  <SafeAreaView style={styles.safeArea}>
 
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
@@ -337,7 +338,6 @@ const AddAttendance = () => {
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
-      </View>
 
       {/* Remark Modal */}
       <Modal transparent visible={localRemarkModalVisible} animationType="fade">
@@ -418,11 +418,19 @@ const AddAttendance = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
   statusBarBackground: {
-    // flex: 1,
-    backgroundColor: '#a970ff',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f7fa', // Your screen background color
   },
   container: {
     flex: 1,

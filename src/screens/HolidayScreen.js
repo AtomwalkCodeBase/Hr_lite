@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { ScrollView, View, TouchableOpacity, Alert, Text, BackHandler } from 'react-native';
+import { ScrollView, View, TouchableOpacity, Alert, Text, BackHandler, StatusBar } from 'react-native';
 import styled from 'styled-components/native';
 import { getEmpHoliday, postEmpLeave } from '../services/productServices';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
@@ -13,6 +13,7 @@ import { colors } from '../Styles/appStyle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { StyleSheet } from 'react-native';
 
 const monthNameMap = {
   'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4,
@@ -355,7 +356,11 @@ const HolidayScreen = () => {
   };
 
   return (
-    <MainContainer edges={['top']}>
+    <>
+      <StatusBar barStyle="light-content" />
+  {/* Status bar background only */}
+  <View style={styles.statusBarBackground} />
+    <MainContainer>
       <HeaderComponent headerTitle="Holiday List" onBackPress={handleBackPress} />
       <Container>
         {holidaydata && (
@@ -409,7 +414,20 @@ const HolidayScreen = () => {
         onClose={() => setErrorModalVisible(false)} 
       />
     </MainContainer>
+    </>
   );
 };
 
 export default HolidayScreen;
+
+const styles = StyleSheet.create({
+  statusBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+});

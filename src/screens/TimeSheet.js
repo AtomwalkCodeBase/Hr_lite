@@ -20,7 +20,6 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import { EmployeeInfoCard } from '../components/SharedTimesheetComponents';
 import TabNavigation from '../components/TabNavigation';
 import moment from "moment";
-import { StatusBar } from "expo-status-bar";
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
@@ -570,7 +569,6 @@ const TimeSheet = () => {
 
   return (
   <View style={styles.container}>
-    <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
     <View style={styles.statusBarBackground}>
       <SafeAreaView style={styles.safeArea}>
         <HeaderComponent 

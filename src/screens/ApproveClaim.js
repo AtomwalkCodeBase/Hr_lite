@@ -11,7 +11,8 @@ import {
   Platform,
   Animated,
   Easing,
-  BackHandler
+  BackHandler,
+  StatusBar
 } from 'react-native';
 import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
@@ -178,6 +179,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#424242',
     fontWeight: 'bold',
+  },
+  statusBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff', // Your screen background color
   },
 });
 
@@ -627,16 +641,18 @@ const ApproveClaim = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-
-      
+    <>
+  <StatusBar barStyle="light-content" />
+  <View style={styles.statusBarBackground} />
+  
+  <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-  headerTitle={`Approve Claim List (${filteredData.length})`}
-  onBackPress={handleBackPress}
-  icon1Name="filter"
-  icon1OnPress={handleFilterPress}  // Use the handler instead of direct setState
-  filterCount={getFilterCount()}
-/>
+        headerTitle={`Approve Claim List (${filteredData.length})`}
+        onBackPress={handleBackPress}
+        icon1Name="filter"
+        icon1OnPress={handleFilterPress}  // Use the handler instead of direct setState
+        filterCount={getFilterCount()}
+      />
 
       <View style={styles.container}>
         {isLoading ? (
@@ -711,6 +727,7 @@ const ApproveClaim = () => {
 />
       </View>
     </SafeAreaView>
+    </>
   );
 };
 

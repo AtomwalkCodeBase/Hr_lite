@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { BackHandler, ScrollView } from 'react-native';
+import { BackHandler, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import styled from 'styled-components/native';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
@@ -7,7 +7,6 @@ import HeaderComponent from '../components/HeaderComponent';
 import ErrorModal from '../components/ErrorModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Loader from '../components/old_components/Loader';
-import { StatusBar } from 'expo-status-bar';
 import { MaterialIcons } from '@expo/vector-icons';
 
 // Styled Components
@@ -355,8 +354,11 @@ const AttendanceStatus = ({ id: empId }) => {
   };
 
   return (
+    <>
+  <StatusBar barStyle="light-content" />
+  {/* Status bar background only */}
+  <View style={styles.statusBarBackground} />
     <MainContainer>
-      <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       <HeaderComponent
         headerTitle="Attendance Status"
         onBackPress={handleBackPress}
@@ -429,7 +431,20 @@ const AttendanceStatus = ({ id: empId }) => {
         }} />
       </Container>
     </MainContainer>
+    </>
   );
 };
 
 export default AttendanceStatus;
+
+const styles = StyleSheet.create({
+  statusBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+});
