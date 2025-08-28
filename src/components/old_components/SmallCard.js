@@ -3,7 +3,7 @@ import { View, Alert,TouchableOpacity,Text  } from "react-native";
 import { MaterialIcons } from '@expo/vector-icons';
 // import { SIZES, SHADOWS, assets } from "../constant_s";
 import { SubInfo, CardTitle } from "./SubInfo";
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 // import { RectButton, CircleButton } from "./Button";
 import { colors } from "../Styles/appStyle";
 import styled from 'styled-components/native';

@@ -9,7 +9,9 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  BackHandler
+  BackHandler,
+  StatusBar,
+  // BackHandler,
 } from 'react-native';
 import moment from 'moment';
 import { useNavigation, useRouter } from 'expo-router';
@@ -27,7 +29,6 @@ import ErrorModal from '../components/ErrorModal';
 import { colors } from '../Styles/appStyle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../../context/AppContext';
-import { StatusBar } from 'expo-status-bar';
 
 const { width } = Dimensions.get('window');
 
@@ -107,20 +108,27 @@ const AddAttendance = () => {
     });
   }, [navigation]);
 
+
+
   useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        router.replace('home');
-        return true;
-      };
+  useCallback(() => {
+    const onBackPress = () => {
+      if (navigation) {
+        navigation.goBack();
+        return true; // prevent default behavior
+      }
+      return false;
+    };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
 
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+    return () => subscription.remove();  // ✅ correct cleanup
+  }, [navigation])
+);
+
 
   // Initialize date and time
   useEffect(() => {
@@ -170,19 +178,27 @@ const AddAttendance = () => {
 
   if (!employeeData) {
     return (
+      <>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.statusBarBackground}>
       <View style={styles.container}>
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load employee data</Text>
         </View>
       </View>
+      </View>
+      </>
     );
   }
 
   return (
     <>
-    <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-      <SafeAreaView>
+  <StatusBar barStyle="light-content" />
+  {/* Status bar background only */}
+  <View style={styles.statusBarBackground} />
+  
+  <SafeAreaView style={styles.safeArea}>
 
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
@@ -402,8 +418,20 @@ const AddAttendance = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
+  statusBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f7fa', // Your screen background color
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',

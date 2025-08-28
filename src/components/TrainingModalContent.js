@@ -11,7 +11,7 @@ import {
   Modal,
   Alert
 } from 'react-native';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import { MaterialIcons } from '@expo/vector-icons';
 import HeaderComponent from './HeaderComponent';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -72,19 +72,12 @@ const TrainingModalContent = ({
         </TouchableOpacity>
 
         <Modal visible={imageViewerVisible} transparent={true}>
-          <ImageViewer
-            imageUrls={[{ url: selectedImageUrl }]}
-            enableSwipeDown
-            onSwipeDown={() => setImageViewerVisible(false)}
-            enablePreload
-            renderHeader={() => (
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => setImageViewerVisible(false)}
-              >
-                <MaterialIcons name="close" size={30} color="white" />
-              </TouchableOpacity>
-            )}
+          <ImageView
+            images={[{ uri: selectedImageUrl }]}
+            imageIndex={0}
+            visible={imageViewerVisible}
+            onRequestClose={() => setImageViewerVisible(false)}
+            presentationStyle="overFullScreen"
           />
         </Modal>
       </View>

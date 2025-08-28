@@ -7,7 +7,6 @@ import {
   Dimensions,
   Text 
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation, useRouter } from 'expo-router';
 import { getEmpShift } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -16,6 +15,7 @@ import moment from 'moment';
 import { colors } from '../Styles/appStyle';
 import ApplyButton from '../components/ApplyButton';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -109,16 +109,16 @@ const ShiftScreen = (props) => {
         activeOpacity={0.8}
       >
         <View style={styles.currentShiftHeader}>
-          <Icon name="schedule" size={24} color={shiftInfo.text} />
+          <MaterialIcons name="schedule" size={24} color={shiftInfo.text} />
           <Text style={[styles.currentShiftTitle, { color: shiftInfo.text }]}>
             Your Current Shift
           </Text>
-          <Icon name="chevron-right" size={24} color={shiftInfo.text} />
+          <MaterialIcons name="chevron-right" size={24} color={shiftInfo.text}/>
         </View>
         
         <View style={styles.currentShiftContent}>
           <View style={styles.currentShiftIconContainer}>
-            <Icon 
+            <MaterialIcons 
               name={shiftInfo.icon} 
               size={36} 
               color={shiftInfo.text} 
@@ -169,7 +169,7 @@ const ShiftScreen = (props) => {
           </View>
           
           <View style={styles.shiftContainer}>
-            <Icon 
+            <MaterialIcons 
               name={colors.icon} 
               size={24} 
               color={colors.text} 
@@ -222,7 +222,7 @@ return (
         {shiftData && (
           <View style={styles.employeeCard}>
             <View style={styles.employeeAvatar}>
-              <Icon name="person" size={32} color="#fff" />
+              <MaterialIcons name="person" size={32} color="#fff" />
             </View>
             <View style={styles.employeeInfo}>
               <Text style={styles.employeeName}>{shiftData.emp_name}</Text>
@@ -240,14 +240,14 @@ return (
               style={styles.navButton} 
               onPress={() => changeWeek(-1)}
             >
-              <Icon name="chevron-left" size={24} color="#fff" />
+              <MaterialIcons name="chevron-left" size={24} color="#fff" />
             </TouchableOpacity>
             <Text style={styles.weekRangeText}>{getWeekRangeText()}</Text>
             <TouchableOpacity 
               style={styles.navButton} 
               onPress={() => changeWeek(1)}
             >
-              <Icon name="chevron-right" size={24} color="#fff" />
+              <MaterialIcons name="chevron-right" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
@@ -271,7 +271,7 @@ return (
           {Object.entries(shiftColors).map(([key, value]) => (
             <View key={key} style={styles.colorGuideItem}>
               <View style={[styles.colorBox, { backgroundColor: value.bg }]}>
-                <Icon name={value.icon} size={16} color={value.text} />
+                <MaterialIcons name={value.icon} size={16} color={value.text} />
               </View>
               <Text style={styles.infoText}>{value.name}</Text>
             </View>

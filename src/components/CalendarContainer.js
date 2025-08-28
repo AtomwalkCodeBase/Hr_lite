@@ -1,7 +1,7 @@
 // CalendarContainer.js
 import React from 'react';
 import styled from 'styled-components/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const CalendarContainerWrapper = styled.View`
   flex-direction: row;
@@ -32,13 +32,13 @@ const CalendarContainer = ({ month, year, onPrevMonth, onNextMonth }) => (
   <CalendarContainerWrapper>
     {onPrevMonth && (
       <NavButtonContainer onPress={onPrevMonth}>
-        <Icon name="chevron-left" size={24} color="#3f87f9" />
+        <MaterialIcons name="chevron-left" size={24} color="#3f87f9" />
       </NavButtonContainer>
     )}
     {month && year && <MonthText>{`${month} ${year}`}</MonthText>}
     {onNextMonth && (
       <NavButtonContainer onPress={onNextMonth}>
-        <Icon name="chevron-right" size={24} color="#3f87f9" />
+        <MaterialIcons name="chevron-right" size={24} color="#3f87f9" />
       </NavButtonContainer>
     )}
   </CalendarContainerWrapper>

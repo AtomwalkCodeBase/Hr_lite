@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native'
 import {React, useState, useEffect} from 'react'
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from '../Styles/appStyle';
 
 const DateInput = ({
@@ -80,7 +80,7 @@ const DateInput = ({
                 onCancel={hideDatePicker}
             />
             <Text style={{color: colors.darkBlue, flex: 1, paddingTop:10}}>
-                <Icon
+                <MaterialIcons
                     name={iconName}
                     style={{color: colors.darkBlue, fontSize: 22, marginRight: 20}}
                 />

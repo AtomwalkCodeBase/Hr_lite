@@ -11,13 +11,14 @@ import {
   Platform,
   Animated,
   Easing,
-  BackHandler
+  BackHandler,
+  StatusBar
 } from 'react-native';
 import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import ModalComponent from '../components/ModalComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
@@ -179,6 +180,19 @@ const styles = StyleSheet.create({
     color: '#424242',
     fontWeight: 'bold',
   },
+  statusBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StatusBar.currentHeight, // This gets the actual status bar height
+    backgroundColor: '#a970ff', // Your status bar color
+    zIndex: 999,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff', // Your screen background color
+  },
 });
 
 const ApproveClaim = () => {
@@ -274,19 +288,29 @@ const ApproveClaim = () => {
   };
 
    useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        router.replace('home');
-        return true;
-      };
+  useCallback(() => {
+    const onBackPress = () => {
+      if (selectedImageUrl) {
+        setSelectedImageUrl(null);
+        return true; // Prevent default back behavior
+      }
+      return false; // Allow default back behavior
+    };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    // Safe BackHandler implementation
+    let backHandler;
+    if (BackHandler && typeof BackHandler.addEventListener === 'function') {
+      backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    }
 
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+    return () => {
+      // Safe cleanup
+      if (backHandler && typeof backHandler.remove === 'function') {
+        backHandler.remove();
+      }
+    };
+  }, [selectedImageUrl, setSelectedImageUrl]) // Added dependencies
+);
 
 
   const handleClearFilters = () => {
@@ -604,10 +628,12 @@ const ApproveClaim = () => {
       <SafeAreaView style={styles.safeArea}>
         <HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
         <View style={{ flex: 1 }}>
-          <ImageViewer
-            imageUrls={[{ url: selectedImageUrl }]}
-            enableSwipeDown={true}
-            onSwipeDown={handleBackPress}
+          <ImageView
+            images={[{ uri: selectedImageUrl }]}
+            imageIndex={0}
+            visible={true}
+            onRequestClose={handleBackPress}
+            presentationStyle="overFullScreen"
           />
         </View>
       </SafeAreaView>
@@ -615,16 +641,18 @@ const ApproveClaim = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-
-      
+    <>
+  <StatusBar barStyle="light-content" />
+  <View style={styles.statusBarBackground} />
+  
+  <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
-  headerTitle={`Approve Claim List (${filteredData.length})`}
-  onBackPress={handleBackPress}
-  icon1Name="filter"
-  icon1OnPress={handleFilterPress}  // Use the handler instead of direct setState
-  filterCount={getFilterCount()}
-/>
+        headerTitle={`Approve Claim List (${filteredData.length})`}
+        onBackPress={handleBackPress}
+        icon1Name="filter"
+        icon1OnPress={handleFilterPress}  // Use the handler instead of direct setState
+        filterCount={getFilterCount()}
+      />
 
       <View style={styles.container}>
         {isLoading ? (
@@ -699,6 +727,7 @@ const ApproveClaim = () => {
 />
       </View>
     </SafeAreaView>
+    </>
   );
 };
 

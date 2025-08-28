@@ -2,12 +2,30 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import md5 from 'md5';
+// md5 dependency removed; using a lightweight local hash for change detection
 // import ProjectTimeDistribution from './ProjectTimeDistribution';
 import { DailyTableRow, ExceedModal, DetailModal } from './SharedTimesheetComponents';
 import SelectedDayDetail from "./SelectedDayDetail"
 
 const MAX_DAILY_HOURS = 9;
+
+// Lightweight string hash (djb2) for change detection, not for cryptographic use
+const computeHash = (input) => {
+  try {
+    const str = typeof input === 'string' ? input : JSON.stringify(input);
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash) + str.charCodeAt(i); // hash * 33 + c
+      // Force 32-bit integer
+      hash = hash & 0xffffffff;
+    }
+    // Return as unsigned 32-bit hex string
+    return (hash >>> 0).toString(16);
+  } catch (e) {
+    // Fallback to timestamp if serialization fails
+    return String(Date.now());
+  }
+};
 
 const TimeSheetWeeklySummary = ({
   tasks,
@@ -224,7 +242,7 @@ const TimeSheetWeeklySummary = ({
       const key = monthFilter
         ? `${currentMonthStart.getFullYear()}-${currentMonthStart.getMonth() + 1}`
         : formatDateForComparison(new Date(currentWeekStart));
-      const newTaskHash = md5(JSON.stringify(tasks));
+      const newTaskHash = computeHash(JSON.stringify(tasks));
       const storedTaskHash = await AsyncStorage.getItem(`taskHash_${key}`);
 
       if (newTaskHash !== storedTaskHash) {

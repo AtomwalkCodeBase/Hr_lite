@@ -3,7 +3,7 @@ import { FlatList, View, Text, Alert, Linking, TouchableOpacity, StyleSheet, Tex
 import { useFocusEffect, useNavigation, usePathname, useRouter } from 'expo-router';
 import { getEmpClaim, postClaimAction } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import ModalComponent from '../components/ModalComponent';
 import ClaimCard from '../components/ClaimCard';
 import ApplyButton from '../components/ApplyButton';
@@ -226,14 +226,17 @@ const periodOptions = [
    useFocusEffect(
       useCallback(() => {
         const onBackPress = () => {
-          router.replace('home');
-          return true;
+          if (selectedImageUrl) {
+            setSelectedImageUrl(null);
+            return true;
+          }
+          return false;
         };
   
-        BackHandler.addEventListener('hardwareBackPress', onBackPress);
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
   
         return () => {
-          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+          backHandler?.remove && backHandler.remove();
         };
       }, [])
     );
@@ -816,10 +819,12 @@ const filterClaims = () => {
       <SafeAreaView style={{ flex: 1 }}>
         <HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
         <View style={{ flex: 1 }}>
-          <ImageViewer 
-            imageUrls={[{ url: selectedImageUrl }]}
-            enableSwipeDown={true}
-            onSwipeDown={handleBackPress}
+          <ImageView
+            images={[{ uri: selectedImageUrl }]}
+            imageIndex={0}
+            visible={true}
+            onRequestClose={handleBackPress}
+            presentationStyle="overFullScreen"
           />
         </View>
       </SafeAreaView>

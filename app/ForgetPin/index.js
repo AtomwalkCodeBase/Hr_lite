@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, SafeAreaView, 
   ScrollView, Dimensions, Image, Text, Alert, Keyboard, Platform } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Logos from '../../assets/images/Atom_walk_logo.jpg';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { publicAxiosRequest } from '../../src/services/HttpMethod';
 import CompanyDropdown from '../../src/components/ComanyDropDown';
 import Loader from '../../src/components/old_components/Loader';
-import Icon from 'react-native-vector-icons/Ionicons'; 
 import { forgetUserPinView } from '../../src/services/productServices';
 import SuccessModal from '../../src/components/SuccessModal';
 import { AppContext } from '../../context/AppContext';
@@ -213,7 +212,7 @@ const {completLogout} = useContext(AppContext);
             </Card>
           </Content>
           <View style={styles.securityNote}>
-                              <Icon name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
+                          <Ionicons name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
                               <View style={styles.noteContent}>
                                   <Text style={styles.noteTitle}>Security Notice</Text>
                                   <Text style={styles.noteText}>
