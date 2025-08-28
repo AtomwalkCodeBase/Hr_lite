@@ -17,7 +17,7 @@ import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icon
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpClaim } from '../services/productServices';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import ModalComponent from '../components/ModalComponent';
 import EmptyMessage from '../components/EmptyMessage';
 import Loader from '../components/old_components/Loader';
@@ -274,19 +274,29 @@ const ApproveClaim = () => {
   };
 
    useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        router.replace('home');
-        return true;
-      };
+  useCallback(() => {
+    const onBackPress = () => {
+      if (selectedImageUrl) {
+        setSelectedImageUrl(null);
+        return true; // Prevent default back behavior
+      }
+      return false; // Allow default back behavior
+    };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    // Safe BackHandler implementation
+    let backHandler;
+    if (BackHandler && typeof BackHandler.addEventListener === 'function') {
+      backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    }
 
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+    return () => {
+      // Safe cleanup
+      if (backHandler && typeof backHandler.remove === 'function') {
+        backHandler.remove();
+      }
+    };
+  }, [selectedImageUrl, setSelectedImageUrl]) // Added dependencies
+);
 
 
   const handleClearFilters = () => {
@@ -604,10 +614,12 @@ const ApproveClaim = () => {
       <SafeAreaView style={styles.safeArea}>
         <HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
         <View style={{ flex: 1 }}>
-          <ImageViewer
-            imageUrls={[{ url: selectedImageUrl }]}
-            enableSwipeDown={true}
-            onSwipeDown={handleBackPress}
+          <ImageView
+            images={[{ uri: selectedImageUrl }]}
+            imageIndex={0}
+            visible={true}
+            onRequestClose={handleBackPress}
+            presentationStyle="overFullScreen"
           />
         </View>
       </SafeAreaView>

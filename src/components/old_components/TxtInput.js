@@ -1,7 +1,7 @@
 import {React, useState} from 'react';
 import {View, Text, TextInput, StyleSheet} from 'react-native';
 import { colors } from '../../Styles/appStyle';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 const TxtInput = ({
   label,
   iconName,
@@ -30,7 +30,7 @@ const TxtInput = ({
             alignItems: 'center',
           },
         ]}>
-        <Icon
+        <MaterialCommunityIcons
           name={iconName}
           style={{color: colors.darkBlue, fontSize: 22, marginRight: 10}}
         />
@@ -46,7 +46,7 @@ const TxtInput = ({
           {...props}
         />
         {password && (
-          <Icon
+          <MaterialCommunityIcons
             onPress={() => setHidePassword(!hidePassword)}
             name={hidePassword ? 'eye-outline' : 'eye-off-outline'}
             style={{color: colors.darkBlue, fontSize: 22}}

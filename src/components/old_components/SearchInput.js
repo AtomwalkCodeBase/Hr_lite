@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {View, TextInput, StyleSheet} from 'react-native';
 import { colors } from '../Styles/appStyle';
-import Feather from 'react-native-vector-icons/Feather';
+import { Feather } from '@expo/vector-icons';
 const SearchInput = ({
   label,
   serachFilter,

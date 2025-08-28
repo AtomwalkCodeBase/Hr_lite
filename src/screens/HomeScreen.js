@@ -120,19 +120,24 @@ const HomePage = ({ navigation }) => {
 
 
   useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        setShowExitModal(true); // Show exit confirmation modal
-        return true; // Prevent default back behavior
-      };
+  useCallback(() => {
+    const onBackPress = () => {
+      if (navigation) {
+        navigation.goBack();
+        return true; // prevent default behavior
+      }
+      return false;
+    };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
 
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+    return () => subscription.remove();
+  }, [navigation])
+);
+
 
   const fetchEvents = async () => {
     try {

@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import FilePicker from '../components/FilePicker';
 import SubmitButton from '../components/SubmitButton';
 import { colors } from '../Styles/appStyle';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import { postEmpRequest } from '../services/productServices';
 import SuccessModal from '../components/SuccessModal';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -113,12 +113,12 @@ const ResolveRequestScreen = (props) => {
 			<SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
 				<HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
 				<View style={styles.imageViewerContainer}>
-					<ImageViewer
-						imageUrls={[{ url: selectedImageUrl }]}
-						enableSwipeDown={true}
-						onSwipeDown={handleBackPress}
-						renderIndicator={() => null}
-						backgroundColor="transparent"
+					<ImageView
+						images={[{ uri: selectedImageUrl }]}
+						imageIndex={0}
+						visible={true}
+						onRequestClose={handleBackPress}
+						presentationStyle="overFullScreen"
 					/>
 				</View>
 			</SafeAreaView>

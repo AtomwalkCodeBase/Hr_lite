@@ -9,7 +9,8 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
-  BackHandler
+  BackHandler,
+  // BackHandler,
 } from 'react-native';
 import moment from 'moment';
 import { useNavigation, useRouter } from 'expo-router';
@@ -107,20 +108,27 @@ const AddAttendance = () => {
     });
   }, [navigation]);
 
+
+
   useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        router.replace('home');
-        return true;
-      };
+  useCallback(() => {
+    const onBackPress = () => {
+      if (navigation) {
+        navigation.goBack();
+        return true; // prevent default behavior
+      }
+      return false;
+    };
 
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress
+    );
 
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+    return () => subscription.remove();  // ✅ correct cleanup
+  }, [navigation])
+);
+
 
   // Initialize date and time
   useEffect(() => {
@@ -170,18 +178,25 @@ const AddAttendance = () => {
 
   if (!employeeData) {
     return (
+      <>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.statusBarBackground}>
       <View style={styles.container}>
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load employee data</Text>
         </View>
       </View>
+      </View>
+      </>
     );
   }
 
   return (
     <>
+    {/* <StatusBar barStyle="light-content" backgroundColor="#a970ff" /> */}
     <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
+    <View style={styles.statusBarBackground}>
       <SafeAreaView>
 
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
@@ -322,6 +337,7 @@ const AddAttendance = () => {
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
+      </View>
 
       {/* Remark Modal */}
       <Modal transparent visible={localRemarkModalVisible} animationType="fade">
@@ -404,6 +420,10 @@ const AddAttendance = () => {
 
 
 const styles = StyleSheet.create({
+  statusBarBackground: {
+    // flex: 1,
+    backgroundColor: '#a970ff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',

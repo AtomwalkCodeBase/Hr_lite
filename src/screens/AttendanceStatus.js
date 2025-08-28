@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { BackHandler, ScrollView } from 'react-native';
 import styled from 'styled-components/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { getEmpAttendance, getEmpHoliday } from '../services/productServices';
 import HeaderComponent from '../components/HeaderComponent';
@@ -9,6 +8,7 @@ import ErrorModal from '../components/ErrorModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Loader from '../components/old_components/Loader';
 import { StatusBar } from 'expo-status-bar';
+import { MaterialIcons } from '@expo/vector-icons';
 
 // Styled Components
 const MainContainer = styled(SafeAreaView)`
@@ -106,9 +106,9 @@ const StatusIndicator = styled.View`
   border-radius: 12px;
   background-color: ${(props) =>
     props.status === 'N' ? '#ff6b6b' :
-    props.status === 'L' ? '#ffa502' :
-    props.status === 'C' ? '#339af0' :
-    props.status === 'H' ? '#748ffc' : '#51cf66'};
+      props.status === 'L' ? '#ffa502' :
+        props.status === 'C' ? '#339af0' :
+          props.status === 'H' ? '#748ffc' : '#51cf66'};
   justify-content: center;
   align-items: center;
 `;
@@ -182,7 +182,7 @@ const AttendanceStatus = ({ id: empId }) => {
   const [isErrorVisiable, setIsErrorVisiable] = useState(false);
   const [lastValidDate, setLastValidDate] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const currentMonth = date.getMonth();
   const currentYear = date.getFullYear();
   const router = useRouter();
@@ -191,22 +191,24 @@ const AttendanceStatus = ({ id: empId }) => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  useFocusEffect(
-      useCallback(() => {
-        const onBackPress = () => {
-          router.push({
-      pathname: '/attendance' 
-    });
-          return true;
-        };
-  
-        BackHandler.addEventListener('hardwareBackPress', onBackPress);
-  
-        return () => {
-          BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-        };
-      }, [])
-    );
+ useEffect(() => {
+    const onBackPress = () => {
+      handleBackPress();
+      return true; // Prevent default back behavior
+    };
+
+    // Add back handler
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // Clean up on component unmount
+    return () => {
+      backHandler.remove();
+    };
+  }, []);
+
+
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -222,8 +224,8 @@ const AttendanceStatus = ({ id: empId }) => {
           getEmpAttendance(data),
           getEmpHoliday(data)
         ]);
-        
-        
+
+
         processAttendanceData(attendanceRes.data);
         processHolidayData(holidayRes.data);
 
@@ -255,10 +257,10 @@ const AttendanceStatus = ({ id: empId }) => {
     if (data.holiday_list?.length) {
       data.holiday_list.forEach((holidayDate) => {
         if (!holidayDate) return;
-        
+
         const [day, monthName, year] = holidayDate.split('-');
         const month = MONTH_NAME_MAP[monthName];
-        
+
         if (month === currentMonth && parseInt(year, 10) === currentYear) {
           holidayMap[parseInt(day, 10)] = 'C';
         }
@@ -269,10 +271,10 @@ const AttendanceStatus = ({ id: empId }) => {
     if (data.holiday_saturday_list) {
       data.holiday_saturday_list.split('|').forEach((saturdayDate) => {
         if (!saturdayDate) return;
-        
+
         const [day, monthName] = saturdayDate.split('-');
         const month = MONTH_NAME_MAP[monthName];
-        
+
         if (month === currentMonth) {
           holidayMap[parseInt(day, 10)] = 'H';
         }
@@ -321,7 +323,7 @@ const AttendanceStatus = ({ id: empId }) => {
       const holidayStatus = holiday[day];
       const attendanceStatus = attendance[day];
       let displayStatus = 'N';
-      
+
       // Check if employee has checked in for this day first
       if (attendanceStatus === 'A') {
         displayStatus = 'P';
@@ -346,31 +348,31 @@ const AttendanceStatus = ({ id: empId }) => {
     return days;
   };
 
-    const handleBackPress = () => {
+  const handleBackPress = () => {
     router.push({
-      pathname: '/attendance' 
+      pathname: '/attendance'
     });
   };
 
   return (
     <MainContainer>
       <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-      <HeaderComponent 
-        headerTitle="Attendance Status" 
-        onBackPress={handleBackPress} 
+      <HeaderComponent
+        headerTitle="Attendance Status"
+        onBackPress={handleBackPress}
       />
-      
+
       <Container>
         <CalendarHeader>
           <MonthNavigation>
             <NavButton onPress={() => changeMonth(-1)}>
-              <Icon name="chevron-left" size={24} color="#fff" />
+              <MaterialIcons name="chevron-left" size={24} color="#fff" />
             </NavButton>
             <MonthText>
               {`${date.toLocaleString('default', { month: 'long' })} ${currentYear}`}
             </MonthText>
             <NavButton onPress={() => changeMonth(1)}>
-              <Icon name="chevron-right" size={24} color="#fff" />
+              <MaterialIcons name="chevron-right" size={24} color="#fff" />
             </NavButton>
           </MonthNavigation>
 
@@ -385,7 +387,7 @@ const AttendanceStatus = ({ id: empId }) => {
           <CalendarGrid>
             {renderCalendarDays()}
           </CalendarGrid>
-          
+
           <StatusGuideContainer>
             <StatusGuideTitle>Status Guide</StatusGuideTitle>
             <StatusGuideItem>
@@ -421,7 +423,7 @@ const AttendanceStatus = ({ id: empId }) => {
             }
           }}
         />
-         <Loader visible={loading} onTimeout={() => {
+        <Loader visible={loading} onTimeout={() => {
           setIsErrorVisiable(true);
           setLoading(false);
         }} />

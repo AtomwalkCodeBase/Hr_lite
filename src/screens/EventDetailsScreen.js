@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import HeaderComponent from '../components/HeaderComponent';
 import { MaterialIcons, Feather, Ionicons } from '@expo/vector-icons';
-import ImageViewer from 'react-native-image-zoom-viewer';
+import ImageView from 'react-native-image-viewing';
 import { getEventsResponse, processEventResponse } from '../services/productServices';
 import moment from 'moment';
 import CommentInputInline from '../components/CommentInputInline';
@@ -366,12 +366,12 @@ const EventDetailsScreen = (props) => {
       <SafeAreaView style={{ flex: 1 }}>
         <HeaderComponent headerTitle="View Image" onBackPress={handleBackPress} />
         <View style={{ flex: 1, backgroundColor: '#000' }}>
-          <ImageViewer
-            imageUrls={[{ url: selectedImageUrl }]}
-            enableSwipeDown={true}
-            onSwipeDown={handleBackPress}
-            backgroundColor="#000"
-            renderIndicator={() => null}
+          <ImageView
+            images={[{ uri: selectedImageUrl }]}
+            imageIndex={0}
+            visible={true}
+            onRequestClose={handleBackPress}
+            presentationStyle="overFullScreen"
           />
         </View>
       </SafeAreaView>

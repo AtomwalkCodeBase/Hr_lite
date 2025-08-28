@@ -1,5 +1,11 @@
 import { Stack } from "expo-router";
 import {AppProvider} from '../context/AppContext'
+import { BackHandler } from 'react-native';
+
+if (BackHandler && typeof BackHandler.removeEventListener !== 'function') {
+  BackHandler.removeEventListener = () => {};
+}
+
 
 export default function RootLayout() {
   return (

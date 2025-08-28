@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, StatusBar, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getActivitylist, getProjectlist, getTimesheetData, postTimeList } from "../services/productServices";
@@ -20,6 +20,7 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import { EmployeeInfoCard } from '../components/SharedTimesheetComponents';
 import TabNavigation from '../components/TabNavigation';
 import moment from "moment";
+import { StatusBar } from "expo-status-bar";
 
 const TimeSheet = () => {
   const { employee: employeeParam } = useLocalSearchParams();
@@ -568,167 +569,170 @@ const TimeSheet = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#a970ff" barStyle="light-content" />
+  <View style={styles.container}>
+    <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
+    <View style={styles.statusBarBackground}>
+      <SafeAreaView style={styles.safeArea}>
+        <HeaderComponent 
+          headerTitle="Timesheet" 
+          onBackPress={() => navigate.goBack()}
+          icon1Name="filter"
+          icon1OnPress={openFilterModal}
+          icon2Name={showAddIcon ? "add" : undefined}
+          icon2OnPress={showAddIcon ? () => setShowAddModal(true) : undefined}
+          filterCount={appliedFilterCount}
+        />
 
-      <HeaderComponent 
-        headerTitle="Timesheet" 
-        onBackPress={() => navigate.goBack()}
-        icon1Name="filter"
-        icon1OnPress={openFilterModal}
-        icon2Name={showAddIcon ? "add" : undefined}
-        icon2OnPress={showAddIcon ? () => setShowAddModal(true) : undefined}
-        filterCount={appliedFilterCount}
-      />
+        <TabNavigation tabs={[{label: 'Summary', value: 'summary'}, {label: 'Timesheet', value: 'timesheet'}]} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <TabNavigation tabs={[{label: 'Summary', value: 'summary'}, {label: 'Timesheet', value: 'timesheet'}]} activeTab={activeTab} setActiveTab={setActiveTab} />
+        <TimeSheetWeekNavigation currentWeekStart={currentWeekStart} onNavigate={navigateWeek} formatDisplayDate={formatDisplayDate} getCurrentWeekDates={getCurrentWeekDates} filterRange={{ year: filters.year, month: filters.month, setFilters }} getFilterDateRange={getFilterDateRange} monthOptions={monthOptions} />
 
-      <TimeSheetWeekNavigation currentWeekStart={currentWeekStart} onNavigate={navigateWeek} formatDisplayDate={formatDisplayDate} getCurrentWeekDates={getCurrentWeekDates} filterRange={{ year: filters.year, month: filters.month, setFilters }} getFilterDateRange={getFilterDateRange} monthOptions={monthOptions} />
+        {employee && <EmployeeInfoCard employee={employee} />}
 
-      {employee && <EmployeeInfoCard employee={employee} />}
+        {activeTab === 'summary' && (
+          <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
+            {filteredTasks.length > 0 ? (
+              <TimeSheetWeeklySummary
+                tasks={filteredTasks}
+                formatDisplayDate={formatDisplayDate}
+                getCurrentWeekDates={getCurrentWeekDates}
+                currentWeekStart={currentWeekStart}
+                currentMonthStart={currentMonthStart}
+                monthFilter={filters.month}
+                isSelfView={isSelfView}
+                onEdit={editTask}
+                onDelete={handleDelete}
+                showAddModal={(date) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    date: date instanceof Date ? date : new Date(date)
+                  }));
+                  setShowAddModal(true);
+                }}
+                showAddIcon={showAddIcon}
+              />
+            ) : (
+              <EmptyState icon="calendar-outline" text="No summary available for this period" />
+            )}
+          </ScrollView>
+        )}
 
-      {activeTab === 'summary' && (
-        <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
-          {filteredTasks.length > 0 ? (
-            <TimeSheetWeeklySummary
-              tasks={filteredTasks}
-              formatDisplayDate={formatDisplayDate}
-              getCurrentWeekDates={getCurrentWeekDates}
-              currentWeekStart={currentWeekStart}
-              currentMonthStart={currentMonthStart}
-              monthFilter={filters.month}
-              isSelfView={isSelfView}
-              onEdit={editTask}
-              onDelete={handleDelete}
-              showAddModal={(date) => {
-                setFormData(prev => ({
-                  ...prev,
-                  date: date instanceof Date ? date : new Date(date)
-                }));
-                setShowAddModal(true);
-              }}
-              showAddIcon={showAddIcon}
-            />
-          ) : (
-            <EmptyState icon="calendar-outline" text="No summary available for this period" />
-          )}
-        </ScrollView>
-      )}
+        {activeTab === 'timesheet' && (
+          <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
+            {filteredTasks.length === 0 ? (
+              <EmptyState
+                icon="calendar-outline"
+                text={
+                  employee
+                    ? hasActiveFilters()
+                      ? "No timesheet entries match your current filters for this employee"
+                      : "No Timesheet found for this employee"
+                    : hasActiveFilters()
+                      ? "No timesheet entries match your current filters"
+                      : "No Timesheet found for this period"
+                }
+              />
+            ) : (
+              filteredTasks.map((task) => (
+                <TimeSheetCard key={task.id} task={task} onEdit={editTask} isSelfView={isSelfView} onApprove={handleApproveReject} onReject={handleApproveReject} onDelete={handleDelete} EditView={companyInfo.is_geo_location_enabled}/>
+              ))
+            )}
+          </ScrollView>
+        )}
 
-      {activeTab === 'timesheet' && (
-        <ScrollView style={styles.taskList} showsVerticalScrollIndicator={false}>
-          {filteredTasks.length === 0 ? (
-            <EmptyState
-              icon="calendar-outline"
-              text={
-                employee
-                  ? hasActiveFilters()
-                    ? "No timesheet entries match your current filters for this employee"
-                    : "No Timesheet found for this employee"
-                  : hasActiveFilters()
-                    ? "No timesheet entries match your current filters"
-                    : "No Timesheet found for this period"
-              }
-            />
-          ) : (
-            filteredTasks.map((task) => (
-              <TimeSheetCard key={task.id} task={task} onEdit={editTask} isSelfView={isSelfView} onApprove={handleApproveReject} onReject={handleApproveReject} onDelete={handleDelete} EditView={companyInfo.is_geo_location_enabled}/>
-            ))
-          )}
-        </ScrollView>
-      )}
+        {showApproveWeeklyButton && (
+          <View style={styles.actionButtonContainer}>
+            <ApplyButton onPress={() => setApproveConfirmModalVisible(true)} buttonText="Approve Weekly TimeSheet" />
+          </View>
+        )}
 
-      {showApproveWeeklyButton && (
-        <View style={styles.actionButtonContainer}>
-          <ApplyButton onPress={() => setApproveConfirmModalVisible(true)} buttonText="Approve Weekly TimeSheet" />
-        </View>
-      )}
+        {showSubmitWeeklyButton && (
+          <View style={styles.actionButtonContainer}>
+            <ApplyButton onPress={() => setSubmitConfirmModalVisible(true)} buttonText="Submit Weekly TimeSheet" />
+          </View>
+        )}
 
-      {showSubmitWeeklyButton && (
-        <View style={styles.actionButtonContainer}>
-          <ApplyButton onPress={() => setSubmitConfirmModalVisible(true)} buttonText="Submit Weekly TimeSheet" />
-        </View>
-      )}
+        <AddEditTaskModal visible={showAddModal} onClose={closeAddModal} onSubmit={handleSubmit} isLoading={isLoading} formData={formData} setFormData={setFormData} editingTask={editingTask} projects={projects} activities={activities} projectActiveTab={projectActiveTab} setProjectActiveTab={setProjectActiveTab} fetchProjectCategories={fetchProjectCategories} EmpId={EmpId} hasProjects={hasProjects} />
 
-      <AddEditTaskModal visible={showAddModal} onClose={closeAddModal} onSubmit={handleSubmit} isLoading={isLoading} formData={formData} setFormData={setFormData} editingTask={editingTask} projects={projects} activities={activities} projectActiveTab={projectActiveTab} setProjectActiveTab={setProjectActiveTab} fetchProjectCategories={fetchProjectCategories} EmpId={EmpId} hasProjects={hasProjects} />
+        <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
+          onClearFilters={() => {
+            setPendingFilters({
+              project: "",
+              status: "",
+              activity: "",
+              year: "",
+              month: "",
+            });
+            setFilters({
+              project: "",
+              status: "",
+              activity: "",
+              year: "",
+              month: "",
+            });
+            setCurrentWeekStart(new Date());
+          }}
+          filterConfigs={filterConfigs}
+          modalTitle="Filter TimeSheet"
+          onApplyFilters={() => {
+            setFilters(pendingFilters);
+            setShowFilterModal(false);
+          }}
+          tabs={hasProjects ? [
+            { label: 'Assign Project', value: 'Assign Project' },
+            { label: 'Other Projects', value: 'Other Projects' }
+          ] : []}
+          activeTab={filterActiveTab}
+          setActiveTab={(tab) => {
+            setProjectActiveTab(tab); // This will automatically sync filterActiveTab via useEffect
+            if (tab === 'Assign Project') {
+              fetchProjectCategories(EmpId); // With EmpId
+            } else {
+              fetchProjectCategories(""); // Without EmpId
+            }
+            // Clear the project filter when switching tabs
+            setPendingFilters(prev => ({ ...prev, project: "" }));
+          }}
+        />
 
-      <FilterModal visible={showFilterModal} onClose={() => setShowFilterModal(false)}
-        onClearFilters={() => {
-          setPendingFilters({
-            project: "",
-            status: "",
-            activity: "",
-            year: "",
-            month: "",
-          });
-          setFilters({
-            project: "",
-            status: "",
-            activity: "",
-            year: "",
-            month: "",
-          });
-          setCurrentWeekStart(new Date());
-        }}
-        filterConfigs={filterConfigs}
-        modalTitle="Filter TimeSheet"
-        onApplyFilters={() => {
-          setFilters(pendingFilters);
-          setShowFilterModal(false);
-        }}
-        tabs={hasProjects ? [
-          { label: 'Assign Project', value: 'Assign Project' },
-          { label: 'Other Projects', value: 'Other Projects' }
-        ] : []}
-        activeTab={filterActiveTab}
-        setActiveTab={(tab) => {
-          setProjectActiveTab(tab); // This will automatically sync filterActiveTab via useEffect
-          if (tab === 'Assign Project') {
-            fetchProjectCategories(EmpId); // With EmpId
-          } else {
-            fetchProjectCategories(""); // Without EmpId
+        <RemarkModal visible={showRemarkModal} onClose={() => setShowRemarkModal(false)} remark={remark} setRemark={setRemark} isLoading={isLoading} selectedAction={selectedAction} onSubmit={handleSubmit} />
+
+        <SuccessModal
+          visible={isSuccessModalVisible}
+          onClose={() => setIsSuccessModalVisible(false)}
+          message={successMessage}
+        />
+
+        <ErrorModal
+          visible={isErrorModalVisible}
+          message={errorMessage}
+          onClose={() => setIsErrorModalVisible(false)}
+        />
+
+        <ConfirmationModal
+          visible={SubmitConfirmModalVisible || ApproveConfirmModalVisible}
+          message={
+            SubmitConfirmModalVisible
+              ? `Once you submit timesheet you can not add new task for this week.${'\n\n'} Are you sure to submit it?`
+              : "Are you sure you want to approve timesheet for this employee?"
           }
-          // Clear the project filter when switching tabs
-          setPendingFilters(prev => ({ ...prev, project: "" }));
-        }}
-      />
+          messageColor="#EF6C00"
+          onConfirm={() => {
+            handleWeeklySubmit(SubmitConfirmModalVisible ? "WEEKLY_SUBMIT" : "WEEKLY_APPROVE");
+          }}
+          onCancel={() => {
+            setSubmitConfirmModalVisible(false);
+            setApproveConfirmModalVisible(false);
+          }}
+          confirmText={SubmitConfirmModalVisible ? "Submit" : "Approve"}
+          cancelText="Cancel"
+        />
 
-      <RemarkModal visible={showRemarkModal} onClose={() => setShowRemarkModal(false)} remark={remark} setRemark={setRemark} isLoading={isLoading} selectedAction={selectedAction} onSubmit={handleSubmit} />
-
-      <SuccessModal
-        visible={isSuccessModalVisible}
-        onClose={() => setIsSuccessModalVisible(false)}
-        message={successMessage}
-      />
-
-      <ErrorModal
-        visible={isErrorModalVisible}
-        message={errorMessage}
-        onClose={() => setIsErrorModalVisible(false)}
-      />
-
-      <ConfirmationModal
-        visible={SubmitConfirmModalVisible || ApproveConfirmModalVisible}
-        message={
-          SubmitConfirmModalVisible
-            ? `Once you submit timesheet you can not add new task for this week.${'\n\n'} Are you sure to submit it?`
-            : "Are you sure you want to approve timesheet for this employee?"
-        }
-        messageColor="#EF6C00"
-        onConfirm={() => {
-          handleWeeklySubmit(SubmitConfirmModalVisible ? "WEEKLY_SUBMIT" : "WEEKLY_APPROVE");
-        }}
-        onCancel={() => {
-          setSubmitConfirmModalVisible(false);
-          setApproveConfirmModalVisible(false);
-        }}
-        confirmText={SubmitConfirmModalVisible ? "Submit" : "Approve"}
-        cancelText="Cancel"
-      />
-
-      <Loader visible={isLoading} />
-    </SafeAreaView>
-  );
+        <Loader visible={isLoading} />
+      </SafeAreaView>
+    </View>
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
@@ -736,8 +740,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
+  statusBarBackground: {
+    flex: 1,
+    backgroundColor: '#a970ff', // Your desired status bar color
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   taskList: {
     flex: 1,
+    paddingHorizontal: 16,
     // padding: 16,
   },
   emptyState: {

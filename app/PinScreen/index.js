@@ -18,13 +18,13 @@ import {
 } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import Logos from '../../assets/images/Atom_walk_logo.jpg'
-import Icon from 'react-native-vector-icons/Ionicons';
 import { AppContext } from '../../context/AppContext';
 import Loader from '../../src/components/old_components/Loader';
 import ErrorModal from '../../src/components/ErrorModal';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../../src/components/ConfirmationModal';
 import Constants from 'expo-constants';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -190,14 +190,14 @@ const AuthScreen = () => {
                         <Image source={Logos} style={styles.logo} />
                     ) : (
                         <View style={styles.companyPlaceholder}>
-                            <Icon name="business" size={scaleWidth(40)} color="#fff" />
+                            <Ionicons name="business" size={scaleWidth(40)} color="#fff" />
                         </View>
                     )}
                 </View>
                 <Text style={styles.welcomeText}>Welcome to ATOMWALK HRM</Text>
                 {userName && (
                     <View style={styles.userInfoContainer}>
-                        <Icon name="person-circle-outline" size={24} color="#fff" />
+                        <Ionicons name="person-circle-outline" size={24} color="#fff" />
                         <Text style={styles.userName}>{userName}</Text>
                     </View>
                 )}
@@ -214,10 +214,10 @@ const AuthScreen = () => {
                             onPress={() => setShowPinInput(true)}
                         >
                             <View style={styles.authButtonIconContainer}>
-                                <Icon name="lock-closed-outline" size={22} color="#7722F9" />
+                                <Ionicons name="lock-closed-outline" size={22} color="#7722F9" />
                             </View>
                             <Text style={styles.authButtonText}>Login with PIN</Text>
-                            <Icon name="chevron-forward-outline" size={20} color="#777" style={styles.authButtonArrow} />
+                            <Ionicons name="chevron-forward-outline" size={20} color="#777" style={styles.authButtonArrow} />
                         </TouchableOpacity>
 
                         {showBiomatricOption && (
@@ -229,17 +229,17 @@ const AuthScreen = () => {
                                 }}
                             >
                                 <View style={styles.authButtonIconContainer}>
-                                    <Icon name="finger-print-outline" size={22} color="#7722F9" />
+                                    <Ionicons name="finger-print-outline" size={22} color="#7722F9" />
                                 </View>
                                 <Text style={styles.authButtonText}>Login with Fingerprint</Text>
-                                <Icon name="chevron-forward-outline" size={20} color="#777" style={styles.authButtonArrow} />
+                                <Ionicons name="chevron-forward-outline" size={20} color="#777" style={styles.authButtonArrow} />
                             </TouchableOpacity>
                         )}
                         <TouchableOpacity
                             onPress={() => setIsLogoutModalVisible(true)}
                             style={styles.forgotContainer}
                         >
-                            <Icon name="log-out-outline" size={16} color="#9C5EF9" />
+                            <Ionicons name="log-out-outline" size={16} color="#9C5EF9" />
                             <Text style={styles.forgotText}>Change Active User</Text>
                         </TouchableOpacity>
                     </View>
@@ -268,7 +268,7 @@ const AuthScreen = () => {
 
                         {(hasFailedAttempt || contextErrorMessage) && (
                             <View style={styles.errorContainer}>
-                                <Icon name="alert-circle-outline" size={16} color="#E02020" />
+                                <Ionicons name="alert-circle-outline" size={16} color="#E02020" />
                                 <Text style={styles.errorText}>
                                     {contextErrorMessage || "Incorrect PIN. Please Try Again."}
                                 </Text>
@@ -318,7 +318,7 @@ const AuthScreen = () => {
                                     setAttemptsRemaining(maxAttempts);
                                 }}
                             >
-                                <Icon name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
+                                <Ionicons name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
                                 <Text style={styles.backButtonText}>Back to Login Options</Text>
                             </TouchableOpacity>
                         )}
@@ -327,7 +327,7 @@ const AuthScreen = () => {
                                 onPress={() => setIsLogoutModalVisible(true)}
                                 style={styles.forgotContainer}
                             >
-                                <Icon name="log-out-outline" size={16} color="#9C5EF9" />
+                                <Ionicons name="log-out-outline" size={16} color="#9C5EF9" />
                                 <Text style={styles.forgotText}>Change Active User</Text>
                             </TouchableOpacity>
                         )}
@@ -347,7 +347,7 @@ const AuthScreen = () => {
                                 checkNetworkAndAuthenticate();
                             }}
                         >
-                            <Icon name="finger-print" size={80} color="#9C5EF9" />
+                            <Ionicons name="finger-print" size={80} color="#9C5EF9" />
                         </TouchableOpacity>
 
                         <Text style={styles.fingerprintHint}>
@@ -364,14 +364,14 @@ const AuthScreen = () => {
                                 setAttemptsRemaining(maxAttempts);
                             }}
                         >
-                            <Icon name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
+                            <Ionicons name="arrow-back-outline" size={16} color="#9C5EF9" style={styles.backIcon} />
                             <Text style={styles.backButtonText}>Back to Login Options</Text>
                         </TouchableOpacity>
                     </View>
                 )}
 
                 <View style={styles.securityNote}>
-                    <Icon name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
+                    <Ionicons name="shield-checkmark-outline" size={20} color="#FFA726" style={styles.noteIcon} />
                     <View style={styles.noteContent}>
                         <Text style={styles.noteTitle}>Security Notice</Text>
                         <Text style={styles.noteText}>
