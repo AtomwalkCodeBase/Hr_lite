@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 30,
     // paddingBottom: 30,
-    maxHeight: height * 0.95,
+    maxHeight: height * 0.85,
   },
   scrollContent: {
     // paddingBottom: 20,
