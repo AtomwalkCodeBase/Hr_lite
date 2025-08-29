@@ -71,15 +71,15 @@ const AppProvider = ({ children }) => {
     //calculate check in location and parameter location
     const calculateDistance = (lat1, lon1, lat2, lon2) => {
         const R = 6371e3; // Earth radius in meters
-        const φ1 = lat1 * Math.PI/180;
-        const φ2 = lat2 * Math.PI/180;
-        const Δφ = (lat2-lat1) * Math.PI/180;
-        const Δλ = (lon2-lon1) * Math.PI/180;
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
 
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2) * Math.sin(Δλ/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return R * c;
     };
@@ -148,7 +148,7 @@ const AppProvider = ({ children }) => {
             const res = await getTimesheetData(empId, date, date);
             const timesheetEntries = res.data || [];
             const MAX_DAILY_HOURS = 9;
-            
+
             if (!timesheetEntries.length) {
                 return { notFilled: true, totalEffort: 0, isEffortOutOfRange: false, isValid: false };
             }
@@ -211,7 +211,7 @@ const AppProvider = ({ children }) => {
 
             // Set geolocation configuration
             setGeoLocationConfig({
-                isEnabled: !!companyGeoEnabled && !!companyAllowedDistance, 
+                isEnabled: !!companyGeoEnabled && !!companyAllowedDistance,
                 allowedRadius: companyAllowedDistance,
                 originLatitude: finalOriginLat,
                 originLongitude: finalOriginLon,
@@ -577,7 +577,7 @@ const AppProvider = ({ children }) => {
         if (!employeeData) return;
 
         setIsLoading(true);
-        
+
         // Check geolocation validation for check-in
         if (data === 'ADD' && geoLocationConfig.isEnabled && (geoLocationConfig.mode === "T" || geoLocationConfig.mode === "A") && profile.is_geo_disabled !== true) {
             const { isValid } = await validateLocationDistance(setErrorModal);
@@ -588,7 +588,7 @@ const AppProvider = ({ children }) => {
         }
 
         const location = await getLocationWithPermission(setErrorModal);
-        
+
         if (!location) {
             setIsLoading(false);
             return;
@@ -616,12 +616,11 @@ const AppProvider = ({ children }) => {
             setRefreshKey((prevKey) => prevKey + 1);
             setSuccessModal(true);
             if (data === 'UPDATE') setRemark('');
-            
+
             // Refresh attendance data to update UI immediately
             await refreshData();
         } catch (error) {
-            console.error('Check in/out error:', error);
-            setErrorModal({message: "Failed to Check.", visible: true});
+            setErrorModal({ message: error?.response?.data?.message, visible: true });
         } finally {
             setIsLoading(false);
         }
@@ -643,7 +642,7 @@ const AppProvider = ({ children }) => {
             );
 
             if (!yesterdayRecord) {
-                setErrorModal({message: "No pending checkout found for yesterday", visible: true});
+                setErrorModal({ message: "No pending checkout found for yesterday", visible: true });
                 return;
             }
 
@@ -668,7 +667,7 @@ const AppProvider = ({ children }) => {
         try {
             setIsLoading(true);
             const location = await getLocationWithPermission(setErrorModal);
-            
+
             if (!location) {
                 setIsLoading(false);
                 return;
@@ -683,12 +682,12 @@ const AppProvider = ({ children }) => {
             setSuccessModal(true);
             setRemark('');
             setIsYesterdayCheckout(false);
-            
+
             // Refresh attendance data to update UI immediately
             await refreshData();
         } catch (error) {
             console.error('Checkout error:', error);
-            setErrorModal({message: "Failed to complete checkout", visible: true});
+            setErrorModal({ message: "Failed to complete checkout, Please try again.", visible: true });
         } finally {
             setIsLoading(false);
         }
@@ -699,58 +698,59 @@ const AppProvider = ({ children }) => {
         setRemarkModal(true);
     };
 
-   const handleCheckOutAttempt = async (setRemarkModal, setErrorModal, setShowEffortConfirmModal) => {
-    setIsLoading(true);
-    try {
-        const geoLocationEnabled = geoLocationConfig.mode;
+    const handleCheckOutAttempt = async (setRemarkModal, setErrorModal, setShowEffortConfirmModal) => {
+        setIsLoading(true);
+        try {
+            const geoLocationEnabled = geoLocationConfig.mode;
 
-        // Step 1: Ask for location permission if required (skip when geo disabled at profile)
-        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setErrorModal({
-                    message: 'Location permission is required to check out.',
-                    visible: true
-                });
-                return;
-            }
-        }
-
-        // Step 2: Timesheet validations (only in "T")
-        if (geoLocationEnabled === "T") {
-            const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
-
-            if (notFilled) {
-                setErrorModal({
-                    message: "You did not fill today's timesheet. Please fill it before checking out.",
-                    visible: true
-                });
-                return;
+            // Step 1: Ask for location permission if required (skip when geo disabled at profile)
+            if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
+                const { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    setErrorModal({
+                        message: 'Location permission is required to check out.',
+                        visible: true
+                    });
+                    return;
+                }
             }
 
-            if (isEffortOutOfRange) {
-                setShowEffortConfirmModal(true);
-                return;
+            // Step 2: Timesheet validations (only in "T")
+            if (geoLocationEnabled === "T") {
+                const { notFilled, isEffortOutOfRange } = await validateTimesheetForCheckout(employeeData.emp_id, currentDate);
+
+                if (notFilled) {
+                    setErrorModal({
+                        message: "You did not fill today's timesheet. Please fill it before checking out.",
+                        visible: true
+                    });
+                    return;
+                }
+
+                if (isEffortOutOfRange) {
+                    setShowEffortConfirmModal(true);
+                    return;
+                }
             }
-        }
 
-        // Step 3: Geo-distance validation (skip when geo disabled at profile)
-        if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
-            const { isValid } = await validateLocationDistance(setErrorModal);
-            if (!isValid) return;
-        }
+            // Step 3: Geo-distance validation (skip when geo disabled at profile)
+            if ((geoLocationEnabled === "T" || geoLocationEnabled === "A") && profile.is_geo_disabled !== true) {
+                const { isValid } = await validateLocationDistance(setErrorModal);
+                if (!isValid) return;
+            }
 
-        // Step 4: If all passed, show remark modal
-        setTimesheetCheckedToday(true);
-        setRemarkModal(true);
-        
+            // Step 4: If all passed, show remark modal
+            setTimesheetCheckedToday(true);
+            setRemarkModal(true);
+
         } catch (error) {
             console.error("Error during check-out attempt:", error);
             setErrorModal({
-                message: 'Something went wrong. Please try again.',
+                message: error?.response?.data?.message || 'Something went wrong. Please try again.',
                 visible: true
             });
-        } finally {
+        }
+        finally {
             setIsLoading(false);
         }
     };
@@ -816,7 +816,7 @@ const AppProvider = ({ children }) => {
         } catch (error) {
             console.error("Error refreshing data:", error);
         }
-        finally{
+        finally {
             setIsLoading(false)
         }
     };

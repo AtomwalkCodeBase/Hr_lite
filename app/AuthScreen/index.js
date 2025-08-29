@@ -269,10 +269,14 @@ const LoginScreen = () => {
         </Header>
         <MainContent keyboardStatus={keyboardStatus}>
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              { paddingBottom: keyboardStatus ? scaleHeight(150) : scaleHeight(50) }
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+
             <Content>
               <Card>
                 <Title>Login</Title>
@@ -454,7 +458,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: scaleHeight(70), // Add padding to prevent content from being hidden behind footer
   },
   hiddenFooter: {
     display: 'none',

@@ -259,7 +259,7 @@ const ResetPasswordScreen = () => {
                   Never share your PIN with anyone
                   {'\n'}
                   <Text style={styles.bulletPoint}>• </Text>
-                  If you've updated your PIN, please logout and login again with your new PIN
+                  If you've updated your PIN using web app, please logout and login again with your new PIN.
                 </Text>
               </View>
             </View>
