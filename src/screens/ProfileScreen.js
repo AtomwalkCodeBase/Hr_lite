@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#ecf0f1',
-    paddingBottom: 30,
+    paddingBottom: 50,
   },
   profileHeader: {
     backgroundColor: '#fff',

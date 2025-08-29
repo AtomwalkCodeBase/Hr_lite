@@ -109,7 +109,7 @@ const IdCard = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea}>
       <HeaderComponent headerTitle="Digital ID Card" onBackPress={handleBackPress} />
       
       <Loader visible={isLoading} onTimeout={() => setIsLoading(false)} />
@@ -174,8 +174,8 @@ const IdCard = () => {
                   {/* Right side - Employee Details */}
                   <View style={styles.detailsSection}>
                     <Text style={styles.employeeName}>{profile?.name || "Employee Name"}</Text>
-                    {profile?.grade_name && (
-                      <Text style={styles.designation}>{profile?.grade_name}</Text>
+                    {(profile?.grade_name || profile?.job_title) && (
+                      <Text style={styles.designation}>{profile?.job_title ? profile?.job_title : profile?.grade_name}</Text>
                     )}
                     
                     <View style={styles.detailRow}>

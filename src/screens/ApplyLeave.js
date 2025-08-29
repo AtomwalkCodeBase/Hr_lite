@@ -12,6 +12,7 @@ import { colors } from '../Styles/appStyle';
 import HeaderComponent from '../components/HeaderComponent';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ErrorModal from '../components/ErrorModal';
 
 const Container = styled.ScrollView`
   flex: 1;
@@ -106,10 +107,8 @@ const ApplyLeave = (props) => {
       })
       .catch((error) => {
         setIsLoading(false); // Hide loader on error
-        Alert.alert(
-          'Leave Application Failed',
-          'Please verify the selected dates. Either the dates are already approved or fall on a holiday.'
-        );
+        setErrorMessage(error?.response?.data?.message)
+        setIsErrorModalVisible(true)
       });
   };
 
@@ -134,12 +133,14 @@ const ApplyLeave = (props) => {
           setRemark={setRemarks}
           error={errors.remarks} 
         />
+        {profile?.max_no_leave !== 0 &&  
         <SubmitButton
           label="Apply Leave (EL)"
           onPress={() => { validate('EL'); }}
           bgColor={colors.primary}
           textColor="white"
         />
+}
 
          <SubmitButton
         label="Apply Half Day"
@@ -181,6 +182,12 @@ const ApplyLeave = (props) => {
           setIsSuccessModalVisible(false); // Hide modal on close
           router.push('leave'); // Navigate back to leave page
         }} 
+      />
+
+      <ErrorModal
+      visible={isErrorModalVisible}
+      message={errorMessage}
+      onClose={() => setIsErrorModalVisible(false)}
       />
     </SafeAreaView>
   );
