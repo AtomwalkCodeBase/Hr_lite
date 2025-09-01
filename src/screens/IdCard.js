@@ -8,7 +8,6 @@ import {
   Dimensions, 
   ScrollView,
   Platform,
-  StatusBar
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';

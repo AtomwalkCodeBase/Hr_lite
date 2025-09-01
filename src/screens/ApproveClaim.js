@@ -12,7 +12,6 @@ import {
   Animated,
   Easing,
   BackHandler,
-  StatusBar
 } from 'react-native';
 import { MaterialIcons, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
@@ -179,15 +178,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#424242',
     fontWeight: 'bold',
-  },
-  statusBarBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: StatusBar.currentHeight, // This gets the actual status bar height
-    backgroundColor: '#a970ff', // Your status bar color
-    zIndex: 999,
   },
   safeArea: {
     flex: 1,
@@ -642,9 +632,6 @@ const ApproveClaim = () => {
 
   return (
     <>
-  <StatusBar barStyle="light-content" />
-  <View style={styles.statusBarBackground} />
-  
   <SafeAreaView style={styles.safeArea}>
       <HeaderComponent 
         headerTitle={`Approve Claim List (${filteredData.length})`}

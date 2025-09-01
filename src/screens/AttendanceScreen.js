@@ -10,7 +10,6 @@ import {
   ScrollView,
   Dimensions,
   BackHandler,
-  StatusBar,
   // BackHandler,
 } from 'react-native';
 import moment from 'moment';
@@ -179,7 +178,6 @@ const AddAttendance = () => {
   if (!employeeData) {
     return (
       <>
-      <StatusBar barStyle="light-content" />
       <View style={styles.statusBarBackground}>
       <View style={styles.container}>
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
@@ -194,11 +192,7 @@ const AddAttendance = () => {
 
   return (
     <>
-  <StatusBar barStyle="light-content" />
-  {/* Status bar background only */}
-  <View style={styles.statusBarBackground} />
-  
-  <SafeAreaView style={styles.safeArea}>
+  <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
 
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
@@ -419,18 +413,9 @@ const AddAttendance = () => {
 };
 
 const styles = StyleSheet.create({
-  statusBarBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: StatusBar.currentHeight, // This gets the actual status bar height
-    backgroundColor: '#a970ff', // Your status bar color
-    zIndex: 999,
-  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f7fa', // Your screen background color
+    backgroundColor: '#a970ff', // Your screen background color
   },
   container: {
     flex: 1,
@@ -449,7 +434,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 24,
+    // paddingBottom: 24,
     backgroundColor: '#f5f7fa',
   },
   datetimeCard: {

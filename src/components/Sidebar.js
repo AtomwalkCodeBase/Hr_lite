@@ -268,6 +268,13 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
     });
   };
 
+    const handlePressTravelRequest = () => {  
+    router.push({
+      pathname: 'TravelScreen',
+      params: { empId },
+    });
+  };
+
   const handlePressEvent = () => {  
     router.push({
       pathname: 'EventScr',
@@ -331,45 +338,46 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
   const appMenuItems = [
     {
       name: "Help Desk",
-      icon: <Feather name="help-circle" size={20} color={colors.textSecondary} />,
+      icon: <MaterialCommunityIcons name="handshake-outline" size={20} color={colors.textSecondary} />,
       action: handlePressHelp,
       show: true,
-      hasChevron: true,
     },
     {
       name: "Request Desk",
-      icon: <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />,
+      icon: <FontAwesome6 name="headset" size={20} color={colors.textSecondary} />,
       action: handlePressRequest,
       show: true,
-      hasChevron: true,
     },
     {
       name: "Resolve Desk",
       icon: <MaterialCommunityIcons name="checkbox-multiple-marked-circle-outline" size={20} color={colors.textSecondary} />,
       action: handlePressResolve,
       show: true,
-      hasChevron: true,
     },
+    {
+        name: "Travel Request",
+        icon: <MaterialCommunityIcons name="airplane" size={24} color={colors.textSecondary} />,
+        action: handlePressTravelRequest,
+        show: true,
+
+      },
     {
       name: "Event Updates",
       icon: <MaterialIcons name="tips-and-updates" size={20} color={colors.textSecondary} />,
       action: handlePressEvent,
       show: true,
-      hasChevron: true,
     },
     {
       name: "Shift Information",
       icon: <MaterialIcons name="calendar-month" size={20} color={colors.textSecondary} />,
       action: handlePressShift,
       show: isShift,
-      hasChevron: true,
     },
     {
       name: "My Training",
       icon: <MaterialIcons name="book" size={20} color={colors.textSecondary} />,
       action: handlePressTraining,
       show: true,
-      hasChevron: true,
     }
   ].filter(item => item.show);
 
@@ -386,12 +394,6 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
       <Text style={[styles.menuText, isActive && styles.menuTextActive]}>
         {item.name}
       </Text>
-      {/* {item.badge && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{item.badge}</Text>
-        </View>
-      )} */}
-      {item.hasChevron && (
         <View style={styles.chevron}>
           <Ionicons 
             name="chevron-forward" 
@@ -399,7 +401,6 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
             color={isActive ? colors.primary : colors.textMuted} 
           />
         </View>
-      )}
     </TouchableOpacity>
   );
 
@@ -467,7 +468,7 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
               activeOpacity={0.8}
             >
               <View style={styles.logoutIcon}>
-                <Feather name="log-out" size={20} color={colors.error} />
+                <MaterialCommunityIcons name="exit-run" size={20} color={colors.error} />
               </View>
               <Text style={styles.logoutText}>LOGOUT</Text>
             </TouchableOpacity>

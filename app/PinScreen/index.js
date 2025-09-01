@@ -11,9 +11,7 @@ import {
     Alert,
     ImageBackground,
     Dimensions,
-    StatusBar,
     Image,
-    SafeAreaView,
     ScrollView
 } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -25,6 +23,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import ConfirmationModal from '../../src/components/ConfirmationModal';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -178,7 +177,6 @@ const AuthScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar backgroundColor="#a970ff" barStyle="light-content" />
 
             {/* Bank Logo Area */}
             <LinearGradient
@@ -424,8 +422,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5F5',
     },
     header: {
-        paddingTop: 100,
-        paddingBottom: 30,
+        paddingVertical: 30,
         paddingHorizontal: 20,
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
@@ -623,8 +620,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         alignItems: 'center',
-        marginTop: 20,
-        paddingVertical: 15,
+        paddingVertical: 30,
     },
     footerText: {
         color: '#888',
@@ -653,7 +649,7 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 8,
         marginTop: 16,
-        marginBottom: 16,
+        marginBottom: 12,
         borderLeftWidth: 4,
         borderLeftColor: '#FFA726',
         width: '100%',

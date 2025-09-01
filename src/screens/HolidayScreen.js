@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
-import { ScrollView, View, TouchableOpacity, Alert, Text, BackHandler, StatusBar } from 'react-native';
+import { ScrollView, View, TouchableOpacity, Alert, Text, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
 import { getEmpHoliday, postEmpLeave } from '../services/productServices';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
@@ -357,9 +357,6 @@ const HolidayScreen = () => {
 
   return (
     <>
-      <StatusBar barStyle="light-content" />
-  {/* Status bar background only */}
-  <View style={styles.statusBarBackground} />
     <MainContainer>
       <HeaderComponent headerTitle="Holiday List" onBackPress={handleBackPress} />
       <Container>
@@ -419,15 +416,3 @@ const HolidayScreen = () => {
 };
 
 export default HolidayScreen;
-
-const styles = StyleSheet.create({
-  statusBarBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: StatusBar.currentHeight, // This gets the actual status bar height
-    backgroundColor: '#a970ff', // Your status bar color
-    zIndex: 999,
-  },
-});

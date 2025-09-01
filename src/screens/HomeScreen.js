@@ -374,7 +374,6 @@ const HomePage = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       {(isLoading) && (
         <View style={styles.loaderContainer}>
           <Loader visible={true} />

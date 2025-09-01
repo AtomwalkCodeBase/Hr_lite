@@ -92,7 +92,7 @@ const ProfileScreen = () => {
         {isLoading ? (
           <Loader visible={isLoading} />
         ) : (
-          <ScrollView contentContainerStyle={styles.container}>
+          <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
             {/* Profile Header */}
             <View style={styles.profileHeader}>
               <TouchableOpacity

@@ -1,16 +1,25 @@
 import { Stack } from "expo-router";
 import { AppProvider } from '../context/AppContext';
-import { BackHandler, StatusBar, View } from 'react-native';
+import { BackHandler, View, StyleSheet,StatusBar, Platform } from 'react-native';
 
 if (BackHandler && typeof BackHandler.removeEventListener !== 'function') {
   BackHandler.removeEventListener = () => {};
 }
 
+const StatusBarBackground = () => {
+  if (Platform.OS === 'android') {
+    return (
+      <View style={styles.statusBarBackground} />
+    );
+  }
+  return null;
+};
+
 export default function RootLayout() {
   return (
     <AppProvider>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.statusBarBackground} />
+      <StatusBarBackground />
+      <StatusBar barStyle="light-content" backgroundColor="#a970ff" translucent={false} />
       
       <Stack>
         <Stack.Screen name="index"/>
@@ -51,14 +60,14 @@ export default function RootLayout() {
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   statusBarBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: StatusBar.currentHeight,
+    height: Platform.OS === 'android' ? StatusBar.currentHeight : 0, // Use fixed height for Android
     backgroundColor: '#a970ff', // Your status bar color
     zIndex: 999,
   }
-};
+});

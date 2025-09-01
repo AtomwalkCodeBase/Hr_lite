@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback } from 'react';
-import { FlatList, Text, View, TouchableOpacity, Dimensions, BackHandler, StatusBar, StyleSheet } from 'react-native';
+import { FlatList, Text, View, TouchableOpacity, Dimensions, BackHandler, StyleSheet } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -240,8 +240,6 @@ const LeaveScreen = (props) => {
 
   return (
     <>
-      <StatusBar barStyle="light-content" />
-       <View style={styles.statusBarBackground} />
     <SafeAreaView style={styles.safeArea}>
       <HeaderComponent headerTitle="Leave Approvals" onBackPress={handleBackPress}/>
       <Container>
@@ -341,15 +339,6 @@ const LeaveScreen = (props) => {
 };
 
 const styles = StyleSheet.create({
-  statusBarBackground: {
-   position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: StatusBar.currentHeight, // This gets the actual status bar height
-    backgroundColor: '#a970ff', // Your status bar color
-    zIndex: 999,
-  },
   safeArea: {
     flex: 1,
     backgroundColor: '#fff'

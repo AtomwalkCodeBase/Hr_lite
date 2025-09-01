@@ -143,7 +143,6 @@ const {completLogout} = useContext(AppContext);
 
   return (
     <SafeAreaContainer>
-      <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
       <Container>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Header>

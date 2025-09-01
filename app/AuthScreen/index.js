@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
 import {
-  View, TouchableOpacity, StyleSheet, Keyboard, StatusBar, SafeAreaView,
+  View, TouchableOpacity, StyleSheet, Keyboard, StatusBar,
   Platform, ScrollView, Dimensions, Image, Text
 } from 'react-native';
 import { MaterialIcons, Entypo } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import CompanyDropdown from '../../src/components/ComanyDropDown';
 import { AppContext } from '../../context/AppContext';
 import Loader from '../../src/components/old_components/Loader';
 import Constants from 'expo-constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 
@@ -234,8 +235,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <SafeAreaContainer>
-      <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
+    <SafeAreaContainer edges={["top"]}>
       <Container>
         <Header style={styles.headerContainer}>
           <LinearGradient

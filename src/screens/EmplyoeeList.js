@@ -8,7 +8,6 @@ import {
   Image,
   TextInput,
   Dimensions,
-  StatusBar,
 } from 'react-native';
 import { AntDesign, Feather, FontAwesome, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { getEmplyoeeList } from '../services/productServices';
@@ -199,8 +198,6 @@ const filterConfigs = useMemo(() => [
         icon1OnPress={openFilterModal}
         filterCount={appliedFilterCount}
       />
-        <StatusBar barStyle="light-content" backgroundColor="#a970ff" />
-
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchBar}>

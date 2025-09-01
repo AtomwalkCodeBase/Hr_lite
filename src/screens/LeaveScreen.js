@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { FlatList,Dimensions, BackHandler } from 'react-native';
 import styled from 'styled-components/native';
-import { useFocusEffect, usePathname, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { MaterialIcons } from '@expo/vector-icons';
 import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';
@@ -97,7 +97,6 @@ const LeaveScreen = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false); // Loader state
   const [totalLeaveSum, setTotalLeaveSum] = useState(0);
-  const pathname = usePathname();
 
   useFocusEffect(
     useCallback(() => {
@@ -275,13 +274,13 @@ const LeaveScreen = () => {
             renderItem={renderLeaveItem}
             keyExtractor={(item) => item.id.toString()}
             ListEmptyComponent={<EmptyMessage data={`leave`} />}
-            contentContainerStyle={{ paddingBottom: responsiveMarginBottom }}
+            // contentContainerStyle={{ paddingBottom: responsiveMarginBottom }}
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}
           />
         )}
         <ApplyButton onPress={() => handlePress(leaveData && leaveData[0]?.emp_data)} buttonText="Apply Leave" 
-          icon='send' currentPath={pathname} />
+          icon='send' />
 
         {selectedLeave && (
           <ModalComponent
