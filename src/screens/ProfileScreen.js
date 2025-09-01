@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#ecf0f1',
-    paddingBottom: 50,
+    paddingBottom: 10,
   },
   profileHeader: {
     backgroundColor: '#fff',
@@ -415,7 +415,8 @@ const styles = StyleSheet.create({
   },
 
   actionContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10
   },
   actionButton: {
     flexDirection: 'row',
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
     color: '#e74c3c',
   },
   versionContainer: {
-    padding: 5,
+    paddingBottom: 65,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -78,7 +78,7 @@ const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFile
       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPermission.granted) {
         let result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ImagePicker.MediaType.IMAGE,
           allowsEditing: true,
           quality: 1,
         });

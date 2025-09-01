@@ -4,35 +4,36 @@ import { Tabs } from 'expo-router'
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 const _layout = () => {
   return (
-    <Tabs screenOptions={{tabBarActiveTintColor:"blue"}}>
-    <Tabs.Screen name='home'
-    options={{
-     title:'Home',
-     headerShown:false,
-     tabBarIcon:({color})=><FontAwesome name="home" size={24} color={color} />
-    }}/>
-    
-    <Tabs.Screen name='leave'
-    options={{
-     title:'Leaves',
-     headerShown:false,
-     tabBarIcon:({color})=><MaterialCommunityIcons name="exit-run" size={24} color={color}/>
-    }}></Tabs.Screen> 
-    <Tabs.Screen name='attendance'
-    options={{
-     title:'Attendance',
-     headerShown:false,
-     tabBarIcon:({color})=><MaterialCommunityIcons name="calendar-account" size={24} color={color} />
-    }}></Tabs.Screen> 
-    <Tabs.Screen name='profile'options={{
-     title:'Profile',
-     headerShown:false,
-     tabBarIcon:({color})=><Ionicons name="people" size={24} color={color}/>
-    }}></Tabs.Screen> 
- </Tabs>
+    <Tabs screenOptions={{ tabBarActiveTintColor: "blue" }}>
+      <Tabs.Screen name='home'
+        options={{
+          title: 'Home',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome name="home" size={24} color={color} />
+        }} />
+
+      <Tabs.Screen name='leave'
+        options={{
+          title: 'Leaves',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="user-clock" size={20} color={color} />
+        }}></Tabs.Screen>
+      <Tabs.Screen name='attendance'
+        options={{
+          title: 'Attendance',
+          headerShown: false,
+          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={22} color={color} />
+        }}></Tabs.Screen>
+      <Tabs.Screen name='profile' options={{
+        title: 'Profile',
+        headerShown: false,
+        tabBarIcon: ({ color }) => <Ionicons name="people" size={24} color={color} />
+      }}></Tabs.Screen>
+    </Tabs>
   )
 }
 

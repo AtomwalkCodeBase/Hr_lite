@@ -48,7 +48,7 @@ const AddAppointee = ({ navigation }) => {
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ImagePicker.MediaType.IMAGE,
             allowsEditing: true,
             quality: 1,
         });
