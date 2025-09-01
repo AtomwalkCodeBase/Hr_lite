@@ -190,23 +190,22 @@ const AttendanceStatus = ({ id: empId }) => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
- useEffect(() => {
-       const onBackPress = () => {
-      if (navigation) {
-        navigation.goBack();
-        return true; // prevent default behavior
-      }
-      return false;
+useFocusEffect(
+  useCallback(() => {
+    const handleBackPress = () => {
+      router.push({ pathname: '/attendance' });
+      return true;
     };
 
-    // Add back handler
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackPress
+    );
 
-    // Clean up on component unmount
-    return () => {
-      backHandler.remove();
-    };
-  }, []);
+    return () => subscription.remove();
+  }, [router]) 
+);
+
 
 
 

@@ -122,11 +122,8 @@ const HomePage = ({ navigation }) => {
   useFocusEffect(
   useCallback(() => {
     const onBackPress = () => {
-      if (navigation) {
-        navigation.goBack();
-        return true; // prevent default behavior
-      }
-      return false;
+      setShowExitModal(true); // ✅ Open exit confirmation modal
+      return true; // ✅ Prevent default back behavior
     };
 
     const subscription = BackHandler.addEventListener(
@@ -135,8 +132,9 @@ const HomePage = ({ navigation }) => {
     );
 
     return () => subscription.remove();
-  }, [navigation])
+  }, [])
 );
+
 
 
   const fetchEvents = async () => {
