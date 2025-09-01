@@ -719,9 +719,9 @@ const styles = StyleSheet.create({
     // Remove the pointerEvents from here - handle it at the component level
   },
   headerGradient: {
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 10,
     paddingHorizontal: 20,
-    paddingBottom: 60, // Extra padding for the curved effect
+    paddingBottom: 40, // Extra padding for the curved effect
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
