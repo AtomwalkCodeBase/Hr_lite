@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   sidebarContent: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? StatusBar.currentHeight || 44 : StatusBar.currentHeight || 24,
+    // paddingTop: Platform.OS === 'ios' ? StatusBar.currentHeight || 44 : StatusBar.currentHeight || 24,
   },
   header: {
     paddingHorizontal: 20,

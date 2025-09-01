@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
     // marginTop: 30,
     position: 'absolute',
     left: '3%',
-    top: '20%',
+    top: '5%',
     zIndex: 50,
     // backgroundColor: 'rgba(169,112,255,0.7)',
     borderRadius: 20,
