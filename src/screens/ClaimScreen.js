@@ -832,7 +832,7 @@ const filterClaims = () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle={headerTitle} 
         onBackPress={handleBackPress}

@@ -173,7 +173,7 @@ const filterConfigs = useMemo(() => [
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle="Request Desk" 
         onBackPress={() => navigate.goBack()} 

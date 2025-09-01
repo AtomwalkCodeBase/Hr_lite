@@ -142,7 +142,7 @@ const {completLogout} = useContext(AppContext);
 
 
   return (
-    <SafeAreaContainer>
+    <SafeAreaContainer edges={["left", "right", "bottom"]}>
       <Container>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Header>

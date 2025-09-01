@@ -113,7 +113,7 @@ const ApplyLeave = (props) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
       <HeaderComponent headerTitle="Apply Leave" onBackPress={handleBackPress} />
       <Container showsVerticalScrollIndicator={false}>
         <DatePicker 

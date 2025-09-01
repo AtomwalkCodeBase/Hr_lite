@@ -189,7 +189,7 @@ const filterConfigs = useMemo(() => [
 
   return (
     <>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
       <HeaderComponent
         headerTitle="Employee List"
         onBackPress={()=> navigate.goBack()}

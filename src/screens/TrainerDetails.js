@@ -16,7 +16,7 @@ const TrainerDetailsScreen = () => {
 
   return (
 	<>
-  <SafeAreaView>
+  <SafeAreaView edges={["left", "right", "bottom"]}>
  			<HeaderComponent 
      	  	headerTitle="More Options" 
          	onBackPress={handleBackPress} 

@@ -240,7 +240,7 @@ const handlePressProfile = () => {
 ].filter(item => item.show); // This filters out any items where show is false
 
   return (
-    <MainContainer>
+    <MainContainer edges={["left", "right", "bottom"]}>
       {/* <ContentContainer> */}
         <Loader visible={loading} />
         <HeaderComponent 

@@ -87,7 +87,7 @@ const ProfileScreen = () => {
 
   return (
     <>
-      <SafeAreaView>
+      <SafeAreaView edges={["left", "right", "bottom"]}>
         <HeaderComponent headerTitle="Employee Profile" onBackPress={() => navigate.goBack()} />
         {isLoading ? (
           <Loader visible={isLoading} />

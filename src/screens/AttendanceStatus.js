@@ -191,9 +191,12 @@ const AttendanceStatus = ({ id: empId }) => {
   }, [navigation]);
 
  useEffect(() => {
-    const onBackPress = () => {
-      handleBackPress();
-      return true; // Prevent default back behavior
+       const onBackPress = () => {
+      if (navigation) {
+        navigation.goBack();
+        return true; // prevent default behavior
+      }
+      return false;
     };
 
     // Add back handler
@@ -354,7 +357,7 @@ const AttendanceStatus = ({ id: empId }) => {
   };
 
   return (
-    <MainContainer>
+    <MainContainer edges={["left", "right", "bottom"]}>
       <HeaderComponent
         headerTitle="Attendance Status"
         onBackPress={handleBackPress}

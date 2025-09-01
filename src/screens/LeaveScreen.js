@@ -221,7 +221,7 @@ const LeaveScreen = () => {
 
   return (
     <>
-    <SafeAreaView>
+    <SafeAreaView edges={["left", "right", "bottom"]}>
       <HeaderComponent headerTitle="My Leaves" onBackPress={handleBackPress} />
       <Container>
       <CardRow>

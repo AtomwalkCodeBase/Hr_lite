@@ -168,7 +168,7 @@ const AddAppointee = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ backgroundColor: colors.white, flex: 1 }}>
+        <SafeAreaView style={{ backgroundColor: colors.white, flex: 1 }} edges={["left", "right", "bottom"]}>
             <HeaderComponent headerTitle="Add Appointee" onBackPress={handleBackPress} />
 
             <Loader visible={loading} onTimeout={() => setLoading(false)} />

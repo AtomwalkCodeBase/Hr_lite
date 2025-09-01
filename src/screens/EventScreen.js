@@ -212,7 +212,7 @@ const handleClearFilters = () => {
 };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle="Event Updates" 
         onBackPress={() => navigate.goBack()} 

@@ -132,7 +132,7 @@ const showModuleDetailsAndCertificate = (item) => {
 
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle="Training List" 
         onBackPress={handleBackPress} 

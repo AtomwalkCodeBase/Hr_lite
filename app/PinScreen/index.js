@@ -176,7 +176,7 @@ const AuthScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
 
             {/* Bank Logo Area */}
             <LinearGradient

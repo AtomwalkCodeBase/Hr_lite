@@ -357,7 +357,7 @@ const HolidayScreen = () => {
 
   return (
     <>
-    <MainContainer>
+    <MainContainer edges={["left", "right", "bottom"]}>
       <HeaderComponent headerTitle="Holiday List" onBackPress={handleBackPress} />
       <Container>
         {holidaydata && (

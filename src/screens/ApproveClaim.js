@@ -632,7 +632,7 @@ const ApproveClaim = () => {
 
   return (
     <>
-  <SafeAreaView style={styles.safeArea}>
+  <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle={`Approve Claim List (${filteredData.length})`}
         onBackPress={handleBackPress}

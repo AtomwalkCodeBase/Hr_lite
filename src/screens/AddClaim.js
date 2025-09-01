@@ -247,10 +247,10 @@ const AddClaim = (props) => {
     }
   };
 
-  console.log("Claim resubmit data==", claimData)
+  // console.log("Claim resubmit data==", claimData)
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
       <HeaderComponent
         headerTitle={
           isViewMode ? "View Claim" :

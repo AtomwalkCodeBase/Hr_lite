@@ -568,9 +568,9 @@ const TimeSheet = () => {
   );
 
   return (
-  <View style={styles.container}>
-    <View style={styles.statusBarBackground}>
-      <SafeAreaView style={styles.safeArea}>
+  // <View style={styles.container}>
+  //   <View style={styles.statusBarBackground}>
+      <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
         <HeaderComponent 
           headerTitle="Timesheet" 
           onBackPress={() => navigate.goBack()}
@@ -728,8 +728,8 @@ const TimeSheet = () => {
 
         <Loader visible={isLoading} />
       </SafeAreaView>
-    </View>
-  </View>
+  //   </View>
+  // </View>
 );
 };
 

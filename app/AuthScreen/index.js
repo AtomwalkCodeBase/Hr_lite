@@ -235,7 +235,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <SafeAreaContainer edges={["top"]}>
+    <SafeAreaContainer edges={["left", "right", "bottom"]}>
       <Container>
         <Header style={styles.headerContainer}>
           <LinearGradient

@@ -192,7 +192,7 @@ const AddAttendance = () => {
 
   return (
     <>
-  <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+  <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
 
         <HeaderComponent headerTitle="Attendance" onBackPress={() => navigation.goBack()} />
 
@@ -331,8 +331,6 @@ const AddAttendance = () => {
             <Feather name="chevron-right" size={20} color="#fff" />
           </TouchableOpacity>
         </ScrollView>
-      </SafeAreaView>
-
       {/* Remark Modal */}
       <Modal transparent visible={localRemarkModalVisible} animationType="fade">
         <View style={styles.modalBackdrop}>
@@ -408,18 +406,20 @@ const AddAttendance = () => {
 
       {/* Loader */}
       <Loader visible={isLoading} />
+      </SafeAreaView>
+
     </>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#a970ff', // Your screen background color
+    // flex: 1,
+    backgroundColor: '#F5F5F5', // Your screen background color
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#F5F5F5',
   },
   errorContainer: {
     flex: 1,

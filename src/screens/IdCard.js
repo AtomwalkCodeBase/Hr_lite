@@ -108,7 +108,7 @@ const IdCard = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent headerTitle="Digital ID Card" onBackPress={handleBackPress} />
       
       <Loader visible={isLoading} onTimeout={() => setIsLoading(false)} />

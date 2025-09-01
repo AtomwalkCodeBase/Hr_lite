@@ -389,7 +389,7 @@ const EventDetailsScreen = (props) => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
     >
       
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["left", "right", "bottom"]}>
         <HeaderComponent 
         headerTitle={`Event Details`} 
         onBackPress={handleBackPress} 

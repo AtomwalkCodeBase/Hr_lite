@@ -208,7 +208,7 @@ const ShiftScreen = (props) => {
 
 
 return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={["left", "right", "bottom"]}>
       <HeaderComponent 
         headerTitle="My Shift Schedule" 
         onBackPress={() => navigate.goBack()} 

@@ -309,7 +309,7 @@ const handleBackPress = () => {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }} edges={["left", "right", "bottom"]}>
             <HeaderComponent
                 headerTitle={
                     isViewMode ? "View Travel Request" :
