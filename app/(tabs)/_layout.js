@@ -20,13 +20,13 @@ const _layout = () => {
         options={{
           title: 'Leaves',
           headerShown: false,
-          tabBarIcon: ({ color }) => <FontAwesome5 name="user-clock" size={20} color={color} />
+          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={20} color={color} />
         }}></Tabs.Screen>
       <Tabs.Screen name='attendance'
         options={{
           title: 'Attendance',
           headerShown: false,
-          tabBarIcon: ({ color }) => <FontAwesome5 name="calendar-alt" size={22} color={color} />
+          tabBarIcon: ({ color }) => <FontAwesome5 name="user-clock" size={22} color={color} />
         }}></Tabs.Screen>
       <Tabs.Screen name='profile' options={{
         title: 'Profile',

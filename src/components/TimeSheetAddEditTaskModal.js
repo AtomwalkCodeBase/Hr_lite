@@ -208,6 +208,27 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
               // minimumDate={new Date(new Date().setDate(new Date().getDate() - 7))}
               maximumDate={new Date()}
             />
+             <View style={styles.formGroup}>
+              <Text style={styles.label}>Efforts <Text style={{ fontSize: 12,color: '#888',fontWeight: '600',}}>(Please fill Start Time , End Time or Efforts)</Text></Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  editingTask && formData.startTime && formData.endTime ? styles.disabledInput : null
+                ]}
+                value={formData.hours}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({ ...prev, hours: value }))
+                }
+                placeholder="Enter hours"
+                keyboardType="numeric"
+                placeholderTextColor="#999"
+                editable={!(editingTask && formData.startTime && formData.endTime)}
+              />
+
+            </View>
+            {errorMessage ? (
+              <Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>
+            ) : null}
             <View style={styles.formGroup}>
               <TimePicker
                 label="Start Time"
@@ -230,27 +251,6 @@ const AddEditTaskModal = ({ visible, onClose, onSubmit, isLoading, formData, set
             />
 
             </View>
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Efforts <Text style={{ fontSize: 12,color: '#888',fontWeight: '600',}}>(Please fill Start Time , End Time or Efforts)</Text></Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  editingTask && formData.startTime && formData.endTime ? styles.disabledInput : null
-                ]}
-                value={formData.hours}
-                onChangeText={(value) =>
-                  setFormData((prev) => ({ ...prev, hours: value }))
-                }
-                placeholder="Enter hours"
-                keyboardType="numeric"
-                placeholderTextColor="#999"
-                editable={!(editingTask && formData.startTime && formData.endTime)}
-              />
-
-            </View>
-            {errorMessage ? (
-              <Text style={{ color: "red", marginTop: 4 }}>{errorMessage}</Text>
-            ) : null}
             <View style={styles.formGroup}>
               <Text style={styles.label}>Remarks</Text>
               <TextInput
@@ -350,6 +350,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     marginBottom: 8,
+    marginTop: 10
   },
   input: {
     borderWidth: 1,

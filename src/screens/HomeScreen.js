@@ -360,7 +360,7 @@ const HomePage = ({ navigation }) => {
       {/* Curved Header */}
       <View style={styles.headerContainer}>
         <LinearGradient
-          colors={['#a970ff', '#8a5bda']}
+          colors={['#a970ff', '#a970ff']}
           start={[0, 0]}
           end={[1, 1]}
           style={styles.headerGradient}
@@ -1115,10 +1115,10 @@ const styles = StyleSheet.create({
     left: '3%',
     top: '5%',
     zIndex: 50,
-    // backgroundColor: 'rgba(169,112,255,0.7)',
+    backgroundColor: 'rgba(169,112,255,0.7)',
     borderRadius: 20,
-    // padding: 2,
-    // elevation: 7,
+    padding: 2,
+    elevation: 7,
   },
   menuIconButton: {
     // marginTop: 10,

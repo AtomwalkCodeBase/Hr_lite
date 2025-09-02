@@ -239,7 +239,7 @@ const LoginScreen = () => {
       <Container>
         <Header style={styles.headerContainer}>
           <LinearGradient
-            colors={["#a970ff", "#8a5bda"]}
+            colors={["#a970ff", "#a970ff"]}
             start={[0, 0]}
             end={[1, 1]}
             style={styles.headerGradient}
