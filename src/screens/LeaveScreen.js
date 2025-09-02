@@ -15,6 +15,7 @@ import { colors } from '../Styles/appStyle';
 import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const screenHeight = Dimensions.get('window').height;
 const responsiveMarginBottom = screenHeight * 0.125;
@@ -82,6 +83,13 @@ const TabTextActive = styled(TabText)`
   font-weight: bold;
   margin-bottom: 0px;
 `;
+const ApplyButtonWrapper = styled.View`
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  align-items: center;
+`;
+
 
 const LeaveScreen = () => {
   const { profile } = useContext(AppContext);
@@ -97,6 +105,7 @@ const LeaveScreen = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false); // Loader state
   const [totalLeaveSum, setTotalLeaveSum] = useState(0);
+  const tabBarHeight = useBottomTabBarHeight();
 
   useFocusEffect(
     useCallback(() => {
@@ -221,7 +230,7 @@ const LeaveScreen = () => {
 
   return (
     <>
-    <SafeAreaView edges={["left", "right", "bottom"]}>
+    <SafeAreaView edges={["left", "right"]}>
       <HeaderComponent headerTitle="My Leaves" onBackPress={handleBackPress} />
       <Container>
       <CardRow>
@@ -274,13 +283,13 @@ const LeaveScreen = () => {
             renderItem={renderLeaveItem}
             keyExtractor={(item) => item.id.toString()}
             ListEmptyComponent={<EmptyMessage data={`leave`} />}
-            // contentContainerStyle={{ paddingBottom: responsiveMarginBottom }}
+            contentContainerStyle={{ paddingBottom: tabBarHeight + 80 }}
             showsVerticalScrollIndicator={false}
             showsHorizontalScrollIndicator={false}
           />
         )}
         <ApplyButton onPress={() => handlePress(leaveData && leaveData[0]?.emp_data)} buttonText="Apply Leave" 
-          icon='send' />
+          icon='send'  tabBarHeight={tabBarHeight} />
 
         {selectedLeave && (
           <ModalComponent

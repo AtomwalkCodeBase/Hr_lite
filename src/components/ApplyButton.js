@@ -7,20 +7,10 @@ import {
   Platform 
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const { width } = Dimensions.get('window');
 
-const ApplyButton = ({ onPress, buttonText, icon }) => {
-  let tabBarHeight = 0;
-
-  try {
-    // Try to get tab bar height (works only inside Tab Navigator)
-    tabBarHeight = useBottomTabBarHeight();
-  } catch (e) {
-    // If not inside tabs, fallback to 0
-    tabBarHeight = 0;
-  }
+const ApplyButton = ({ onPress, buttonText, icon, tabBarHeight }) => {
 
   // Responsive style calculations
   const buttonPadding = Platform.OS === 'ios' ? 12 : 10;
@@ -38,7 +28,7 @@ const ApplyButton = ({ onPress, buttonText, icon }) => {
           paddingVertical: buttonPadding,
           paddingHorizontal: buttonPadding + 4,
           marginVertical: buttonMarginVertical,
-          marginBottom: tabBarHeight ? 10 : 4,  // ✅ Safe fallback
+          marginBottom: tabBarHeight > 0 ? 35 : 11,
           width: buttonWidth,
         }
       ]}
