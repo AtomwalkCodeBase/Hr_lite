@@ -211,11 +211,14 @@ const TimeSheet = () => {
         // No data for given EmpId → fallback to "Other Projects"
         const fallbackRes = await getProjectlist(); // No empId
         const fallbackData = fallbackRes?.data || [];
+
+        console.log("Project Data--",fallbackData)
         setProjects(fallbackData);
         setHasProjects(false);
         setProjectActiveTab('Other Projects');
       } else {
         setProjects(data);
+        console.log("Project Data--",data)
         setHasProjects(true);
         setProjectActiveTab(empId ? 'Assign Project' : 'Other Projects');
       }

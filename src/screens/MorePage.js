@@ -83,7 +83,7 @@ const SectionTitle = styled.Text`
 `;
 
 const MorePage = () => {
-  const { profile } = useContext(AppContext);
+  const { profile, companyInfo } = useContext(AppContext);
   const router = useRouter();
   const [isManager, setIsManager] = useState(false);
   const [empId, setEmpId] = useState([]);
@@ -91,73 +91,86 @@ const MorePage = () => {
   const [loading, setLoading] = useState(false);
   const [isShift, setIsShift] = useState(false);
 
+  if (!companyInfo || Object.keys(companyInfo).length === 0) {
+    return <Loader visible={true} />;
+  }
+
+  const businessType = companyInfo?.business_type?.trim()?.toUpperCase();
+
   useEffect(() => {
     setLoading(true);
-        setEmpShift(profile?.current_shift);
-        setEmpId(profile?.emp_id);
-        setIsManager(profile?.is_manager);
-        setIsShift(profile?.is_shift_applicable);
-        setLoading(false);
+    setEmpShift(profile?.current_shift);
+    setEmpId(profile?.emp_id);
+    setIsManager(profile?.is_manager);
+    setIsShift(profile?.is_shift_applicable);
+    setLoading(false);
   }, []);
 
-  const handlePressHelp = () => {  
+  const handlePressPrj = () => {
+    router.push({
+      pathname: 'ManagerTimeSheet',
+      // params: { empId },
+    });
+  };
+
+  const handlePressHelp = () => {
     router.push({
       pathname: 'HelpScr',
       params: { empId },
     });
   };
 
-  const handlePressResolve = () => {  
+  const handlePressResolve = () => {
     router.push({
       pathname: 'ResolveScreen',
       params: { empId },
     });
   };
-  const handlePressTravelRequest = () => {  
+  const handlePressTravelRequest = () => {
     router.push({
       pathname: 'TravelScreen',
       params: { empId },
     });
   };
 
-  const handlePressRequest = () => {  
+  const handlePressRequest = () => {
     router.push({
       pathname: 'RequestScr',
       params: { empId },
     });
   };
 
-  const handlePressEvent = () => {  
+  const handlePressEvent = () => {
     router.push({
       pathname: 'EventScr',
       params: { empId },
     });
   };
 
-  const handlePressShift = () => {  
+  const handlePressShift = () => {
     router.push({
       pathname: 'ShiftScr',
       params: { empId, empShift },
     });
   };
 
-  const handlePressTraining = () => {  
+  const handlePressTraining = () => {
     router.push({
       pathname: 'TrainingScr',
     });
   };
-  
-  const handlePressEmployee = () => {  
+
+  const handlePressEmployee = () => {
     router.push({
       pathname: 'EmployeeList',
     });
   };
 
-const handlePressProfile = () => {
-  router.push('profile');
-};
+  const handlePressProfile = () => {
+    router.push('profile');
+  };
 
-  
+
   const handleBackPress = () => {
     router.navigate({
       pathname: 'home',
@@ -189,6 +202,13 @@ const handlePressProfile = () => {
       show: isManager
     },
     {
+      title: "Project Dashboard",
+      subTitle: "Manage and track all ongoing projects",
+      icon: <MaterialCommunityIcons name="view-dashboard-outline" size={24} color="#7e57c2" />,
+      action: handlePressPrj,
+      show: businessType === "APM" && isManager === true
+    },
+    {
       title: "Help Desk",
       subTitle: "Raise your concern at Help Desk",
       icon: <MaterialCommunityIcons name="handshake-outline" size={24} color="#7e57c2" />,
@@ -210,84 +230,84 @@ const handlePressProfile = () => {
       show: true
     },
     {
-    title: "Travel Request",
-    subTitle: "Submit and track your travel Request",
-    icon: <MaterialCommunityIcons name="airplane" size={24} color="#7e57c2" />,
-    action: handlePressTravelRequest,
-    show: true
-  },
-  {
-    title: "Event Updates",
-    subTitle: "Get your recent updates and events",
-    icon: <MaterialIcons name="tips-and-updates" size={24} color="#7e57c2" />,
-    action: handlePressEvent,
-    show: true
-  },
-  {
-    title: "Shift Information",
-    subTitle: "Check your scheduled shifts",
-    icon: <MaterialIcons name="calendar-month" size={24} color="#7e57c2" />,
-    action: handlePressShift,
-    show: isShift
-  },
-  {
-    title: "My Training",
-    subTitle: "Check your training details",
-    icon: <MaterialIcons name="book" size={24} color="#7e57c2" />,
-    action: handlePressTraining,
-    show: true
-}
-].filter(item => item.show); // This filters out any items where show is false
+      title: "Travel Request",
+      subTitle: "Submit and track your travel Request",
+      icon: <MaterialCommunityIcons name="airplane" size={24} color="#7e57c2" />,
+      action: handlePressTravelRequest,
+      show: true
+    },
+    {
+      title: "Event Updates",
+      subTitle: "Get your recent updates and events",
+      icon: <MaterialIcons name="tips-and-updates" size={24} color="#7e57c2" />,
+      action: handlePressEvent,
+      show: true
+    },
+    {
+      title: "Shift Information",
+      subTitle: "Check your scheduled shifts",
+      icon: <MaterialIcons name="calendar-month" size={24} color="#7e57c2" />,
+      action: handlePressShift,
+      show: isShift
+    },
+    {
+      title: "My Training",
+      subTitle: "Check your training details",
+      icon: <MaterialIcons name="book" size={24} color="#7e57c2" />,
+      action: handlePressTraining,
+      show: true
+    }
+  ].filter(item => item.show); // This filters out any items where show is false
 
   return (
     <MainContainer edges={["left", "right", "bottom"]}>
       {/* <ContentContainer> */}
-        <Loader visible={loading} />
-        <HeaderComponent 
-          headerTitle="More Options" 
-          onBackPress={handleBackPress} 
-          headerStyle={{ backgroundColor: '#7e57c2' }}
-        />
-        
-        <MenuContainer>
-          <SectionTitle>ACCOUNT</SectionTitle>
-          
-          {menuItems.slice(0, isManager ? 3 : 1).map((item, index) => (
-            <MenuItem 
-              key={`account-${index}`}
-              onPress={item.action}
-              activeOpacity={0.7}
-            >
-              <MenuIconContainer>
-                {item.icon}
-              </MenuIconContainer>
-              <MenuTextContainer>
-                <MenuText>{item.title}</MenuText>
-                <MenuSubText>{item.subTitle}</MenuSubText>
-              </MenuTextContainer>
-              <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-            </MenuItem>
-          ))}
-          
-          <SectionTitle>APP</SectionTitle>
-          
-          {menuItems.slice(isManager ? 3 : 1).map((item, index) => (
-            <MenuItem 
-              key={`app-${index}`}
-              onPress={item.action}
-              activeOpacity={0.7}
-            >
-              <MenuIconContainer>
-                {item.icon}
-              </MenuIconContainer>
-              <MenuTextContainer>
-                <MenuText>{item.title}</MenuText>
-                <MenuSubText>{item.subTitle}</MenuSubText>
-              </MenuTextContainer>
-              <MaterialIcons name="chevron-right" size={24} color="#ccc" />
-            </MenuItem>
-          ))}
-        </MenuContainer>
+      <Loader visible={loading} />
+      <HeaderComponent
+        headerTitle="More Options"
+        onBackPress={handleBackPress}
+        headerStyle={{ backgroundColor: '#7e57c2' }}
+      />
+
+      <MenuContainer>
+        <SectionTitle>ACCOUNT</SectionTitle>
+
+        {menuItems.slice(0, isManager ? 3 : 1).map((item, index) => (
+          <MenuItem
+            key={`account-${index}`}
+            onPress={item.action}
+            activeOpacity={0.7}
+          >
+            <MenuIconContainer>
+              {item.icon}
+            </MenuIconContainer>
+            <MenuTextContainer>
+              <MenuText>{item.title}</MenuText>
+              <MenuSubText>{item.subTitle}</MenuSubText>
+            </MenuTextContainer>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </MenuItem>
+        ))}
+
+        <SectionTitle>APP</SectionTitle>
+
+        {menuItems.slice(isManager ? 3 : 1).map((item, index) => (
+          <MenuItem
+            key={`app-${index}`}
+            onPress={item.action}
+            activeOpacity={0.7}
+          >
+            <MenuIconContainer>
+              {item.icon}
+            </MenuIconContainer>
+            <MenuTextContainer>
+              <MenuText>{item.title}</MenuText>
+              <MenuSubText>{item.subTitle}</MenuSubText>
+            </MenuTextContainer>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </MenuItem>
+        ))}
+      </MenuContainer>
       {/* </ContentContainer> */}
     </MainContainer>
   );
