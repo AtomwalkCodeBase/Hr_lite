@@ -1,15 +1,30 @@
-import { StyleSheet, Text, View } from 'react-native'
+import React, { useContext } from 'react';
+import { StyleSheet, View } from 'react-native';
 import TimeSheet from '../../src/screens/TimeSheet';
+import { AppContext } from '../../context/AppContext';
+import Loader from '../../src/components/old_components/Loader';
+import APMTimeSheet from '../../src/screens/APMTimeSheet';
 
-const index = () => {
+const Index = () => {
+  const { companyInfo } = useContext(AppContext);
+
+  if (!companyInfo || Object.keys(companyInfo).length === 0) {
+    return <Loader visible={true} />;
+  }
+
+  const businessType = companyInfo?.business_type?.trim()?.toUpperCase();
 
   return (
-    <View style={{ flex: 1}}>
-            <TimeSheet />
+    <View style={styles.container}>
+      {businessType === 'APM' ? <APMTimeSheet /> : <TimeSheet />}
     </View>
-  )
-}
+  );
+};
 
-export default index
+export default Index;
 
-const styles = StyleSheet.create({})
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
