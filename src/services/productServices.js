@@ -1,4 +1,4 @@
-import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet, profileDtlURL, validateApproveLimit, getEmployeeTravelList, getTravelMode, postTravelRequest } from "../services/ConstantServies";
+import { addEmpLeave, getEmpLeavedata, addClaim, getEmpClaimdata, getExpenseItemList, getProjectList, getEmpAttendanceData, getEmpHolidayData, empCheckData, processClaim, getClaimApproverList, getfiletotext, processAppointee, getEmployeeRequestList, getEmployeeRequestCategory, processEmployeeRequest, getEventResponse, processEventRes, getEventtList, setUserPinURL, forgetEmpPinURL, getEmpShiftData, getTrainingModuleData, getEmpTrainingListData, processEmpTraining, getTimeSheetList, getactivityList, getProjectLists, addTimesheet, profileDtlURL, validateApproveLimit, getEmployeeTravelList, getTravelMode, postTravelRequest, getAllocation, processAllocation } from "../services/ConstantServies";
 import { authAxios, authAxiosFilePost, authAxiosPost, publicAxiosRequest } from "./HttpMethod";
 
 export async function getEmpLeave(leave_type, emp_id) {
@@ -286,3 +286,22 @@ export async function postTravel(res) {
   // console.log('Data to be sent:', data);
   return authAxiosPost(url, data)
 }
+
+export async function getAllocationList(empId, startDate, endDate) {
+  let data = {
+    start_date: startDate,
+    end_date: endDate,
+  };
+  if (empId) {
+    data.emp_id = empId;
+  }
+  const url = await getAllocation();
+  console.log("Data to be passed --", data);
+
+  return authAxios(url, data);
+}
+
+export async function postAllocationData(activity_data) {
+    const url = await processAllocation();
+    return authAxiosFilePost(url, activity_data);
+  }

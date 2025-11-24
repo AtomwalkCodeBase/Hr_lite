@@ -167,11 +167,6 @@ export const getactivityList = async () => {
   return `${newendpoint}/get_activity_list/${db_name}/`;
 }
 
-// export const getProjectLists = async () => {
-//   const db_name = await getDbName();
-//   return `${newendpoint}/get_project_list/${db_name}/`;
-// }
-
 export const getTimeSheetList = async () => {
   const db_name = await getDbName();
   return `${newendpoint}/get_time_sheet_list/${db_name}/`;
@@ -192,4 +187,12 @@ export const postTravelRequest = async () => {
   return`${newendpoint}/process_travel_request/${db_name}/`;
 };
 
+export const getAllocation = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/get_emp_allocation_data/${db_name}/`;
+};
 
+export const processAllocation = async () => {
+  const db_name = await getDbName();
+  return `${newendpoint}/process_emp_allocation/${db_name}/`;
+};
