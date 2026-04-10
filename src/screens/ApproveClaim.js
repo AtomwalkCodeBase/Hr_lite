@@ -223,7 +223,7 @@ const ApproveClaim = () => {
 
   const periodOptions = [
   { label: 'Current Financial Year', value: 'CY' },
-  { label: 'Upto Last Financial Year', value: 'LY' },
+  { label: 'Upto Last Financial Year', value: 'PY' },
   { label: 'All Claims', value: 'ALL' },
 ];
 
@@ -397,8 +397,7 @@ const ApproveClaim = () => {
         const employeeId = profile?.id;
         if (employeeId) {
           const period = activeFilters.period || 'CY';
-          const apiPeriod = period === 'ALL' ? null : period;
-          const res = await getEmpClaim(requestData, employeeId, apiPeriod);
+          const res = await getEmpClaim(requestData, employeeId, period);
           // Filter out claims with expense_status "N"
           const filteredClaims = res.data.filter(item => item.expense_status !== 'N');
           setClaimData(filteredClaims.reverse());
@@ -703,6 +702,7 @@ const ApproveClaim = () => {
       status: null,
       claimId: null,
       employee: null,
+      period: 'CY'
     };
     setPendingFilters(clearedFilters);
     setActiveFilters(clearedFilters);

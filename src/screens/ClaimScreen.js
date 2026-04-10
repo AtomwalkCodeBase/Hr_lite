@@ -213,7 +213,7 @@ const ClaimScreen = (props) => {
 
 const periodOptions = [
   { label: 'Current Financial Year', value: 'CY' },
-  { label: 'Upto Last Financial Year', value: 'LY' },
+  { label: 'Upto Last Financial Year', value: 'PY' },
   { label: 'All Claims', value: 'ALL' },
 ];
 
@@ -370,19 +370,7 @@ const filterClaims = () => {
   let filtered = [...allClaims];
 
   // Filter by period - now using currentFilters.period
-  if (currentFilters.period && currentFilters.period !== 'ALL') {
-    const currentYear = new Date().getFullYear();
-    filtered = filtered.filter(claim => {
-      const claimDate = parseClaimDate(claim.claim_date);
-      if (!claimDate) return true;
-      
-      const claimYear = claimDate.getFullYear();
-      return currentFilters.period === 'CY' 
-        ? claimYear === currentYear 
-        : claimYear === currentYear - 1;
-    });
-  }
-
+  
   // Filter by active tab
   if (activeTab === 'drafts') {
     filtered = filtered.filter(claim => 
@@ -429,12 +417,13 @@ const filterClaims = () => {
 
   const fetchClaimDetails = () => {
   setIsLoading(true);
+  setAllClaims([]);
   
   // Get the current period filter from the filters state
   const currentPeriod = getCurrentFilters().period;
   const apiPeriod = currentPeriod === 'ALL' ? null : currentPeriod;
   
-  getEmpClaim(requestData, empId, apiPeriod || 'CY')
+  getEmpClaim(requestData, empId, apiPeriod || 'ALL')
     .then((res) => {
       const claims = res.data || [];
       const validClaims = claims.filter(claim => 

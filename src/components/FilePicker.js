@@ -1,14 +1,35 @@
 import React, { useState } from "react";
-import { TouchableOpacity, Text, Image, ActivityIndicator, Modal, View, StyleSheet, Animated } from "react-native";
+import {
+  TouchableOpacity,
+  Text,
+  Image,
+  ActivityIndicator,
+  Modal,
+  View,
+  StyleSheet,
+  Animated,
+  Alert
+} from "react-native";
 import styled from "styled-components/native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { colors } from "../Styles/appStyle";
 import { MaterialIcons } from "@expo/vector-icons";
 
+/* ================= FUTURE-PROOF MEDIA TYPE ================= */
+const getMediaTypes = () => {
+  if (ImagePicker.MediaType) {
+    return [ImagePicker.MediaType.IMAGE]; // New API
+  }
+  if (ImagePicker.MediaTypeOptions) {
+    return ImagePicker.MediaTypeOptions.Images; // Old API
+  }
+  return undefined;
+};
 
+/* ================= STYLES ================= */
 const FileButton = styled.TouchableOpacity`
   flex-direction: row;
   justify-content: space-between;
@@ -28,9 +49,7 @@ const Label = styled.Text`
 const InputText = styled.Text`
   color: black;
   font-size: 16px;
-  font-weight: normal;
   flex: 1;
-  flex-shrink: 1;
   margin-right: 10px;
   max-width: 80%;
 `;
@@ -38,21 +57,28 @@ const InputText = styled.Text`
 const Icon = styled.Image`
   width: 24px;
   height: 24px;
-  flex-shrink: 0;
 `;
 
-const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFileMimeType, error, existingImgUri= null}) => {
+/* ================= COMPONENT ================= */
+const FilePicker = ({
+  label,
+  fileName,
+  fileUri,
+  setFileName,
+  setFileUri,
+  setFileMimeType,
+  error,
+  existingImgUri = null,
+}) => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [scaleValue] = useState(new Animated.Value(0));
 
-    const openModal = () => {
+  const openModal = () => {
     setShowModal(true);
     Animated.spring(scaleValue, {
       toValue: 1,
       useNativeDriver: true,
-      tension: 100,
-      friction: 8,
     }).start();
   };
 
@@ -60,89 +86,80 @@ const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFile
     Animated.spring(scaleValue, {
       toValue: 0,
       useNativeDriver: true,
-      tension: 100,
-      friction: 8,
-    }).start(() => {
-      setShowModal(false);
-    });
+    }).start(() => setShowModal(false));
   };
 
-  const handleFilePick = async () => {
-    openModal();
-  };
-
+  /* ================= CAMERA ================= */
   const handleCameraCapture = async () => {
     closeModal();
-    setLoading(true)
-    try {
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
-      if (cameraPermission.granted) {
-        let result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaType.IMAGE,
-          allowsEditing: true,
-          quality: 1,
-        });
+    setLoading(true);
 
-        if (!result.canceled) {
-          const compressedImage = await compressImage(result.assets[0].uri);
-          setFileName(result.assets[0].fileName || "captured_image.jpg");
-          setFileUri(compressedImage.uri);
-          setFileMimeType(result.assets[0].mimeType || "image/jpeg");
-        }
-      } else {
-         Alert.alert(
-                  "Permission Required",
-                  "Camera permission is required to capture photos"
-                );
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+
+      if (!permission.granted) {
+        Alert.alert("Permission Required", "Camera permission is required");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: getMediaTypes(),
+        allowsEditing: true,
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets?.length > 0) {
+        const asset = result.assets[0];
+
+        const compressedImage = await compressImage(asset.uri);
+
+        setFileName(asset.fileName || `photo_${Date.now()}.jpg`);
+        setFileUri(compressedImage.uri);
+        setFileMimeType(asset.mimeType || "image/jpeg");
       }
     } catch (error) {
       console.error("Camera error:", error);
     }
+
     setLoading(false);
   };
 
+  /* ================= FILE PICK ================= */
   const handleFileSelect = async () => {
     closeModal();
-    setLoading(true)
+    setLoading(true);
+
     try {
-      let result = await DocumentPicker.getDocumentAsync({
+      const result = await DocumentPicker.getDocumentAsync({
         type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
       });
 
-      if (result.type !== "cancel") {
-        const fileUri = result.assets[0].uri;
-        const fileName = result.assets[0].name;
-        const mimeType = result.assets[0].mimeType || result.type;
+      if (!result.canceled && result.assets?.length > 0) {
+        const asset = result.assets[0];
 
-        let compressedImageUri = fileUri;
-        if (
-          result.assets[0].mimeType &&
-          result.assets[0].mimeType.startsWith("image/")
-        ) {
-          const compressedImage = await compressImage(fileUri);
-          compressedImageUri = compressedImage.uri || compressedImage;
+        let finalUri = asset.uri;
+
+        if (asset.mimeType?.startsWith("image/")) {
+          const compressed = await compressImage(asset.uri);
+          finalUri = compressed.uri;
         }
 
-        setFileName(fileName);
-        setFileUri(compressedImageUri);
-        setFileMimeType(mimeType);
+        setFileName(asset.name);
+        setFileUri(finalUri);
+        setFileMimeType(asset.mimeType || "application/octet-stream");
       }
     } catch (error) {
-      console.error("Error while picking file or compressing:", error);
+      console.error("File pick error:", error);
     }
+
     setLoading(false);
   };
 
-  const clearData = () => {
-    setFileName("");
-    setFileUri("");
-    setFileMimeType("");
-  };
-
+  /* ================= IMAGE COMPRESSION ================= */
   const compressImage = async (uri) => {
     let compressQuality = 1;
-    const targetSize = 200 * 1024; // 200 KB
+    const targetSize = 200 * 1024;
 
     let compressedImage = await ImageManipulator.manipulateAsync(uri, [], {
       compress: compressQuality,
@@ -154,10 +171,14 @@ const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFile
     while (imageInfo.size > targetSize && compressQuality > 0.1) {
       compressQuality -= 0.1;
 
-      compressedImage = await ImageManipulator.manipulateAsync(uri, [], {
-        compress: compressQuality,
-        format: ImageManipulator.SaveFormat.JPEG,
-      });
+      compressedImage = await ImageManipulator.manipulateAsync(
+        compressedImage.uri, // ✅ FIXED
+        [],
+        {
+          compress: compressQuality,
+          format: ImageManipulator.SaveFormat.JPEG,
+        }
+      );
 
       imageInfo = await FileSystem.getInfoAsync(compressedImage.uri);
     }
@@ -165,166 +186,123 @@ const FilePicker = ({ label, fileName, fileUri, setFileName, setFileUri, setFile
     return compressedImage;
   };
 
+  const clearData = () => {
+    setFileName("");
+    setFileUri("");
+    setFileMimeType("");
+  };
+
+  /* ================= UI ================= */
   return (
     <>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Label>{label}</Label>
-       {fileName && <TouchableOpacity onPress={clearData}>
-          <Text
-            style={{
-              color: colors.primary,
-              fontSize: 16,
-              fontWeight: 600,
-              marginTop: 12,
-            }}
-          >
-            Clear
-          </Text>
-        </TouchableOpacity>}
+        {fileName && (
+          <TouchableOpacity onPress={clearData}>
+            <Text style={{ color: colors.primary }}>Clear</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <FileButton onPress={handleFilePick}>
-        <InputText numberOfLines={1} ellipsizeMode="middle">{fileName || "No file selected"}</InputText>
+      <FileButton onPress={openModal}>
+        <InputText numberOfLines={1}>
+          {fileName || "No file selected"}
+        </InputText>
         <Icon source={require("../../assets/images/Upload-Icon.png")} />
       </FileButton>
 
-      {loading && (
-        <View style={{ marginTop: 16, alignItems: "center" }}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      )}
+      {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
 
-      {error && (
-        <Text style={{ marginTop: 7, color: colors.red, fontSize: 12 }}>
-          {error}
-        </Text>
-      )}
+      {error && <Text style={{ color: colors.red }}>{error}</Text>}
 
-      {(fileUri || existingImgUri) && ( /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(fileName)) && (
-        <Image
-          source={{ uri: fileUri ? fileUri : existingImgUri }}
-          style={{
-            width: 250,
-            height: 140,
-            borderRadius: 12,
-            resizeMode: "cover",
-            objectFit: "contain",
-            marginTop: 10,
-            alignSelf: "center"
-          }}
-        />
-      )}
-      <Modal visible={showModal} transparent animationType="none">
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalBackground} 
-            onPress={closeModal}
-            activeOpacity={1}
+      {(fileUri || existingImgUri) &&
+        /\.(jpg|jpeg|png|webp)$/i.test(fileName) && (
+          <Image
+            source={{ uri: fileUri || existingImgUri }}
+            style={{ width: 250, height: 140, marginTop: 10 }}
           />
-          <Animated.View 
-            style={[
-              styles.modalContent,
-              {
-                transform: [{ scale: scaleValue }]
-              }
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Option</Text>
-              <Text style={styles.modalSubtitle}>
-                Choose a file from the library or capture a photo
-              </Text>
-            </View>
+        )}
 
-            <View style={styles.optionContainer}>
-              <TouchableOpacity 
-                style={styles.optionButton}
-                onPress={handleCameraCapture}
-              >
-                <View style={styles.optionIconContainer}>
-                  <MaterialIcons name="camera-alt" size={24} color="#a970ff" />
-                </View>
-                <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Capture Photo</Text>
-                  <Text style={styles.optionSubtitle}>Take a new photo</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color="#ccc" />
-              </TouchableOpacity>
+      {/* ================= MODAL ================= */}
+      <Modal visible={showModal} transparent animationType="none">
+  <View style={styles.modalOverlay}>
+    <TouchableOpacity 
+      style={styles.modalBackground} 
+      onPress={closeModal}
+      activeOpacity={1}
+    />
 
-              <TouchableOpacity 
-                style={styles.optionButton}
-                onPress={handleFileSelect}
-              >
-                <View style={styles.optionIconContainer}>
-                  <MaterialIcons name="folder" size={24} color="#a970ff" />
-                </View>
-                <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Choose File</Text>
-                  <Text style={styles.optionSubtitle}>Select from library</Text>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color="#ccc" />
-              </TouchableOpacity>
-            </View>
+    <Animated.View 
+      style={[
+        styles.modalContent,
+        {
+          transform: [{ scale: scaleValue }]
+        }
+      ]}
+    >
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalTitle}>Select Option</Text>
+        <Text style={styles.modalSubtitle}>
+          Choose a file from the library or capture a photo
+        </Text>
+      </View>
 
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={closeModal}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Modal>
+      <View style={styles.optionContainer}>
+        {/* CAMERA OPTION */}
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={handleCameraCapture}
+        >
+          <View style={styles.optionIconContainer}>
+            <MaterialIcons name="camera-alt" size={24} color="#a970ff" />
+          </View>
+
+          <View style={styles.optionTextContainer}>
+            <Text style={styles.optionTitle}>Capture Photo</Text>
+            <Text style={styles.optionSubtitle}>Take a new photo</Text>
+          </View>
+
+          <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+        </TouchableOpacity>
+
+        {/* FILE OPTION */}
+        <TouchableOpacity 
+          style={styles.optionButton}
+          onPress={handleFileSelect}
+        >
+          <View style={styles.optionIconContainer}>
+            <MaterialIcons name="folder" size={24} color="#a970ff" />
+          </View>
+
+          <View style={styles.optionTextContainer}>
+            <Text style={styles.optionTitle}>Choose File</Text>
+            <Text style={styles.optionSubtitle}>Select from library</Text>
+          </View>
+
+          <MaterialIcons name="chevron-right" size={20} color="#ccc" />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity 
+        style={styles.cancelButton}
+        onPress={closeModal}
+      >
+        <Text style={styles.cancelText}>Cancel</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  </View>
+</Modal>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  clearButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "#f0ebff",
-  },
-  clearText: {
-    color: "#a970ff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  errorText: {
-    marginTop: 7,
-    color: "#f44336",
-    fontSize: 12,
-  },
-  imageContainer: {
-    alignItems: "center",
-    marginTop: 12,
-  },
-  previewImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 12,
-    resizeMode: "cover",
-    borderWidth: 2,
-    borderColor: "#a970ff",
-  },
-  modalOverlay: {
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center" },
+ modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  modalBackground: {
+  },  modalBackground: {
     position: "absolute",
     top: 0,
     left: 0,

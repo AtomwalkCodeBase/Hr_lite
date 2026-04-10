@@ -15,12 +15,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styled from 'styled-components/native';
 import { colors } from '../Styles/appStyle';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { KeyboardAvoidingView, Platform } from "react-native";
 
-const Container = styled.ScrollView`
+const Container = styled.ScrollView.attrs({
+  keyboardShouldPersistTaps: "handled",
+  contentContainerStyle: {
+    paddingBottom: 120, // 👈 THIS FIXES YOUR ISSUE
+  },
+})`
   flex: 1;
   padding: 10px;
   background-color: #fff;
-  height: 100%;
 `;
 
 const AddClaim = (props) => {
@@ -260,6 +265,11 @@ const AddClaim = (props) => {
         }
         onBackPress={handleBackPress}
       />
+      <KeyboardAvoidingView
+  style={{ flex: 1 }}
+  behavior={Platform.OS === "ios" ? "padding" : "height"}
+  keyboardVerticalOffset={80}
+>
       {isLoading ? (
         <Loader
           visible={isLoading}
@@ -269,6 +279,7 @@ const AddClaim = (props) => {
           }}
         />
       ) : (
+   
         <Container showsVerticalScrollIndicator={false}>
           {isEditMode && (
             <View style={{
@@ -404,6 +415,7 @@ const AddClaim = (props) => {
           )}
         </Container>
       )}
+      </KeyboardAvoidingView>
 
       <SuccessModal
         visible={isSuccessModalVisible}
