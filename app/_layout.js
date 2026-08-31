@@ -1,3 +1,4 @@
+import 'expo-insights';
 import { Stack } from "expo-router";
 import { AppProvider } from "../context/AppContext";
 import { BackHandler, View, StyleSheet, StatusBar, Platform } from "react-native";

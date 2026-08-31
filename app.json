@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atomwalk HRM Lite",
     "slug": "atomwalkhrmslite",
-    "version": "1.0.6",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/images/adaptive-icon.png",
     "scheme": "myapp",
@@ -16,8 +16,10 @@
       "supportsTablet": true
     },
     "android": {
-      "versionCode": 10,
+      "versionCode": 13,
       "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
@@ -44,7 +46,12 @@
         "projectId": "51fe7bfa-9380-4bc2-9337-87001bb0e07b"
       }
     },
-    "owner": "atomwalk"
+    "owner": "atomwalk",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/51fe7bfa-9380-4bc2-9337-87001bb0e07b"
+    }
   }
 }
-
