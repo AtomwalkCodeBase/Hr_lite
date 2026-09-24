@@ -1,7 +1,8 @@
 import React, { useContext, useEffect, useState } from 'react';
 import styled from 'styled-components/native';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar, SafeAreaView, 
+import { View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, StatusBar,
   ScrollView, Dimensions, Image, Text, Alert, Keyboard, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Logos from '../../assets/images/Atom_walk_logo.jpg';

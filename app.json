@@ -2,7 +2,7 @@
   "expo": {
     "name": "Atomwalk HRM Lite",
     "slug": "atomwalkhrmslite",
-    "version": "1.0.9",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/adaptive-icon.png",
     "scheme": "myapp",
@@ -13,7 +13,7 @@
     },
 
     "android": {
-      "versionCode": 13,
+      "versionCode": 14,
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
@@ -36,7 +36,15 @@
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-sharing",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/images/adaptive-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
       "expo-status-bar",
       "expo-web-browser"
     ],
@@ -48,7 +56,7 @@
     "extra": {
       "eas": {
         "projectId": "51fe7bfa-9380-4bc2-9337-87001bb0e07b"
-    }
+      }
     },
 
     "owner": "atomwalk",
