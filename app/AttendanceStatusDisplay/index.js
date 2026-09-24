@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import AttendanceStatus from '../../src/screens/AttendanceStatus';
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router';
 
 
 const index = () => {
@@ -16,3 +16,4 @@ const index = () => {
 }
 
 export default index
+

@@ -48,7 +48,7 @@ export const DailyTableRow = ({ dayData, getDayName, getStatusColor, getStatusTe
         <Text style={styles.projectLabel}>{` Tasks: ${taskCount}`}</Text>
       </View>
       <View style={styles.projectsColumn}>
-        <AntDesign name="eyeo" size={20} color="#a970ff" />
+        <AntDesign name="eye" size={20} color="#a970ff" />
         <Text style={styles.projectLabel}>View</Text>
       </View>
     </TouchableOpacity>

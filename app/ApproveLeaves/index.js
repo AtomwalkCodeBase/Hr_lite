@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 import ApproveLeave from '../../src/screens/ApproveLeave'
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router';
 
 const index = () => {
 

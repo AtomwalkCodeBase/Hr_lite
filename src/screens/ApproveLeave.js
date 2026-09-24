@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useState, useCallback } from 'react'
 import { FlatList, Text, View, TouchableOpacity, Dimensions, BackHandler, StyleSheet } from 'react-native';
 import styled from 'styled-components/native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router';
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import ModalComponent from '../components/ModalComponent';
 import { getEmpLeave } from '../services/productServices';

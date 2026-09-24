@@ -19,14 +19,9 @@ import { colors } from "../Styles/appStyle";
 import { MaterialIcons } from "@expo/vector-icons";
 
 /* ================= FUTURE-PROOF MEDIA TYPE ================= */
+
 const getMediaTypes = () => {
-  if (ImagePicker.MediaType) {
-    return [ImagePicker.MediaType.IMAGE]; // New API
-  }
-  if (ImagePicker.MediaTypeOptions) {
-    return ImagePicker.MediaTypeOptions.Images; // Old API
-  }
-  return undefined;
+  return ['images'];
 };
 
 /* ================= STYLES ================= */
@@ -103,7 +98,6 @@ const FilePicker = ({
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: getMediaTypes(),
         allowsEditing: true,
         quality: 1,
       });

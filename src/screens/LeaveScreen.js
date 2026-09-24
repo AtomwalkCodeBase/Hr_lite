@@ -15,7 +15,7 @@ import { colors } from '../Styles/appStyle';
 import NewLeaveCardComponent from '../components/NewLeaveCardComponent';
 import { AppContext } from '../../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useBottomTabBarHeight } from 'expo-router/js-tabs';
 
 const screenHeight = Dimensions.get('window').height;
 const responsiveMarginBottom = screenHeight * 0.125;

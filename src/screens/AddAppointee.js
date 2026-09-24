@@ -41,24 +41,27 @@ const AddAppointee = ({ navigation }) => {
     };
     
     const openCamera = async () => {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Required', 'Camera access is needed to capture the image.');
-            return;
-        }
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-        const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaType.IMAGE,
-            allowsEditing: true,
-            quality: 1,
-        });
+    if (status !== 'granted') {
+        Alert.alert(
+            'Permission Required',
+            'Camera access is needed to capture the image.'
+        );
+        return;
+    }
 
-        if (!result.canceled && result.assets?.length > 0) {
-            processImage(result.assets[0]);
-        } else {
-            navigation.pop();
-        }
-    };
+    const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        quality: 1,
+    });
+
+    if (!result.canceled && result.assets?.length > 0) {
+        processImage(result.assets[0]);
+    } else {
+        navigation.pop();
+    }
+};
 
     const processImage = async (file) => {
         setLoading(true);

@@ -425,7 +425,7 @@ const Sidebar = ({ isOpen, onClose, isHomePage = true, style }) => {
         <SafeAreaView style={styles.sidebarContent}>
           {/* Header with Profile */}
           <View style={styles.header}>
-              <AntDesign name="leftcircle" size={24} style={{position: "absolute", right: 20, top: 10}} color="black"  onPress={handleOverlayPress} />
+              <AntDesign name="left-circle" size={24} style={{position: "absolute", right: 20, top: 10}} color="black"  onPress={handleOverlayPress} />
             <View style={styles.profileSection}>
               <View style={styles.avatar}>
                 {profile.image ? (

@@ -63,20 +63,17 @@ const TimePicker = ({ error, label, cDate, setCDate }) => {
           value={isValidDate ? cDate : new Date()}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            if (Platform.OS === 'android') {
-              if (event.type === 'set' && selectedDate) {
-                setCDate(selectedDate);
-              }
-              setShowDatePicker(false);
-            } else {
-              // iOS: selectedDate is undefined if cancelled
-              if (typeof event === 'object' && event.type === 'dismissed') {
-                // do nothing
-              } else if (selectedDate) {
-                setCDate(selectedDate);
-              }
+          onValueChange={(event, selectedDate) => {
+            if (selectedDate) {
+              setCDate(selectedDate);
             }
+
+            if (Platform.OS === 'android') {
+              setShowDatePicker(false);
+            }
+          }}
+          onDismiss={() => {
+            setShowDatePicker(false);
           }}
         />
       )}

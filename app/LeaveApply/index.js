@@ -1,6 +1,6 @@
 import {View } from 'react-native'
 import ApplyLeave from '../../src/screens/ApplyLeave'
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router';
 const index = () => {
   const route = useRoute();
   const emp_data_id = route?.params?.id

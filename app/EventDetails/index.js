@@ -1,5 +1,5 @@
 import {View } from 'react-native'
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router';
 import EventDetailsScreen from '../../src/screens/EventDetailsScreen';
 const index = () => {
   const route = useRoute();

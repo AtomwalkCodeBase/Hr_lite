@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import moment from 'moment';
 import { useNavigation, useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import RemarksInput from '../components/RemarkInput';

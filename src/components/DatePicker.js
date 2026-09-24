@@ -46,28 +46,26 @@ const DatePicker = ({ error, label, cDate, setCDate, minimumDate, maximumDate })
       </DatePickerButton>
 
       {showDatePicker && (
-        <DateTimePicker
-          value={cDate instanceof Date && !isNaN(cDate) ? cDate : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(event, selectedDate) => {
-            // Only update if user confirms (not cancel)
-            if (Platform.OS === 'android') {
-              if (event.type === 'set' && selectedDate) {
-                setCDate(selectedDate);
-              }
-              setShowDatePicker(false);
-            } else {
-              // iOS: selectedDate is undefined if cancelled
-              if (selectedDate) {
-                setCDate(selectedDate);
-              }
-            }
-          }}
-          {...(minimumDate ? { minimumDate } : {})}
-          {...(maximumDate ? { maximumDate } : {})}
-        />
-      )}
+  <DateTimePicker
+    value={cDate instanceof Date && !isNaN(cDate) ? cDate : new Date()}
+    mode="date"
+    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+    onValueChange={(event, selectedDate) => {
+      if (selectedDate) {
+        setCDate(selectedDate);
+      }
+
+      if (Platform.OS === 'android') {
+        setShowDatePicker(false);
+      }
+    }}
+    onDismiss={() => {
+      setShowDatePicker(false);
+    }}
+    {...(minimumDate ? { minimumDate } : {})}
+    {...(maximumDate ? { maximumDate } : {})}
+  />
+)}
 
       {error && (
         <Text style={{ marginTop: 7, color: colors.red, fontSize: 12 }}>

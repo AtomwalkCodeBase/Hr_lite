@@ -1,16 +1,10 @@
 import React, { useEffect } from 'react';
 import styled from 'styled-components/native';
-import { Modal, View, Image, Text, TouchableOpacity } from 'react-native';
-
-const ModalContainer = styled.Modal`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
-  background-color: rgba(0, 0, 0, 0.5);
-`;
+import { Modal, View, Image } from 'react-native';
 
 const ContentContainer = styled.View`
   width: 80%;
+  max-width: 400px;
   padding: 20px;
   background-color: #fff;
   border: 1px solid #a970ff;
@@ -53,32 +47,49 @@ const SuccessModal = ({ visible, onClose, message }) => {
     if (visible) {
       const timer = setTimeout(() => {
         onClose();
-      }, 5000); // Auto close after 10 seconds
-      
+      }, 5000);
+
       return () => clearTimeout(timer);
     }
   }, [visible, onClose]);
 
   return (
-    <ModalContainer
+    <Modal
       animationType="slide"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          width: '100%',
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        }}
+      >
         <ContentContainer>
           <IconContainer>
-            <Image source={require('../../assets/images/Like.png')} style={{ width: 60, height: 60 }} />
+            <Image
+              source={require('../../assets/images/Like.png')}
+              style={{ width: 60, height: 60 }}
+            />
           </IconContainer>
+
           <MessageText>Success!</MessageText>
-          <SubText>{message || "Your action completed successfully."}</SubText>
+
+          <SubText>
+            {message || 'Your action completed successfully.'}
+          </SubText>
+
           <CloseButton onPress={onClose}>
             <CloseButtonText>Close</CloseButtonText>
           </CloseButton>
         </ContentContainer>
       </View>
-    </ModalContainer>
+    </Modal>
   );
 };
 

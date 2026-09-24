@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from 'expo-router';
 import { AppContext } from '../../context/AppContext';
 import { getCompanyInfo } from '../services/authServices';
 import AsyncStorage from '@react-native-async-storage/async-storage';

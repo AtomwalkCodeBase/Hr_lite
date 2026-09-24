@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
-import { useRoute } from '@react-navigation/native';
+import { useRoute } from 'expo-router';
 import AddHelp from '../../src/screens/AddHelp';
 import UpdateHelp from '../../src/screens/UpdateHelp';
 
